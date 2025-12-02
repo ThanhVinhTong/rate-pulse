@@ -7,8 +7,8 @@ CREATE TABLE currencies (
     currency_name   VARCHAR(100) NOT NULL,
     currency_country VARCHAR(100),
     currency_symbol VARCHAR(10),
-    updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==============================================================
@@ -20,8 +20,8 @@ CREATE TABLE rate_sources (
     source_link     VARCHAR(255),
     source_country  VARCHAR(100),
     source_status   VARCHAR(20)  DEFAULT 'active',
-    updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==============================================================
@@ -32,11 +32,11 @@ CREATE TABLE exchange_rates (
     rate_value             NUMERIC(20,10) NOT NULL,   -- exchange rate
     source_currency_id     INT NOT NULL REFERENCES currencies(currency_id),
     destination_currency_id INT NOT NULL REFERENCES currencies(currency_id),
-    valid_from_date        DATE NOT NULL,
-    valid_to_date          DATE,
+    valid_from_date        TIMESTAMPTZ NOT NULL,
+    valid_to_date          TIMESTAMPTZ,
     source_id              INT REFERENCES rate_sources(source_id),   -- 1:1 link
-    updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at             TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at             TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_dates CHECK (valid_from_date <= COALESCE(valid_to_date, valid_from_date))
 );
