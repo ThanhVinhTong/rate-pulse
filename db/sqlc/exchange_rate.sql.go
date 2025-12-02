@@ -50,6 +50,15 @@ func (q *Queries) CreateExchangeRate(ctx context.Context, arg CreateExchangeRate
 	return i, err
 }
 
+const deleteAllExchangeRates = `-- name: DeleteAllExchangeRates :exec
+DELETE FROM exchange_rates
+`
+
+func (q *Queries) DeleteAllExchangeRates(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllExchangeRates)
+	return err
+}
+
 const deleteExchangeRate = `-- name: DeleteExchangeRate :exec
 DELETE FROM exchange_rates
 WHERE rate_id = $1

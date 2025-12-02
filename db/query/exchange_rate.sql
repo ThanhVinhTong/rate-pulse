@@ -22,3 +22,6 @@ RETURNING *;
 -- name: DeleteExchangeRate :exec
 DELETE FROM exchange_rates
 WHERE rate_id = $1;
+
+-- name: DeleteAllExchangeRates :exec
+DELETE FROM exchange_rates;
