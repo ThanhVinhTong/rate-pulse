@@ -40,9 +40,17 @@ jobs:
         go-version: '1.25.4'
       id: go
 
-    - name: Checkout code into the Go module directory
-      uses: actions/checkout@v4
-    
+    - name: Check out repository code
+      uses: actions/checkout@v5
+
+    - name: Install golang-migrate
+      run: |
+        go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+        tar xvzf migrate.tar.gz
+        mv migrate /usr/local/bin/migrate
+        rm migrate.tar.gz
+        rm migrate.tar
+
     - name: Run migrations
       run: make migrateup
 
