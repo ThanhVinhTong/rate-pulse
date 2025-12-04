@@ -45,11 +45,8 @@ jobs:
 
     - name: Install golang-migrate
       run: |
-        go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-        tar xvzf migrate.tar.gz
-        mv migrate /usr/local/bin/migrate
-        rm migrate.tar.gz
-        rm migrate.tar
+        curl -L https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz | tar xvz
+        mv migrate.linux-amd64 /usr/local/bin/migrate
 
     - name: Run migrations
       run: make migrateup
