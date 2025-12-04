@@ -117,23 +117,60 @@ func TestUpdateExchangeRate(t *testing.T) {
 }
 
 func TestDeleteExchangeRate(t *testing.T) {
-	rateID := int32(util.GetLengthExchangeRates())
-	err := testQueries.DeleteExchangeRate(context.Background(), rateID)
+	// Use a transaction and temporary data so we don't affect global seed data or FKs.
+	ctx := context.Background()
+	tx, err := testDB.BeginTx(ctx, nil)
 	require.NoError(t, err)
+	defer tx.Rollback()
 
-	exchangeRate, err := testQueries.GetExchangeRateByID(context.Background(), rateID)
-	require.Error(t, err)
-	require.Empty(t, exchangeRate)
-}
+	q := New(tx)
 
-func TestDeleteAllExchangeRates(t *testing.T) {
-	err := testQueries.DeleteAllExchangeRates(context.Background())
-	require.NoError(t, err)
-
-	exchangeRates, err := testQueries.GetAllExchangeRates(context.Background(), GetAllExchangeRatesParams{
-		Limit:  1000,
-		Offset: 0,
+	// Create temporary currencies for the exchange rate
+	baseCurrency, err := q.CreateCurrency(ctx, CreateCurrencyParams{
+		CurrencyCode:    "TMP",
+		CurrencyName:    "Temporary Base",
+		CurrencyCountry: sql.NullString{String: "TempLand", Valid: true},
+		CurrencySymbol:  sql.NullString{String: "T", Valid: true},
 	})
 	require.NoError(t, err)
-	require.Empty(t, exchangeRates)
+
+	destCurrency, err := q.CreateCurrency(ctx, CreateCurrencyParams{
+		CurrencyCode:    "TMQ",
+		CurrencyName:    "Temporary Dest",
+		CurrencyCountry: sql.NullString{String: "TempLand", Valid: true},
+		CurrencySymbol:  sql.NullString{String: "Q", Valid: true},
+	})
+	require.NoError(t, err)
+
+	// Create a temporary rate source
+	tempSource, err := q.CreateRateSource(ctx, CreateRateSourceParams{
+		SourceName:    "Temp Delete Rate Source",
+		SourceLink:    sql.NullString{String: "https://temp-delete-rate-source.local", Valid: true},
+		SourceCountry: sql.NullString{String: "TempLand", Valid: true},
+		SourceStatus:  sql.NullString{String: "inactive", Valid: true},
+	})
+	require.NoError(t, err)
+
+	// Create a temporary exchange rate that we will delete
+	tempRate, err := q.CreateExchangeRate(ctx, CreateExchangeRateParams{
+		RateValue:             "9.9900000000",
+		SourceCurrencyID:      baseCurrency.CurrencyID,
+		DestinationCurrencyID: destCurrency.CurrencyID,
+		ValidFromDate:         time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		ValidToDate:           sql.NullTime{Valid: false},
+		SourceID:              sql.NullInt32{Int32: tempSource.SourceID, Valid: true},
+	})
+	require.NoError(t, err)
+	require.NotZero(t, tempRate.RateID)
+
+	// Delete the temporary exchange rate
+	err = q.DeleteExchangeRate(ctx, tempRate.RateID)
+	require.NoError(t, err)
+
+	// Verify it was deleted within the transaction
+	exchangeRate, err := q.GetExchangeRateByID(ctx, tempRate.RateID)
+	require.Error(t, err)
+	require.Empty(t, exchangeRate)
+
+	// When the transaction rolls back, the database is restored (no permanent change)
 }

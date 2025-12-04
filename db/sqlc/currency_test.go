@@ -102,11 +102,31 @@ func TestUpdateCurrency(t *testing.T) {
 }
 
 func TestDeleteCurrency(t *testing.T) {
+	// Use the last seeded currency ID
 	currencyID := int32(util.GetLengthListCurrencies())
+
+	// Delete the currency
 	err := testQueries.DeleteCurrency(context.Background(), currencyID)
 	require.NoError(t, err)
 
+	// Verify it was deleted
 	currency, err := testQueries.GetCurrencyByID(context.Background(), currencyID)
 	require.Error(t, err)
 	require.Empty(t, currency)
+
+	// Re-insert the deleted currency so other tests still see the full dataset
+	currencies := util.GetAllCurrencies()
+	deletedCurrency := currencies[len(currencies)-1]
+
+	_, err = testDB.ExecContext(
+		context.Background(),
+		`INSERT INTO currencies (currency_id, currency_code, currency_name, currency_country, currency_symbol)
+         VALUES ($1, $2, $3, $4, $5)`,
+		currencyID,
+		deletedCurrency["currency_code"].(string),
+		deletedCurrency["currency_name"].(string),
+		deletedCurrency["currency_country"].(string),
+		deletedCurrency["currency_symbol"].(string),
+	)
+	require.NoError(t, err)
 }

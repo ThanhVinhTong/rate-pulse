@@ -98,11 +98,34 @@ func TestUpdateRateSource(t *testing.T) {
 }
 
 func TestDeleteRateSource(t *testing.T) {
-	sourceID := int32(util.GetLengthRateSources())
-	err := testQueries.DeleteRateSource(context.Background(), sourceID)
+	// Use a transaction and a temporary rate source so we don't violate FK constraints
+	ctx := context.Background()
+	tx, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+
+	q := New(tx)
+
+	// Create a temporary rate source just for this delete test
+	tempArg := CreateRateSourceParams{
+		SourceName:    "Temp Delete Source",
+		SourceLink:    sql.NullString{String: "https://temp-delete-source.local", Valid: true},
+		SourceCountry: sql.NullString{String: "Nowhere", Valid: true},
+		SourceStatus:  sql.NullString{String: "inactive", Valid: true},
+	}
+
+	tempSource, err := q.CreateRateSource(ctx, tempArg)
+	require.NoError(t, err)
+	require.NotZero(t, tempSource.SourceID)
+
+	// Delete the temporary rate source
+	err = q.DeleteRateSource(ctx, tempSource.SourceID)
 	require.NoError(t, err)
 
-	source, err := testQueries.GetRateSourceByID(context.Background(), sourceID)
+	// Verify it was deleted within the transaction
+	source, err := q.GetRateSourceByID(ctx, tempSource.SourceID)
 	require.Error(t, err)
 	require.Empty(t, source)
+
+	// When the transaction rolls back, the database is restored (no permanent change)
 }

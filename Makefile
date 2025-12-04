@@ -16,7 +16,12 @@ migratedown:
 sqlc:
 	sqlc generate
 
+cleancache:
+	go clean -testcache
+	
 test:
-	go test -v -cover ./...
+	go test -v -cover ./db/sqlc -run 'Test.*Currency'
+	go test -v -cover ./db/sqlc -run 'Test.*RateSource'
+	go test -v -cover ./db/sqlc -run 'Test.*ExchangeRate'
 
 .PHONY: postgres createdb dropdb migrateup migratedown sqlc

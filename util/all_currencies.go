@@ -4,22 +4,19 @@ package util
 // currently, there are 5 fixed currencies in the database
 // TODO: implement a crawler or using an API to get the latest currencies
 var currencyCodes = []string{
-	"USD", "EUR", "VND", "AUD", "JPY", "TBD",
+	"USD", "EUR", "VND", "AUD", "JPY",
 }
 
 var currencyNames = []string{
 	"United States Dollar", "Euro", "Vietnamese Dong", "Australian Dollar", "Japanese Yen",
-	"Test Currency Will Be Deleted after done testing",
 }
 
 var currencyCountries = []string{
 	"United States", "Eurozone", "Vietnam", "Australia", "Japan",
-	"Test Country Will Be Deleted after done testing",
 }
 
 var currencySymbols = []string{
 	"$", "€", "₫", "$", "¥",
-	"TEST",
 }
 
 func GetLengthListCurrencies() int {

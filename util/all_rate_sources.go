@@ -35,12 +35,6 @@ var rateSources = []map[string]interface{}{
 		"source_country": sql.NullString{String: "Australia", Valid: true},
 		"source_status":  sql.NullString{String: "active", Valid: true},
 	},
-	{
-		"source_name":    "Test Rate Source",
-		"source_link":    sql.NullString{Valid: false},
-		"source_country": sql.NullString{Valid: false},
-		"source_status":  sql.NullString{String: "inactive", Valid: true},
-	},
 }
 
 // GetAllRateSources returns a list of dummy rate sources as maps for testing purposes
