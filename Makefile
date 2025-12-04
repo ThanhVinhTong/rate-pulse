@@ -18,10 +18,8 @@ sqlc:
 
 cleancache:
 	go clean -testcache
-	
+
 test:
-	go test -v -cover ./db/sqlc -run 'Test.*Currency'
-	go test -v -cover ./db/sqlc -run 'Test.*RateSource'
-	go test -v -cover ./db/sqlc -run 'Test.*ExchangeRate'
+	go test -v -cover ./db/sqlc
 
 .PHONY: postgres createdb dropdb migrateup migratedown sqlc
