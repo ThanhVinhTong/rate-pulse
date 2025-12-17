@@ -47,7 +47,9 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
-.design/*
+
+# Design files
+design/
 
 # Environment variables
 .env
