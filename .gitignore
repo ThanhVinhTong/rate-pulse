@@ -47,6 +47,7 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+.design/*
 
 # Environment variables
 .env
