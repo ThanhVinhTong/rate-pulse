@@ -31,6 +31,20 @@ type ExchangeRate struct {
 	CreatedAt             sql.NullTime
 }
 
+type Payment struct {
+	PaymentID      int32
+	UserID         int32
+	SubscriptionID sql.NullInt32
+	TransactionID  sql.NullString
+	Amount         string
+	Currency       string
+	PaymentMethod  sql.NullString
+	PaymentStatus  sql.NullString
+	PaymentDate    sql.NullTime
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
+}
+
 type RateSource struct {
 	SourceID      int32
 	SourceName    string
@@ -39,6 +53,18 @@ type RateSource struct {
 	SourceStatus  sql.NullString
 	UpdatedAt     sql.NullTime
 	CreatedAt     sql.NullTime
+}
+
+type SubscriptionPlan struct {
+	PlanID          int32
+	PlanName        string
+	PlanPrice       string
+	HistoricalDays  int32
+	RateLimitPerDay int32
+	Features        sql.NullString
+	IsActive        sql.NullBool
+	CreatedAt       sql.NullTime
+	UpdatedAt       sql.NullTime
 }
 
 type User struct {
@@ -72,4 +98,16 @@ type UserRateSourcePreference struct {
 	IsPrimary sql.NullBool
 	UpdatedAt sql.NullTime
 	CreatedAt sql.NullTime
+}
+
+type UserSubscription struct {
+	SubscriptionID int32
+	UserID         int32
+	PlanID         int32
+	Status         sql.NullString
+	StartDate      time.Time
+	EndDate        sql.NullTime
+	AutoRenew      sql.NullBool
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
 }
