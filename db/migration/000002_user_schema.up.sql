@@ -4,7 +4,7 @@
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) DEFAULT 'NEW_USER' NOT NULL,
-    email VARCHAR(100) DEFAULT 'NEW_USER@example.com' NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     user_type VARCHAR(20) DEFAULT 'free' CHECK (user_type IN ('free', 'premium', 'enterprise')),
     email_verified BOOLEAN DEFAULT FALSE,

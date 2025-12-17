@@ -40,3 +40,36 @@ type RateSource struct {
 	UpdatedAt     sql.NullTime
 	CreatedAt     sql.NullTime
 }
+
+type User struct {
+	UserID             int32
+	Username           string
+	Email              string
+	Password           string
+	UserType           sql.NullString
+	EmailVerified      sql.NullBool
+	TimeZone           sql.NullString
+	LanguagePreference sql.NullString
+	CountryOfResidence sql.NullString
+	CountryOfBirth     sql.NullString
+	IsActive           sql.NullBool
+	CreatedAt          sql.NullTime
+	UpdatedAt          sql.NullTime
+}
+
+type UserCurrencyPreference struct {
+	CurrencyID   int32
+	UserID       int32
+	IsFavorite   sql.NullBool
+	DisplayOrder sql.NullInt32
+	UpdatedAt    sql.NullTime
+	CreatedAt    sql.NullTime
+}
+
+type UserRateSourcePreference struct {
+	SourceID  int32
+	UserID    int32
+	IsPrimary sql.NullBool
+	UpdatedAt sql.NullTime
+	CreatedAt sql.NullTime
+}
