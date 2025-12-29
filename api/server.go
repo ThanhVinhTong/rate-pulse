@@ -19,7 +19,8 @@ func NewServer(store *db.Store) *Server {
 
 	// add routes to the router
 	router.POST("/users", server.createUser)
-	// router.GET("/users/:id", server.getUser)
+	router.GET("/users/:id", server.getUser)
+	router.GET("/users", server.listUser)
 	// router.PUT("/users/:id", server.updateUser)
 	// router.DELETE("/users/:id", server.deleteUser)
 	router.GET("/health", func(ctx *gin.Context) {

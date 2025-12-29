@@ -92,48 +92,6 @@ func (q *Queries) DeleteUserByID(ctx context.Context, userID int32) error {
 	return err
 }
 
-const getAllUsers = `-- name: GetAllUsers :many
-SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
-ORDER BY created_at DESC
-`
-
-func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, getAllUsers)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.UserID,
-			&i.Username,
-			&i.Email,
-			&i.Password,
-			&i.UserType,
-			&i.EmailVerified,
-			&i.TimeZone,
-			&i.LanguagePreference,
-			&i.CountryOfResidence,
-			&i.CountryOfBirth,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
 WHERE email = $1 LIMIT 1
@@ -184,6 +142,55 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int32) (User, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
+ORDER BY created_at 
+LIMIT $1
+OFFSET $2
+`
+
+type ListUsersParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Username,
+			&i.Email,
+			&i.Password,
+			&i.UserType,
+			&i.EmailVerified,
+			&i.TimeZone,
+			&i.LanguagePreference,
+			&i.CountryOfResidence,
+			&i.CountryOfBirth,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateUser = `-- name: UpdateUser :one

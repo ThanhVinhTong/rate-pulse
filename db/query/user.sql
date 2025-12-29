@@ -22,9 +22,11 @@ WHERE user_id = $1 LIMIT 1;
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
 
--- name: GetAllUsers :many
+-- name: ListUsers :many
 SELECT * FROM users
-ORDER BY created_at DESC;
+ORDER BY created_at 
+LIMIT $1
+OFFSET $2;
 
 -- name: UpdateUser :one
 UPDATE users
