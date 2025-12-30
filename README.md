@@ -14,3 +14,24 @@ It provides up-to-date data for major currencies (VND, AUD, USD, and more) and g
 Clean, Interactive Dashboard — powered by Next.js, TailwindCSS, and Golang for high performance and scalability.
 
 Whether you’re managing investments or just tracking market changes, RatePulse keeps your finger on the world’s financial heartbeat.
+
+# How to run this website locally
+
+## Ubuntu
+
+Make sure you have Go lang, Docker and make properly installed before you do any thing. If you have any problem with permission, add sudo before the command you're having trouble with.
+
+### 1. Install Go migration
+
+```
+curl -L https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz | tar xvz
+mv migrate /usr/local/bin/migrate
+```
+
+### 2. Create db and migrate
+
+```
+make postgres
+make createdb
+make migrateup
+```
