@@ -6,7 +6,24 @@ import (
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
+
+// HashPassword generates a bcrypt hash from the given password.
+// Uses bcrypt's default cost factor for a balance of security and performance.
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+// CheckPassword compares a plaintext password with a hashed password.
+// Returns nil if they match, or an error if they don't.
+func CheckPassword(password, hashedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
 
 // createUserRequest represents the request body for creating a new user.
 // It contains all the required and optional fields for user registration.
@@ -42,10 +59,17 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
+	// Hash the password before storing
+	hashedPassword, err := HashPassword(req.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.CreateUserParams{
 		Username:           req.Username,
 		Email:              req.Email,
-		Password:           req.Password,
+		Password:           hashedPassword,
 		UserType:           sql.NullString{String: req.UserType, Valid: true},
 		EmailVerified:      sql.NullBool{Bool: req.EmailVerified, Valid: true},
 		TimeZone:           sql.NullString{String: req.TimeZone, Valid: true},

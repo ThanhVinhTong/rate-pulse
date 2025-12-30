@@ -11,10 +11,9 @@ import (
 // createCurrencyRequest represents the request body for creating a new currency.
 // All fields are required for currency registration.
 type createCurrencyRequest struct {
-	CurrencyCode    string `json:"currency_code" binding:"required"`
-	CurrencyName    string `json:"currency_name" binding:"required"`
-	CurrencyCountry string `json:"currency_country" binding:"required"`
-	CurrencySymbol  string `json:"currency_symbol" binding:"required"`
+	CurrencyCode   string `json:"currency_code" binding:"required"`
+	CurrencyName   string `json:"currency_name" binding:"required"`
+	CurrencySymbol string `json:"currency_symbol" binding:"required"`
 }
 
 // createCurrency handles the creation of a new currency.
@@ -36,10 +35,9 @@ func (server *Server) createCurrency(ctx *gin.Context) {
 	}
 
 	arg := db.CreateCurrencyParams{
-		CurrencyCode:    req.CurrencyCode,
-		CurrencyName:    req.CurrencyName,
-		CurrencyCountry: sql.NullString{String: req.CurrencyCountry, Valid: true},
-		CurrencySymbol:  sql.NullString{String: req.CurrencySymbol, Valid: true},
+		CurrencyCode:   req.CurrencyCode,
+		CurrencyName:   req.CurrencyName,
+		CurrencySymbol: sql.NullString{String: req.CurrencySymbol, Valid: true},
 	}
 
 	currency, err := server.store.CreateCurrency(ctx, arg)

@@ -11,31 +11,24 @@ import (
 )
 
 const createCurrency = `-- name: CreateCurrency :one
-INSERT INTO currencies (currency_code, currency_name, currency_country, currency_symbol)
-VALUES ($1, $2, $3, $4)
-RETURNING currency_id, currency_code, currency_name, currency_country, currency_symbol, updated_at, created_at
+INSERT INTO currencies (currency_code, currency_name, currency_symbol)
+VALUES ($1, $2, $3)
+RETURNING currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at
 `
 
 type CreateCurrencyParams struct {
-	CurrencyCode    string
-	CurrencyName    string
-	CurrencyCountry sql.NullString
-	CurrencySymbol  sql.NullString
+	CurrencyCode   string
+	CurrencyName   string
+	CurrencySymbol sql.NullString
 }
 
 func (q *Queries) CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (Currency, error) {
-	row := q.db.QueryRowContext(ctx, createCurrency,
-		arg.CurrencyCode,
-		arg.CurrencyName,
-		arg.CurrencyCountry,
-		arg.CurrencySymbol,
-	)
+	row := q.db.QueryRowContext(ctx, createCurrency, arg.CurrencyCode, arg.CurrencyName, arg.CurrencySymbol)
 	var i Currency
 	err := row.Scan(
 		&i.CurrencyID,
 		&i.CurrencyCode,
 		&i.CurrencyName,
-		&i.CurrencyCountry,
 		&i.CurrencySymbol,
 		&i.UpdatedAt,
 		&i.CreatedAt,
@@ -54,7 +47,7 @@ func (q *Queries) DeleteCurrency(ctx context.Context, currencyID int32) error {
 }
 
 const getAllCurrencies = `-- name: GetAllCurrencies :many
-SELECT currency_id, currency_code, currency_name, currency_country, currency_symbol, updated_at, created_at FROM currencies
+SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies
 ORDER BY currency_id
 LIMIT $1
 OFFSET $2
@@ -78,7 +71,6 @@ func (q *Queries) GetAllCurrencies(ctx context.Context, arg GetAllCurrenciesPara
 			&i.CurrencyID,
 			&i.CurrencyCode,
 			&i.CurrencyName,
-			&i.CurrencyCountry,
 			&i.CurrencySymbol,
 			&i.UpdatedAt,
 			&i.CreatedAt,
@@ -96,8 +88,27 @@ func (q *Queries) GetAllCurrencies(ctx context.Context, arg GetAllCurrenciesPara
 	return items, nil
 }
 
+const getCurrencyByCode = `-- name: GetCurrencyByCode :one
+SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies 
+WHERE currency_code = $1 LIMIT 1
+`
+
+func (q *Queries) GetCurrencyByCode(ctx context.Context, currencyCode string) (Currency, error) {
+	row := q.db.QueryRowContext(ctx, getCurrencyByCode, currencyCode)
+	var i Currency
+	err := row.Scan(
+		&i.CurrencyID,
+		&i.CurrencyCode,
+		&i.CurrencyName,
+		&i.CurrencySymbol,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getCurrencyByID = `-- name: GetCurrencyByID :one
-SELECT currency_id, currency_code, currency_name, currency_country, currency_symbol, updated_at, created_at FROM currencies 
+SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies 
 WHERE currency_id = $1 LIMIT 1
 `
 
@@ -108,7 +119,6 @@ func (q *Queries) GetCurrencyByID(ctx context.Context, currencyID int32) (Curren
 		&i.CurrencyID,
 		&i.CurrencyCode,
 		&i.CurrencyName,
-		&i.CurrencyCountry,
 		&i.CurrencySymbol,
 		&i.UpdatedAt,
 		&i.CreatedAt,
@@ -118,17 +128,16 @@ func (q *Queries) GetCurrencyByID(ctx context.Context, currencyID int32) (Curren
 
 const updateCurrency = `-- name: UpdateCurrency :one
 UPDATE currencies
-SET currency_code = $2, currency_name = $3, currency_country = $4, currency_symbol = $5
+SET currency_code = $2, currency_name = $3, currency_symbol = $4, updated_at = CURRENT_TIMESTAMP
 WHERE currency_id = $1
-RETURNING currency_id, currency_code, currency_name, currency_country, currency_symbol, updated_at, created_at
+RETURNING currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at
 `
 
 type UpdateCurrencyParams struct {
-	CurrencyID      int32
-	CurrencyCode    string
-	CurrencyName    string
-	CurrencyCountry sql.NullString
-	CurrencySymbol  sql.NullString
+	CurrencyID     int32
+	CurrencyCode   string
+	CurrencyName   string
+	CurrencySymbol sql.NullString
 }
 
 func (q *Queries) UpdateCurrency(ctx context.Context, arg UpdateCurrencyParams) (Currency, error) {
@@ -136,7 +145,6 @@ func (q *Queries) UpdateCurrency(ctx context.Context, arg UpdateCurrencyParams) 
 		arg.CurrencyID,
 		arg.CurrencyCode,
 		arg.CurrencyName,
-		arg.CurrencyCountry,
 		arg.CurrencySymbol,
 	)
 	var i Currency
@@ -144,7 +152,6 @@ func (q *Queries) UpdateCurrency(ctx context.Context, arg UpdateCurrencyParams) 
 		&i.CurrencyID,
 		&i.CurrencyCode,
 		&i.CurrencyName,
-		&i.CurrencyCountry,
 		&i.CurrencySymbol,
 		&i.UpdatedAt,
 		&i.CreatedAt,

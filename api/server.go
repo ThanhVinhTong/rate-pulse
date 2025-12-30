@@ -31,6 +31,14 @@ func NewServer(store *db.Store) *Server {
 	// router.PUT("/currencies/:id", server.updateCurrency)
 	// router.DELETE("/currencies/:id", server.deleteCurrency)
 
+	// add `exchange-rates` routes to the router
+	router.POST("/exchange-rates", server.createExchangeRate)
+	router.GET("/exchange-rates/:id", server.getExchangeRate)
+	router.GET("/exchange-rates", server.listExchangeRate)
+	router.GET("/exchange-rates/type", server.listExchangeRateByType)
+	// router.PUT("/exchange-rates/:id", server.updateExchangeRate)
+	// router.DELETE("/exchange-rates/:id", server.deleteExchangeRate)
+
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})

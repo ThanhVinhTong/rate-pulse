@@ -9,14 +9,21 @@ import (
 	"time"
 )
 
+type Country struct {
+	CountryID   int32
+	CountryName string
+	CurrencyID  int32
+	UpdatedAt   sql.NullTime
+	CreatedAt   sql.NullTime
+}
+
 type Currency struct {
-	CurrencyID      int32
-	CurrencyCode    string
-	CurrencyName    string
-	CurrencyCountry sql.NullString
-	CurrencySymbol  sql.NullString
-	UpdatedAt       sql.NullTime
-	CreatedAt       sql.NullTime
+	CurrencyID     int32
+	CurrencyCode   string
+	CurrencyName   string
+	CurrencySymbol sql.NullString
+	UpdatedAt      sql.NullTime
+	CreatedAt      sql.NullTime
 }
 
 type ExchangeRate struct {
@@ -29,6 +36,7 @@ type ExchangeRate struct {
 	SourceID              sql.NullInt32
 	UpdatedAt             sql.NullTime
 	CreatedAt             sql.NullTime
+	Type                  int32
 }
 
 type Payment struct {
