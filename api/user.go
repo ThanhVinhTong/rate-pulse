@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// createUserRequest represents the request body for creating a new user.
+// It contains all the required and optional fields for user registration.
 type createUserRequest struct {
 	Username           string `json:"username" binding:"required"`
 	Email              string `json:"email" binding:"required,email"`
@@ -21,7 +23,18 @@ type createUserRequest struct {
 	IsActive           bool   `json:"is_active" binding:"required,boolean"`
 }
 
-// createUser handles the creation of a new user
+// createUser handles the creation of a new user.
+// It binds the JSON request body to createUserRequest, validates the input,
+// and persists the user to the database.
+//
+// POST /users
+//
+// Request body: createUserRequest (JSON)
+// Response: User object on success, error message on failure
+// Status codes:
+//   - 200 OK: User created successfully
+//   - 400 Bad Request: Invalid request body or validation error
+//   - 500 Internal Server Error: Database or server error
 func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -51,10 +64,25 @@ func (server *Server) createUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
+// getUserRequest represents the URI parameters for fetching a single user.
+// The ID must be a positive integer.
 type getUserRequest struct {
 	ID int32 `uri:"id" binding:"required,min=1"`
 }
 
+// getUser retrieves a single user by their ID.
+// The user ID is extracted from the URI path parameter.
+//
+// GET /users/:id
+//
+// URI parameters:
+//   - id: The unique identifier of the user (required, must be >= 1)
+//
+// Response: User object on success, error message on failure
+// Status codes:
+//   - 200 OK: User retrieved successfully
+//   - 400 Bad Request: Invalid or missing user ID
+//   - 500 Internal Server Error: Database or server error
 func (server *Server) getUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -71,11 +99,27 @@ func (server *Server) getUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
+// listUserRequest represents the query parameters for listing users with pagination.
+// PageID starts from 1 and PageSize must be between 5 and 10.
 type listUserRequest struct {
 	PageID   int32 `form:"page_id" binding:"required,min=1"`
 	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
 }
 
+// listUser retrieves a paginated list of users.
+// Pagination is controlled via query parameters page_id and page_size.
+//
+// GET /users?page_id=1&page_size=10
+//
+// Query parameters:
+//   - page_id: The page number to retrieve (required, must be >= 1)
+//   - page_size: The number of users per page (required, must be between 5 and 10)
+//
+// Response: Array of User objects on success, error message on failure
+// Status codes:
+//   - 200 OK: Users retrieved successfully
+//   - 400 Bad Request: Invalid or missing pagination parameters
+//   - 500 Internal Server Error: Database or server error
 func (server *Server) listUser(ctx *gin.Context) {
 	var req listUserRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -96,3 +140,5 @@ func (server *Server) listUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, users)
 }
+
+// TODO: Implement updateUser and deleteUser functions

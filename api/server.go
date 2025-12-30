@@ -17,12 +17,20 @@ func NewServer(store *db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 
-	// add routes to the router
+	// add `users` routes to the router
 	router.POST("/users", server.createUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
 	// router.PUT("/users/:id", server.updateUser)
 	// router.DELETE("/users/:id", server.deleteUser)
+
+	// add `currencies` routes to the router
+	router.POST("/currencies", server.createCurrency)
+	router.GET("/currencies/:id", server.getCurrency)
+	router.GET("/currencies", server.listCurrency)
+	// router.PUT("/currencies/:id", server.updateCurrency)
+	// router.DELETE("/currencies/:id", server.deleteCurrency)
+
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
