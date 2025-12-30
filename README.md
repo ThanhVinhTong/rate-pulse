@@ -19,7 +19,7 @@ Whether you’re managing investments or just tracking market changes, RatePulse
 
 ## Ubuntu
 
-Make sure you have Go lang, Docker and make properly installed before you do any thing. If you have any problem with permission, add sudo before the command you're having trouble with.
+Make sure you have Golang, Docker and make properly installed before you do any thing. If you have any problem with permission, add sudo before the command you're having trouble with.
 
 ### 1. Install Go migration
 
