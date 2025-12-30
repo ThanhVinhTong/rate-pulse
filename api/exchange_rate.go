@@ -179,3 +179,5 @@ func (server *Server) listExchangeRateByType(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, exchangeRates)
 }
+
+// TODO: Implement updateExchangeRate and deleteExchangeRate functions
