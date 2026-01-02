@@ -1,20 +1,34 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/token"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
 
 // Serve all HTTP requests for our banking service
 type Server struct {
-	store  *db.Store
-	router *gin.Engine
+	config     util.Config
+	store      *db.Store
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(store *db.Store) *Server {
-	server := &Server{store: store}
+func NewServer(config util.Config, store *db.Store) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
+	server := &Server{
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
+	}
 	router := gin.Default()
 
 	// add `users` routes to the router
@@ -58,7 +72,7 @@ func NewServer(store *db.Store) *Server {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
 	server.router = router
-	return server
+	return server, nil
 }
 
 // This will start the server and listen for incoming requests on the given address

@@ -3,27 +3,13 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/lib/pq"
 )
-
-// HashPassword generates a bcrypt hash from the given password.
-// Uses bcrypt's default cost factor for a balance of security and performance.
-func HashPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPassword), nil
-}
-
-// CheckPassword compares a plaintext password with a hashed password.
-// Returns nil if they match, or an error if they don't.
-func CheckPassword(password, hashedPassword string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-}
 
 // createUserRequest represents the request body for creating a new user.
 // It contains all the required and optional fields for user registration.
@@ -38,6 +24,41 @@ type createUserRequest struct {
 	CountryOfResidence string `json:"country_of_residence"`
 	CountryOfBirth     string `json:"country_of_birth"`
 	IsActive           bool   `json:"is_active" binding:"required,boolean"`
+}
+
+// userResponse represents the response body for user data.
+// It excludes sensitive fields like password.
+type userResponse struct {
+	UserID             int32     `json:"user_id"`
+	Username           string    `json:"username"`
+	Email              string    `json:"email"`
+	UserType           string    `json:"user_type"`
+	EmailVerified      bool      `json:"email_verified"`
+	TimeZone           string    `json:"time_zone"`
+	LanguagePreference string    `json:"language_preference"`
+	CountryOfResidence string    `json:"country_of_residence"`
+	CountryOfBirth     string    `json:"country_of_birth"`
+	IsActive           bool      `json:"is_active"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+// newUserResponse creates a userResponse from a db.User, excluding sensitive data.
+func newUserResponse(user db.User) userResponse {
+	return userResponse{
+		UserID:             user.UserID,
+		Username:           user.Username,
+		Email:              user.Email,
+		UserType:           user.UserType.String,
+		EmailVerified:      user.EmailVerified.Bool,
+		TimeZone:           user.TimeZone.String,
+		LanguagePreference: user.LanguagePreference.String,
+		CountryOfResidence: user.CountryOfResidence.String,
+		CountryOfBirth:     user.CountryOfBirth.String,
+		IsActive:           user.IsActive.Bool,
+		CreatedAt:          user.CreatedAt.Time,
+		UpdatedAt:          user.UpdatedAt.Time,
+	}
 }
 
 // createUser handles the creation of a new user.
@@ -60,7 +81,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 	}
 
 	// Hash the password before storing
-	hashedPassword, err := HashPassword(req.Password)
+	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -81,11 +102,19 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 	user, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
+		// handle unique violation error
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "unique_violation":
+				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, newUserResponse(user))
 }
 
 // getUserRequest represents the URI parameters for fetching a single user.
@@ -120,7 +149,7 @@ func (server *Server) getUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, newUserResponse(user))
 }
 
 // listUserRequest represents the query parameters for listing users with pagination.
@@ -162,7 +191,47 @@ func (server *Server) listUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, users)
+	responses := make([]userResponse, len(users))
+	for i, user := range users {
+		responses[i] = newUserResponse(user)
+	}
+
+	ctx.JSON(http.StatusOK, responses)
 }
 
 // TODO: Implement updateUser and deleteUser functions
+
+// Authentication
+type loginUserRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+type loginUserResponse struct {
+	AccessToken string       `json:"access_token"`
+	User        userResponse `json:"user"`
+}
+
+func (server *Server) loginUser(ctx *gin.Context) {
+	var req loginUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = util.CheckPassword(req.Password, user.Password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+}
