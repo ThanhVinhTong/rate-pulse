@@ -29,10 +29,17 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 		store:      store,
 		tokenMaker: tokenMaker,
 	}
+
+	server.setupRouter()
+	return server, nil
+}
+
+func (server *Server) setupRouter() {
 	router := gin.Default()
 
 	// add `users` routes to the router
 	router.POST("/users", server.createUser)
+	router.POST("/users/login", server.loginUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
 	// router.PUT("/users/:id", server.updateUser)
@@ -71,8 +78,8 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
+
 	server.router = router
-	return server, nil
 }
 
 // This will start the server and listen for incoming requests on the given address

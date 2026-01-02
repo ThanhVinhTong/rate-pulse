@@ -203,7 +203,7 @@ func (server *Server) listUser(ctx *gin.Context) {
 
 // Authentication
 type loginUserRequest struct {
-	Email    string `json:"email" binding:"required,email"`
+	Username string `json:"username" binding:"required,alphanum"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -219,7 +219,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserByEmail(ctx, req.Email)
+	user, err := server.store.GetUserByUsername(ctx, req.Username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -234,4 +234,19 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
+
+	accessToken, err := server.tokenMaker.CreateToken(
+		user.Username,
+		server.config.AccessTokenDuration,
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := loginUserResponse{
+		AccessToken: accessToken,
+		User:        newUserResponse(user),
+	}
+	ctx.JSON(http.StatusOK, res)
 }
