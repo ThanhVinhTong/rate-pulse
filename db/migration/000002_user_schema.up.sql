@@ -6,7 +6,7 @@ CREATE TABLE users (
     username VARCHAR(50) DEFAULT 'NEW_USER' NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    user_type VARCHAR(20) DEFAULT 'free' CHECK (user_type IN ('free', 'premium', 'enterprise')),
+    user_type VARCHAR(20) DEFAULT 'free' CHECK (user_type IN ('free', 'premium', 'enterprise', 'admin')),
     email_verified BOOLEAN DEFAULT FALSE,
     time_zone VARCHAR(50) DEFAULT 'UTC',
     language_preference VARCHAR(10) DEFAULT 'en',
