@@ -1,9 +1,11 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,6 +32,12 @@ func (server *Server) createCountry(ctx *gin.Context) {
 	var req createCountryRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload.UserType != UserTypeAdmin {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user is not authorized to create a country")))
 		return
 	}
 
@@ -107,6 +115,7 @@ func (server *Server) listCountry(ctx *gin.Context) {
 	var req listCountryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
 	}
 
 	arg := db.GetAllCountriesParams{

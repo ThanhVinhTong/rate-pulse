@@ -17,7 +17,7 @@ type createUserRequest struct {
 	Username           string `json:"username" binding:"required"`
 	Email              string `json:"email" binding:"required,email"`
 	Password           string `json:"password" binding:"required"`
-	UserType           string `json:"user_type" binding:"required,oneof=free premium enterprise"`
+	UserType           string `json:"user_type" binding:"required,oneof=free premium enterprise admin"`
 	EmailVerified      bool   `json:"email_verified" binding:"boolean"`
 	TimeZone           string `json:"time_zone"`
 	LanguagePreference string `json:"language_preference"`
@@ -237,6 +237,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	accessToken, err := server.tokenMaker.CreateToken(
 		user.Username,
+		user.UserType.String,
 		server.config.AccessTokenDuration,
 	)
 	if err != nil {

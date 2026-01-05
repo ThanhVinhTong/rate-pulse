@@ -2,9 +2,11 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,6 +35,13 @@ func (server *Server) createRateSource(ctx *gin.Context) {
 	var req createRateSourceRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload.UserType != UserTypeAdmin {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user is not authorized to create a rate source")))
+		return
 	}
 
 	arg := db.CreateRateSourceParams{
@@ -74,6 +83,7 @@ func (server *Server) getRateSource(ctx *gin.Context) {
 	var req getRateSourceRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
 	}
 
 	rateSource, err := server.store.GetRateSourceByID(ctx, req.ID)

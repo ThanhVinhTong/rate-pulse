@@ -37,47 +37,51 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 func (server *Server) setupRouter() {
 	router := gin.Default()
 
-	// add `users` routes to the router
+	// Public routes (no authentication required)
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
-	router.GET("/users/:id", server.getUser)
-	router.GET("/users", server.listUser)
-	// router.PUT("/users/:id", server.updateUser)
-	// router.DELETE("/users/:id", server.deleteUser)
 
-	// add `currencies` routes to the router
-	router.POST("/currencies", server.createCurrency)
-	router.GET("/currencies/:id", server.getCurrency)
-	router.GET("/currencies", server.listCurrency)
-	// router.PUT("/currencies/:id", server.updateCurrency)
-	// router.DELETE("/currencies/:id", server.deleteCurrency)
-
-	// add `exchange-rates` routes to the router
-	router.POST("/exchange-rates", server.createExchangeRate)
-	router.GET("/exchange-rates/:id", server.getExchangeRate)
-	router.GET("/exchange-rates", server.listExchangeRate)
-	router.GET("/exchange-rates/type", server.listExchangeRateByType)
-	// router.PUT("/exchange-rates/:id", server.updateExchangeRate)
-	// router.DELETE("/exchange-rates/:id", server.deleteExchangeRate)
-
-	// add `rate-sources` routes to the router
-	router.POST("/rate-sources", server.createRateSource)
-	router.GET("/rate-sources/:id", server.getRateSource)
-	router.GET("/rate-sources", server.listRateSource)
-	// router.PUT("/rate-sources/:id", server.updateRateSource)
-	// router.DELETE("/rate-sources/:id", server.deleteRateSource)
-
-	// add `countries` routes to the router
-	router.POST("/countries", server.createCountry)
-	router.GET("/countries/:id", server.getCountry)
-	router.GET("/countries", server.listCountry)
-	// router.PUT("/countries/:id", server.updateCountry)
-	// router.DELETE("/countries/:id", server.deleteCountry)
-
-	// add `health` route to the router
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
+
+	// Protected routes (authentication required)
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+
+	// add `users` routes
+	authRoutes.GET("/users/:id", server.getUser)
+	authRoutes.GET("/users", server.listUser)
+	// authRoutes.PUT("/users/:id", server.updateUser)
+	// authRoutes.DELETE("/users/:id", server.deleteUser)
+
+	// add `currencies` routes
+	authRoutes.POST("/currencies", server.createCurrency)
+	authRoutes.GET("/currencies/:id", server.getCurrency)
+	authRoutes.GET("/currencies", server.listCurrency)
+	// authRoutes.PUT("/currencies/:id", server.updateCurrency)
+	// authRoutes.DELETE("/currencies/:id", server.deleteCurrency)
+
+	// add `exchange-rates` routes
+	authRoutes.POST("/exchange-rates", server.createExchangeRate)
+	authRoutes.GET("/exchange-rates/:id", server.getExchangeRate)
+	authRoutes.GET("/exchange-rates", server.listExchangeRate)
+	authRoutes.GET("/exchange-rates/type", server.listExchangeRateByType)
+	// authRoutes.PUT("/exchange-rates/:id", server.updateExchangeRate)
+	// authRoutes.DELETE("/exchange-rates/:id", server.deleteExchangeRate)
+
+	// add `rate-sources` routes
+	authRoutes.POST("/rate-sources", server.createRateSource)
+	authRoutes.GET("/rate-sources/:id", server.getRateSource)
+	authRoutes.GET("/rate-sources", server.listRateSource)
+	// authRoutes.PUT("/rate-sources/:id", server.updateRateSource)
+	// authRoutes.DELETE("/rate-sources/:id", server.deleteRateSource)
+
+	// add `countries` routes (admin-only routes handle authorization in handlers)
+	authRoutes.POST("/countries", server.createCountry)
+	authRoutes.GET("/countries/:id", server.getCountry)
+	authRoutes.GET("/countries", server.listCountry)
+	// authRoutes.PUT("/countries/:id", server.updateCountry)
+	// authRoutes.DELETE("/countries/:id", server.deleteCountry)
 
 	server.router = router
 }
