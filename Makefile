@@ -13,6 +13,15 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgresql://root:12345678@localhost:5432/rate_pulse?sslmode=disable" -verbose down
 
+migratedown1:
+	migrate -path db/migration -database "postgresql://root:12345678@localhost:5432/rate_pulse?sslmode=disable" -verbose down 1
+
+migrateto:
+	migrate -path db/migration -database "postgresql://root:12345678@localhost:5432/rate_pulse?sslmode=disable" -verbose goto $(version)
+
+migrateversion:
+	migrate -path db/migration -database "postgresql://root:12345678@localhost:5432/rate_pulse?sslmode=disable" version
+
 sqlc:
 	sqlc generate
 
