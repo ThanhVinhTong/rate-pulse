@@ -10,7 +10,8 @@ INSERT INTO user_rate_source_preferences (
 -- name: GetRateSourcePreferencesByUserID :many
 SELECT * FROM user_rate_source_preferences
 WHERE user_id = $1
-ORDER BY is_primary DESC, created_at ASC;
+ORDER BY is_primary DESC, created_at ASC
+LIMIT $2 OFFSET $3;
 
 -- name: GetRateSourcePreferencesBySourceID :many
 SELECT ursp.* 

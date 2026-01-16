@@ -135,10 +135,17 @@ const getRateSourcePreferencesByUserID = `-- name: GetRateSourcePreferencesByUse
 SELECT source_id, user_id, is_primary, updated_at, created_at FROM user_rate_source_preferences
 WHERE user_id = $1
 ORDER BY is_primary DESC, created_at ASC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetRateSourcePreferencesByUserID(ctx context.Context, userID int32) ([]UserRateSourcePreference, error) {
-	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesByUserID, userID)
+type GetRateSourcePreferencesByUserIDParams struct {
+	UserID int32
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetRateSourcePreferencesByUserID(ctx context.Context, arg GetRateSourcePreferencesByUserIDParams) ([]UserRateSourcePreference, error) {
+	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesByUserID, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
