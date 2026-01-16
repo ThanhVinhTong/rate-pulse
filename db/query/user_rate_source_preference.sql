@@ -21,7 +21,8 @@ ORDER BY ursp.is_primary DESC, ursp.created_at ASC;
 
 -- name: GetAllRateSourcePreferences :many
 SELECT * FROM user_rate_source_preferences
-ORDER BY user_id, is_primary DESC;
+ORDER BY user_id, is_primary DESC
+LIMIT $1 OFFSET $2;
 
 -- name: UpdateRateSourcePreference :one
 UPDATE user_rate_source_preferences

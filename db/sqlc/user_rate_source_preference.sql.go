@@ -57,10 +57,16 @@ func (q *Queries) DeleteRateSourcePreference(ctx context.Context, arg DeleteRate
 const getAllRateSourcePreferences = `-- name: GetAllRateSourcePreferences :many
 SELECT source_id, user_id, is_primary, updated_at, created_at FROM user_rate_source_preferences
 ORDER BY user_id, is_primary DESC
+LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetAllRateSourcePreferences(ctx context.Context) ([]UserRateSourcePreference, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRateSourcePreferences)
+type GetAllRateSourcePreferencesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetAllRateSourcePreferences(ctx context.Context, arg GetAllRateSourcePreferencesParams) ([]UserRateSourcePreference, error) {
+	rows, err := q.db.QueryContext(ctx, getAllRateSourcePreferences, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
