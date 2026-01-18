@@ -51,8 +51,8 @@ func (server *Server) setupRouter() {
 	// add `users` routes
 	authRoutes.GET("/users/:id", server.getUser)
 	authRoutes.GET("/users", server.listUser)
-	// authRoutes.PUT("/users/:id", server.updateUser)
-	// authRoutes.DELETE("/users/:id", server.deleteUser)
+	authRoutes.PUT("/users/:id", server.updateUser)
+	authRoutes.DELETE("/users/:id", server.deleteUser)
 
 	// add `currencies` routes
 	authRoutes.POST("/currencies", server.createCurrency)
