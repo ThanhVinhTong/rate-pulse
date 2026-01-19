@@ -100,10 +100,17 @@ FROM user_rate_source_preferences ursp
 INNER JOIN users u ON ursp.user_id = u.user_id
 WHERE u.email = $1
 ORDER BY ursp.is_primary DESC, ursp.created_at ASC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetRateSourcePreferencesBySourceID(ctx context.Context, email string) ([]UserRateSourcePreference, error) {
-	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesBySourceID, email)
+type GetRateSourcePreferencesBySourceIDParams struct {
+	Email  string
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetRateSourcePreferencesBySourceID(ctx context.Context, arg GetRateSourcePreferencesBySourceIDParams) ([]UserRateSourcePreference, error) {
+	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesBySourceID, arg.Email, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

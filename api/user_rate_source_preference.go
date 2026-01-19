@@ -153,10 +153,15 @@ func (server *Server) deleteRateSourcePreference(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "preference deleted successfully"})
 }
 
+type getRateSourcePreferencesBySourceIDRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+}
+
 // getRateSourcePreferencesBySourceID retrieves all rate source preferences for the authenticated user.
 // It fetches the user from db and returns their preferences filtered by source.
 //
-// GET /rate-source-preferences-sourceid
+// GET /rate-source-preferences-sourceid?page_id=1&page_size=10
 //
 // Response: List of UserRateSourcePreference objects on success, error message on failure
 // Status codes:
@@ -164,6 +169,7 @@ func (server *Server) deleteRateSourcePreference(ctx *gin.Context) {
 //   - 404 Not Found: User not found
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) getRateSourcePreferencesBySourceID(ctx *gin.Context) {
+	var req getRateSourcePreferencesBySourceIDRequest
 
 	// Get authenticated user from token
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
@@ -179,7 +185,13 @@ func (server *Server) getRateSourcePreferencesBySourceID(ctx *gin.Context) {
 		return
 	}
 
-	rateSourcePreference, err := server.store.GetRateSourcePreferencesBySourceID(ctx, user.Email)
+	arg := db.GetRateSourcePreferencesBySourceIDParams{
+		Email: user.Email,
+		Limit:  req.PageSize,
+		Offset: (req.PageID - 1) * req.PageSize,
+	}
+
+	rateSourcePreference, err := server.store.GetRateSourcePreferencesBySourceID(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -196,7 +208,7 @@ type getRateSourcePreferencesByUserIDRequest struct {
 // getRateSourcePreferencesByUserID retrieves paginated rate source preferences for the authenticated user.
 // It validates pagination parameters, retrieves the user ID from db, and returns the preferences.
 //
-// GET /rate-source-preferences-userid
+// GET /rate-source-preferences-userid?page_id=1&page_size=10
 //
 // Query parameters:
 //   - page_id: Page number (min: 1)
@@ -335,7 +347,7 @@ type listRateSourcePreferencesRequest struct {
 // listAllRateSourcePreferences retrieves all rate source preferences across all users with pagination.
 // This endpoint is restricted to admin users only. It validates admin authorization and returns paginated results.
 //
-// GET /rate-source-preferences
+// GET /rate-source-preferences?page_id=1&page_size=10
 //
 // Query parameters:
 //   - page_id: Page number (min: 1)

@@ -18,7 +18,8 @@ SELECT ursp.*
 FROM user_rate_source_preferences ursp
 INNER JOIN users u ON ursp.user_id = u.user_id
 WHERE u.email = $1
-ORDER BY ursp.is_primary DESC, ursp.created_at ASC;
+ORDER BY ursp.is_primary DESC, ursp.created_at ASC
+LIMIT $2 OFFSET $3;
 
 -- name: GetAllRateSourcePreferences :many
 SELECT * FROM user_rate_source_preferences
