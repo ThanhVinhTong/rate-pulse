@@ -11,12 +11,14 @@ INSERT INTO user_currency_preferences (
 -- name: GetCurrencyPreferencesByUserID :many
 SELECT * FROM user_currency_preferences
 WHERE user_id = $1
-ORDER BY display_order ASC, created_at ASC;
+ORDER BY display_order ASC, created_at ASC
+LIMIT $2 OFFSET $3;
 
 -- name: GetCurrencyPreferencesByCurrencyID :many
 SELECT * FROM user_currency_preferences
 WHERE currency_id = $1
-ORDER BY user_id ASC;
+ORDER BY user_id ASC
+LIMIT $2 OFFSET $3;
 
 -- name: GetAllCurrencyPreferences :many
 SELECT * FROM user_currency_preferences
