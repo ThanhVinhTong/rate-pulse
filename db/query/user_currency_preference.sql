@@ -16,9 +16,9 @@ LIMIT $2 OFFSET $3;
 
 -- name: GetCurrencyPreferencesByCurrencyID :many
 SELECT * FROM user_currency_preferences
-WHERE currency_id = $1
-ORDER BY user_id ASC
-LIMIT $2 OFFSET $3;
+WHERE currency_id = $1 AND user_id = $2
+ORDER BY display_order ASC, created_at ASC
+LIMIT $3 OFFSET $4;
 
 -- name: GetAllCurrencyPreferences :many
 SELECT * FROM user_currency_preferences

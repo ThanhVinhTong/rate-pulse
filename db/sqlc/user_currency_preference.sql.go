@@ -105,19 +105,25 @@ func (q *Queries) GetAllCurrencyPreferences(ctx context.Context, arg GetAllCurre
 
 const getCurrencyPreferencesByCurrencyID = `-- name: GetCurrencyPreferencesByCurrencyID :many
 SELECT currency_id, user_id, is_favorite, display_order, updated_at, created_at FROM user_currency_preferences
-WHERE currency_id = $1
-ORDER BY user_id ASC
-LIMIT $2 OFFSET $3
+WHERE currency_id = $1 AND user_id = $2
+ORDER BY display_order ASC, created_at ASC
+LIMIT $3 OFFSET $4
 `
 
 type GetCurrencyPreferencesByCurrencyIDParams struct {
 	CurrencyID int32
+	UserID     int32
 	Limit      int32
 	Offset     int32
 }
 
 func (q *Queries) GetCurrencyPreferencesByCurrencyID(ctx context.Context, arg GetCurrencyPreferencesByCurrencyIDParams) ([]UserCurrencyPreference, error) {
-	rows, err := q.db.QueryContext(ctx, getCurrencyPreferencesByCurrencyID, arg.CurrencyID, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, getCurrencyPreferencesByCurrencyID,
+		arg.CurrencyID,
+		arg.UserID,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
