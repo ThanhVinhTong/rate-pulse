@@ -65,10 +65,16 @@ func (q *Queries) DeleteCurrencyPreference(ctx context.Context, arg DeleteCurren
 const getAllCurrencyPreferences = `-- name: GetAllCurrencyPreferences :many
 SELECT currency_id, user_id, is_favorite, display_order, updated_at, created_at FROM user_currency_preferences
 ORDER BY user_id, display_order ASC
+LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetAllCurrencyPreferences(ctx context.Context) ([]UserCurrencyPreference, error) {
-	rows, err := q.db.QueryContext(ctx, getAllCurrencyPreferences)
+type GetAllCurrencyPreferencesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetAllCurrencyPreferences(ctx context.Context, arg GetAllCurrencyPreferencesParams) ([]UserCurrencyPreference, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCurrencyPreferences, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

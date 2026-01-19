@@ -20,7 +20,8 @@ ORDER BY user_id ASC;
 
 -- name: GetAllCurrencyPreferences :many
 SELECT * FROM user_currency_preferences
-ORDER BY user_id, display_order ASC;
+ORDER BY user_id, display_order ASC
+LIMIT $1 OFFSET $2;
 
 -- name: UpdateCurrencyPreference :one
 UPDATE user_currency_preferences
