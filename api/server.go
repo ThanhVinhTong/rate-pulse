@@ -83,6 +83,13 @@ func (server *Server) setupRouter() {
 	// authRoutes.PUT("/countries/:id", server.updateCountry)
 	// authRoutes.DELETE("/countries/:id", server.deleteCountry)
 
+	authRoutes.POST("/rate-source-preferences", server.createRateSourcePreference)
+	authRoutes.GET("/rate-source-preferences-userid", server.getRateSourcePreferencesByUserID)
+	authRoutes.GET("/rate-source-preferences-sourceid", server.getRateSourcePreferencesBySourceID)
+	authRoutes.GET("/rate-source-preferences", server.listAllRateSourcePreferences)
+	authRoutes.PUT("/rate-source-preferences/:source_id",server.updateRateSourcePreference)
+	authRoutes.DELETE("/rate-source-preferences/:source_id", server.deleteRateSourcePreference)
+
 	server.router = router
 }
 
