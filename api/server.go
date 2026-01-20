@@ -90,6 +90,13 @@ func (server *Server) setupRouter() {
 	authRoutes.PUT("/rate-source-preferences/:source_id",server.updateRateSourcePreference)
 	authRoutes.DELETE("/rate-source-preferences/:source_id", server.deleteRateSourcePreference)
 
+	authRoutes.POST("/currency-preference", server.createCurrencyPreference)
+	authRoutes.GET("/currency-preference-userid", server.getCurrencyPreferencesByUserID)
+	authRoutes.GET("/currency-preference-currid/:currency_id", server.getCurrencyPreferencesByCurrencyID)
+	authRoutes.GET("/currency-preferences", server.listAllCurrencyPreferences)
+	authRoutes.PUT("/currency-preference/:currency_id", server.updateCurrencyPreference)
+	authRoutes.DELETE("/currency-preference/:currency_id", server.deleteCurrencyPreference)
+
 	server.router = router
 }
 
