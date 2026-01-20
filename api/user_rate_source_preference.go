@@ -163,13 +163,23 @@ type getRateSourcePreferencesBySourceIDRequest struct {
 //
 // GET /rate-source-preferences-sourceid?page_id=1&page_size=10
 //
+// Query parameters:
+//   - page_id: Page number (min: 1)
+//   - page_size: Items per page (min: 5, max: 10)
+//
 // Response: List of UserRateSourcePreference objects on success, error message on failure
 // Status codes:
 //   - 200 OK: Preferences retrieved successfully
+//   - 400 Bad Request: Invalid query parameters
 //   - 404 Not Found: User not found
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) getRateSourcePreferencesBySourceID(ctx *gin.Context) {
 	var req getRateSourcePreferencesBySourceIDRequest
+
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
 	// Get authenticated user from token
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
@@ -186,7 +196,7 @@ func (server *Server) getRateSourcePreferencesBySourceID(ctx *gin.Context) {
 	}
 
 	arg := db.GetRateSourcePreferencesBySourceIDParams{
-		Email: user.Email,
+		Email:  user.Email,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}
