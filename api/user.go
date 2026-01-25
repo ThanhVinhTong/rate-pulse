@@ -199,7 +199,117 @@ func (server *Server) listUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, responses)
 }
 
-// TODO: Implement updateUser and deleteUser functions
+// updateUserRequest represents the request body for updating a user.
+// It contains all the optional fields for user updates.
+type updateUserRequest struct {
+	Username           *string `json:"username"`
+	Email              *string `json:"email"`
+	Password           *string `json:"password"`
+	UserType           *string `json:"user_type" binding:"omitempty,oneof=free premium enterprise admin"`
+	EmailVerified      *bool   `json:"email_verified"`
+	TimeZone           *string `json:"time_zone"`
+	LanguagePreference *string `json:"language_preference"`
+	CountryOfResidence *string `json:"country_of_residence"`
+	CountryOfBirth     *string `json:"country_of_birth"`
+	IsActive           *bool   `json:"is_active"`
+}
+
+type updateUserURIRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// updateUser handles the updating of an existing user.
+// It binds the JSON request body to updateUserRequest, validates the input,
+// and updates the user in the database.
+//
+// PUT /users/:id
+// Request body: updateUserRequest (JSON)
+// Response: User object on success, error message on failure
+// Status codes:
+//   - 200 OK: User updated successfully
+//   - 400 Bad Request: Invalid request body or validation error
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) updateUser(ctx *gin.Context) {
+	var uriReq updateUserURIRequest
+	if err := ctx.ShouldBindUri(&uriReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req updateUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Hash password if provided
+	var hashedPassword *string
+	if req.Password != nil {
+		hashed, err := util.HashPassword(*req.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		hashedPassword = &hashed
+	}
+
+	arg := db.UpdateUserParams{
+		Username:           sql.NullString{String: util.StrValue(req.Username), Valid: req.Username != nil},
+		Email:              sql.NullString{String: util.StrValue(req.Email), Valid: req.Email != nil},
+		Password:           sql.NullString{String: util.StrValue(hashedPassword), Valid: hashedPassword != nil},
+		UserType:           sql.NullString{String: util.StrValue(req.UserType), Valid: req.UserType != nil},
+		EmailVerified:      sql.NullBool{Bool: util.BoolValue(req.EmailVerified), Valid: req.EmailVerified != nil},
+		TimeZone:           sql.NullString{String: util.StrValue(req.TimeZone), Valid: req.TimeZone != nil},
+		LanguagePreference: sql.NullString{String: util.StrValue(req.LanguagePreference), Valid: req.LanguagePreference != nil},
+		CountryOfResidence: sql.NullString{String: util.StrValue(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
+		CountryOfBirth:     sql.NullString{String: util.StrValue(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
+		IsActive:           sql.NullBool{Bool: util.BoolValue(req.IsActive), Valid: req.IsActive != nil},
+		UserID:             uriReq.ID,
+	}
+
+	user, err := server.store.UpdateUser(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUserResponse(user))
+}
+
+// deleteUserRequest represents the URI parameters for deleting a single user.
+// The ID must be a positive integer.
+type deleteUserRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// deleteUser deletes a single user by their ID.
+// The user ID is extracted from the URI path parameter.
+//
+// DELETE /users/:id
+//
+// URI parameters:
+//   - id: The unique identifier of the user (required, must be >= 1)
+//
+// Response: Success message on success, error message on failure
+// Status codes:
+//   - 200 OK: User deleted successfully
+//   - 400 Bad Request: Invalid or missing user ID
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) deleteUser(ctx *gin.Context) {
+	var req deleteUserRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err := server.store.DeleteUserByID(ctx, req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
 
 // Authentication
 type loginUserRequest struct {
