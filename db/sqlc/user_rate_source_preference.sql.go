@@ -57,10 +57,16 @@ func (q *Queries) DeleteRateSourcePreference(ctx context.Context, arg DeleteRate
 const getAllRateSourcePreferences = `-- name: GetAllRateSourcePreferences :many
 SELECT source_id, user_id, is_primary, updated_at, created_at FROM user_rate_source_preferences
 ORDER BY user_id, is_primary DESC
+LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetAllRateSourcePreferences(ctx context.Context) ([]UserRateSourcePreference, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRateSourcePreferences)
+type GetAllRateSourcePreferencesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetAllRateSourcePreferences(ctx context.Context, arg GetAllRateSourcePreferencesParams) ([]UserRateSourcePreference, error) {
+	rows, err := q.db.QueryContext(ctx, getAllRateSourcePreferences, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +100,17 @@ FROM user_rate_source_preferences ursp
 INNER JOIN users u ON ursp.user_id = u.user_id
 WHERE u.email = $1
 ORDER BY ursp.is_primary DESC, ursp.created_at ASC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetRateSourcePreferencesBySourceID(ctx context.Context, email string) ([]UserRateSourcePreference, error) {
-	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesBySourceID, email)
+type GetRateSourcePreferencesBySourceIDParams struct {
+	Email  string
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetRateSourcePreferencesBySourceID(ctx context.Context, arg GetRateSourcePreferencesBySourceIDParams) ([]UserRateSourcePreference, error) {
+	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesBySourceID, arg.Email, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +142,17 @@ const getRateSourcePreferencesByUserID = `-- name: GetRateSourcePreferencesByUse
 SELECT source_id, user_id, is_primary, updated_at, created_at FROM user_rate_source_preferences
 WHERE user_id = $1
 ORDER BY is_primary DESC, created_at ASC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetRateSourcePreferencesByUserID(ctx context.Context, userID int32) ([]UserRateSourcePreference, error) {
-	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesByUserID, userID)
+type GetRateSourcePreferencesByUserIDParams struct {
+	UserID int32
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetRateSourcePreferencesByUserID(ctx context.Context, arg GetRateSourcePreferencesByUserIDParams) ([]UserRateSourcePreference, error) {
+	rows, err := q.db.QueryContext(ctx, getRateSourcePreferencesByUserID, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

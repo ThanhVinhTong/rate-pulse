@@ -65,10 +65,16 @@ func (q *Queries) DeleteCurrencyPreference(ctx context.Context, arg DeleteCurren
 const getAllCurrencyPreferences = `-- name: GetAllCurrencyPreferences :many
 SELECT currency_id, user_id, is_favorite, display_order, updated_at, created_at FROM user_currency_preferences
 ORDER BY user_id, display_order ASC
+LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetAllCurrencyPreferences(ctx context.Context) ([]UserCurrencyPreference, error) {
-	rows, err := q.db.QueryContext(ctx, getAllCurrencyPreferences)
+type GetAllCurrencyPreferencesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetAllCurrencyPreferences(ctx context.Context, arg GetAllCurrencyPreferencesParams) ([]UserCurrencyPreference, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCurrencyPreferences, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +105,25 @@ func (q *Queries) GetAllCurrencyPreferences(ctx context.Context) ([]UserCurrency
 
 const getCurrencyPreferencesByCurrencyID = `-- name: GetCurrencyPreferencesByCurrencyID :many
 SELECT currency_id, user_id, is_favorite, display_order, updated_at, created_at FROM user_currency_preferences
-WHERE currency_id = $1
-ORDER BY user_id ASC
+WHERE currency_id = $1 AND user_id = $2
+ORDER BY display_order ASC, created_at ASC
+LIMIT $3 OFFSET $4
 `
 
-func (q *Queries) GetCurrencyPreferencesByCurrencyID(ctx context.Context, currencyID int32) ([]UserCurrencyPreference, error) {
-	rows, err := q.db.QueryContext(ctx, getCurrencyPreferencesByCurrencyID, currencyID)
+type GetCurrencyPreferencesByCurrencyIDParams struct {
+	CurrencyID int32
+	UserID     int32
+	Limit      int32
+	Offset     int32
+}
+
+func (q *Queries) GetCurrencyPreferencesByCurrencyID(ctx context.Context, arg GetCurrencyPreferencesByCurrencyIDParams) ([]UserCurrencyPreference, error) {
+	rows, err := q.db.QueryContext(ctx, getCurrencyPreferencesByCurrencyID,
+		arg.CurrencyID,
+		arg.UserID,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +156,17 @@ const getCurrencyPreferencesByUserID = `-- name: GetCurrencyPreferencesByUserID 
 SELECT currency_id, user_id, is_favorite, display_order, updated_at, created_at FROM user_currency_preferences
 WHERE user_id = $1
 ORDER BY display_order ASC, created_at ASC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetCurrencyPreferencesByUserID(ctx context.Context, userID int32) ([]UserCurrencyPreference, error) {
-	rows, err := q.db.QueryContext(ctx, getCurrencyPreferencesByUserID, userID)
+type GetCurrencyPreferencesByUserIDParams struct {
+	UserID int32
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetCurrencyPreferencesByUserID(ctx context.Context, arg GetCurrencyPreferencesByUserIDParams) ([]UserCurrencyPreference, error) {
+	rows, err := q.db.QueryContext(ctx, getCurrencyPreferencesByUserID, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
