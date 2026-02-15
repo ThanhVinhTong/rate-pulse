@@ -15,7 +15,7 @@ jobs:
     name: Build image
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code into Go module directory 
+      - name: Check out code
         uses: actions/checkout@v6
 
       - name: Configure AWS credentials
