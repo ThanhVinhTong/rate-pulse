@@ -32,6 +32,10 @@ rate-pulse/
 ├── util/
 │   └── config.go           # Configuration loader
 ├── main.go                 # Application entry point
+├── Dockerfile              # Multi-stage API image build
+├── docker-compose.yaml     # API + PostgreSQL orchestration
+├── start.sh                # Runs migrations then starts API
+├── wait-for.sh             # Waits for PostgreSQL to be reachable
 ├── Makefile                # Build commands
 ├── sqlc.yaml               # sqlc configuration
 └── app.env                 # Environment variables
@@ -44,9 +48,54 @@ rate-pulse/
 - Go 1.21 or higher
 - Docker
 - Make
-- golang-migrate
 
-### Install golang-migrate
+### Run With Docker Compose (recommended)
+
+1) Create your environment file:
+
+```bash
+cp app.env.example app.env
+```
+
+2) Set values in `app.env` (example):
+
+```env
+DB_DRIVER=postgres
+SERVER_ADDRESS=0.0.0.0:8080
+```
+
+`DB_SOURCE` for the API container is injected by `docker-compose.yaml`.
+
+3) Start everything:
+
+```bash
+docker compose up --build
+```
+
+What happens on startup:
+- `postgres` container starts.
+- `api` waits for PostgreSQL using `wait-for.sh`.
+- `start.sh` runs DB migrations with `migrate`.
+- API starts on `http://localhost:8080`.
+
+Stop services:
+
+```bash
+docker compose down
+```
+
+### Local Development (without Docker API container)
+
+Start only PostgreSQL and run API on host:
+
+```bash
+make postgres
+make createdb
+make migrateup
+make server
+```
+
+### Install golang-migrate (for local development)
 
 Ubuntu:
 ```bash
@@ -57,20 +106,6 @@ sudo mv migrate /usr/local/bin/migrate
 Windows (using scoop):
 ```bash
 scoop install migrate
-```
-
-### Start Database
-
-```bash
-make postgres
-make createdb
-make migrateup
-```
-
-### Run Server
-
-```bash
-make server
 ```
 
 Server runs on http://localhost:8080
@@ -243,6 +278,10 @@ DB_DRIVER=
 DB_SOURCE=
 SERVER_ADDRESS=
 ```
+
+Notes:
+- For local development, keep `DB_SOURCE` pointing to `localhost`.
+- For Docker Compose, `DB_SOURCE` is set in `docker-compose.yaml` to use `postgres` as host.
 
 ## License
 
