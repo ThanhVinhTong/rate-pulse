@@ -8,171 +8,176 @@ Rate Pulse tracks exchange rates from multiple sources across different countrie
 
 ## Tech Stack
 
-- Go (Gin framework)
-- PostgreSQL
-- Docker
-- sqlc (SQL code generator)
-- golang-migrate (database migrations)
+- **Go** (Golang) - Backend language
+- **Gin** - HTTP Web Framework
+- **PostgreSQL** - Relational Database
+- **Docker & Docker Compose** - Containerization
+- **sqlc** - Type-safe SQL code generation
+- **golang-migrate** - Database migrations
+- **Paseto / JWT** - Structured tokens for authentication
+
+## Features
+
+- **User Management**:
+    - User registration and login.
+    - Token-based authentication (Paseto/JWT).
+    - **User Preferences**:
+        - Manage favorite currencies and rate sources.
+        - Set primary rate sources.
+- **Currency & Country Management**:
+    - CRUD operations for currencies and countries.
+- **Exchange Rate Tracking**:
+    - Record and retrieve exchange rates.
+    - Filter rates by type (Cash/Card).
+- **Rate Sources**:
+    - Manage different sources of exchange rate data (e.g., Banks, APIs).
+- **Middleware**:
+    - Secure routes with Paseto/JWT authentication middleware.
+- **Data Models** (Internal/Roadmap):
+    - Subscriptions and Payments (defined in schema).
 
 ## Project Structure
 
 ```
 rate-pulse/
-├── api/                    # HTTP handlers
-│   ├── server.go           # Server setup and routes
-│   ├── user.go             # User endpoints
-│   ├── currency.go         # Currency endpoints
-│   ├── country.go          # Country endpoints
-│   ├── exchange_rate.go    # Exchange rate endpoints
-│   └── rate_source.go      # Rate source endpoints
+├── api/                        # HTTP handlers & business logic
+│   ├── server.go               # Server setup and router
+│   ├── user.go                 # User auth & profile handlers
+│   ├── user_currency_preference.go # User currency favorites
+│   ├── user_rate_source_preference.go # User source preferences
+│   ├── middleware.go           # Auth middleware
+│   └── ... (other handlers)
 ├── db/
-│   ├── migration/          # SQL migration files
-│   ├── query/              # SQL queries for sqlc
-│   └── sqlc/               # Generated Go code
-├── util/
-│   └── config.go           # Configuration loader
-├── main.go                 # Application entry point
-├── Dockerfile              # Multi-stage API image build
-├── docker-compose.yaml     # API + PostgreSQL orchestration
-├── start.sh                # Runs migrations then starts API
-├── wait-for.sh             # Waits for PostgreSQL to be reachable
-├── Makefile                # Build commands
-├── sqlc.yaml               # sqlc configuration
-└── app.env                 # Environment variables
+│   ├── migration/              # SQL migration files
+│   ├── query/                  # SQL queries for sqlc
+│   └── sqlc/                   # Generated Go code for DB interaction
+├── token/                      # Token generators (Paseto/JWT)
+├── util/                       # Configuration & helper functions
+├── Dockerfile                  # API Container definition
+├── docker-compose.yaml         # Multi-container setup
+├── Makefile                    # Development commands
+└── app.env                     # Environment variables
 ```
 
-## Setup
+## Getting Started
 
-### Requirements
+### Prerequisites
 
-- Go 1.21 or higher
-- Docker
-- Make
+- [Go](https://go.dev/dl/) 1.25+
+- [Docker](https://www.docker.com/products/docker-desktop)
+- [Make](https://www.gnu.org/software/make/)
+- [golang-migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate) (optional, if running locally without Docker)
 
-### Run With Docker Compose (recommended)
+### Environment Variables
 
-1) Create your environment file:
-
-```bash
-cp app.env.example app.env
-```
-
-2) Set values in `app.env` (example):
+Create an `app.env` file in the root directory:
 
 ```env
 DB_DRIVER=postgres
+DB_SOURCE=postgresql://root:12345678@localhost:5432/rate_pulse?sslmode=disable
 SERVER_ADDRESS=0.0.0.0:8080
+TOKEN_SYMMETRIC_KEY=12345678901234567890123456789012
+ACCESS_TOKEN_DURATION=15m
 ```
 
-`DB_SOURCE` for the API container is injected by `docker-compose.yaml`.
+### Running with Docker Compose (Recommended)
 
-3) Start everything:
+To start the entire application (Postgres + API):
 
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
 
-What happens on startup:
-- `postgres` container starts.
-- `api` waits for PostgreSQL using `wait-for.sh`.
-- `start.sh` runs DB migrations with `migrate`.
-- API starts on `http://localhost:8080`.
+The API will be available at `http://localhost:8080`.
 
-Stop services:
+### Running Locally
 
-```bash
-docker compose down
-```
+1.  **Start Postgres**:
+    ```bash
+    make postgres
+    ```
 
-### Local Development (without Docker API container)
+2.  **Create Database**:
+    ```bash
+    make createdb
+    ```
 
-Start only PostgreSQL and run API on host:
+3.  **Run Migrations**:
+    ```bash
+    make migrateup
+    ```
 
-```bash
-make postgres
-make createdb
-make migrateup
-make server
-```
+4.  **Start Server**:
+    ```bash
+    make server
+    ```
 
-### Install golang-migrate (for local development)
-
-Ubuntu:
-```bash
-curl -L https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz | tar xvz
-sudo mv migrate /usr/local/bin/migrate
-```
-
-Windows (using scoop):
-```bash
-scoop install migrate
-```
-
-Server runs on http://localhost:8080
-
-## Make Commands
+## CLI Commands (Makefile)
 
 | Command | Description |
 |---------|-------------|
-| make postgres | Start PostgreSQL container |
-| make createdb | Create database |
-| make dropdb | Drop database |
-| make migrateup | Run all migrations |
-| make migratedown | Revert all migrations |
-| make sqlc | Generate Go code from SQL |
-| make test (currently down for upgrading) | Run tests |
-| make server | Start the server |
+| `make postgres` | Start PostgreSQL container |
+| `make createdb` | Create database |
+| `make dropdb` | Drop database |
+| `make migrateup` | Run all up migrations |
+| `make migratedown` | Revert all migrations |
+| `make sqlc` | Generate Go code from SQL queries |
+| `make server` | Start the Go server locally |
+| `make test` | Run unit tests |
 
-## API Endpoints
+## API Reference
 
-### Health Check
+### Authentication (Public)
 
-```
-GET /health
-```
+- `POST /users` - Register a new user
+- `POST /users/login` - Login and get access token
 
-### Users
+### User Preferences (Protected)
 
-```
-POST /users              # Create user
-GET  /users/:id          # Get user by ID
-GET  /users              # List users (paginated)
-```
+- **Currencies**:
+    - `POST /currency-preference` - Add a favorite currency
+    - `GET /currency-preferences` - List all favorite currencies
+    - `GET /currency-preference-userid` - Get preferences by User ID
+    - `GET /currency-preference-currid/:currency_id` - Get preferences by Currency ID
+    - `PUT /currency-preference/:currency_id` - Update preference
+    - `DELETE /currency-preference/:currency_id` - Remove a favorite currency
 
-### Currencies
+- **Rate Sources**:
+    - `POST /rate-source-preferences` - Add a preferred rate source
+    - `GET /rate-source-preferences` - List all rate source preferences
+    - `GET /rate-source-preferences-userid` - Get preferences by User ID
+    - `GET /rate-source-preferences-sourceid` - Get preferences by Source ID
+    - `PUT /rate-source-preferences/:source_id` - Update preference
+    - `DELETE /rate-source-preferences/:source_id` - Remove a preferred source
 
-```
-POST /currencies         # Create currency
-GET  /currencies/:id     # Get currency by ID
-GET  /currencies         # List currencies (paginated)
-```
+### Core Resources (Protected)
 
-### Countries
+- **Users**:
+    - `GET /users/:id` - Get user profile
+    - `GET /users` - List users
+    - `PUT /users/:id` - Update user
+    - `DELETE /users/:id` - Delete user
 
-```
-POST /countries          # Create country
-GET  /countries/:id      # Get country by ID
-GET  /countries          # List countries (paginated)
-```
+- **Currencies**:
+    - `POST /currencies` - Create currency
+    - `GET /currencies/:id` - Get currency details
+    - `GET /currencies` - List currencies
 
-### Exchange Rates
+- **Countries**:
+    - `POST /countries` - Create country
+    - `GET /countries/:id` - Get country details
+    - `GET /countries` - List countries
 
-```
-POST /exchange-rates          # Create exchange rate
-GET  /exchange-rates/:id      # Get exchange rate by ID
-GET  /exchange-rates          # List exchange rates (paginated)
-GET  /exchange-rates/type     # List by type (paginated)
-```
+- **Rate Sources**:
+    - `POST /rate-sources` - Create rate source
+    - `GET /rate-sources/:id` - Get rate source details
+    - `GET /rate-sources` - List rate sources
 
-Type values: 0 = both, 1 = cash, 2 = card
-
-### Rate Sources
-
-```
-POST /rate-sources       # Create rate source
-GET  /rate-sources/:id   # Get rate source by ID
-GET  /rate-sources       # List rate sources (paginated)
-```
+- **Exchange Rates**:
+    - `POST /exchange-rates` - Record an exchange rate
+    - `GET /exchange-rates/:id` - Get exchange rate details
+    - `GET /exchange-rates` - List exchange rates
+    - `GET /exchange-rates/type` - Filter rates by type (Credit/Cash)
 
 ## API Examples
 
@@ -191,11 +196,23 @@ curl -X POST http://localhost:8080/users \
   }'
 ```
 
+### Login User
+
+```bash
+curl -X POST http://localhost:8080/users/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john",
+    "password": "password123"
+  }'
+```
+
 ### Create Currency
 
 ```bash
 curl -X POST http://localhost:8080/currencies \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
     "currency_code": "USD",
     "currency_name": "US Dollar",
@@ -208,6 +225,7 @@ curl -X POST http://localhost:8080/currencies \
 ```bash
 curl -X POST http://localhost:8080/rate-sources \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
     "source_name": "Vietcombank",
     "source_link": "https://vietcombank.com.vn",
@@ -221,6 +239,7 @@ curl -X POST http://localhost:8080/rate-sources \
 ```bash
 curl -X POST http://localhost:8080/exchange-rates \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
     "rate_value": "25415.50",
     "source_currency_id": 1,
@@ -236,6 +255,7 @@ curl -X POST http://localhost:8080/exchange-rates \
 ```bash
 curl -X POST http://localhost:8080/countries \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
   -d '{
     "country_name": "Vietnam",
     "currency_id": 1
@@ -247,42 +267,20 @@ curl -X POST http://localhost:8080/countries \
 All list endpoints support pagination:
 
 ```bash
-curl "http://localhost:8080/users?page_id=1&page_size=5"
-curl "http://localhost:8080/currencies?page_id=1&page_size=10"
-curl "http://localhost:8080/exchange-rates?page_id=1&page_size=5"
+curl "http://localhost:8080/users?page_id=1&page_size=5" \
+  -H "Authorization: Bearer <access_token>"
+
+curl "http://localhost:8080/currencies?page_id=1&page_size=10" \
+  -H "Authorization: Bearer <access_token>"
+
+curl "http://localhost:8080/exchange-rates?page_id=1&page_size=5" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 Query parameters:
 - page_id: Page number (starts from 1)
 - page_size: Items per page (min 5, max 10)
 
-## Database Tables
-
-- users - User accounts
-- currencies - Currency definitions (USD, VND, AUD, etc.)
-- countries - Countries linked to currencies
-- rate_sources - Exchange rate data sources (banks, etc.)
-- exchange_rates - Currency exchange rates
-- subscription_plans - User subscription tiers
-- user_subscriptions - User subscription records
-- payments - Payment records
-- user_currency_preferences - User favorite currencies
-- user_rate_source_preferences - User preferred rate sources
-
-## Environment Variables
-(For this, you should set the values up by yourself)
-Create an `app.env` file:
-
-```
-DB_DRIVER=
-DB_SOURCE=
-SERVER_ADDRESS=
-```
-
-Notes:
-- For local development, keep `DB_SOURCE` pointing to `localhost`.
-- For Docker Compose, `DB_SOURCE` is set in `docker-compose.yaml` to use `postgres` as host.
-
 ## License
 
-See LICENSE file.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
