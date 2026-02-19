@@ -1,7 +1,7 @@
 -- ==============================================================
 -- 1. currencies
 -- ==============================================================
-CREATE TABLE currencies (
+CREATE TABLE IF NOT EXISTS currencies (
     currency_id     SERIAL PRIMARY KEY,
     currency_code   VARCHAR(3)   NOT NULL UNIQUE,   -- e.g. VND, AUD
     currency_name   VARCHAR(100) NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE currencies (
 -- ==============================================================
 -- 2. rate_sources
 -- ==============================================================
-CREATE TABLE rate_sources (
+CREATE TABLE IF NOT EXISTS rate_sources (
     source_id       SERIAL PRIMARY KEY,
     source_name     VARCHAR(100) NOT NULL UNIQUE,
     source_link     VARCHAR(255),
@@ -27,7 +27,7 @@ CREATE TABLE rate_sources (
 -- ==============================================================
 -- 3. exchange_rates
 -- ==============================================================
-CREATE TABLE exchange_rates (
+CREATE TABLE IF NOT EXISTS exchange_rates (
     rate_id                SERIAL PRIMARY KEY,
     rate_value             NUMERIC(20,10) NOT NULL,   -- exchange rate
     source_currency_id     INT NOT NULL REFERENCES currencies(currency_id),

@@ -1,7 +1,7 @@
 -- ==============================================================
 -- 1. users
 -- ==============================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) DEFAULT 'NEW_USER' NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE users (
 -- ==============================================================
 -- 2. user_currency_preferences
 -- ==============================================================
-CREATE TABLE user_currency_preferences (
+CREATE TABLE IF NOT EXISTS user_currency_preferences (
     currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE CASCADE,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     is_favorite BOOLEAN DEFAULT FALSE,
@@ -33,7 +33,7 @@ CREATE TABLE user_currency_preferences (
 -- ==============================================================
 -- 3. user_rate_source_preferences
 -- ==============================================================
-CREATE TABLE user_rate_source_preferences (
+CREATE TABLE IF NOT EXISTS user_rate_source_preferences (
     source_id INT NOT NULL REFERENCES rate_sources(source_id) ON DELETE CASCADE,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     is_primary BOOLEAN DEFAULT FALSE,

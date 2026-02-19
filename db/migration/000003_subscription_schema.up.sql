@@ -1,7 +1,7 @@
 -- ==============================================================
 -- 1. subscription_plans
 -- ==============================================================
-CREATE TABLE subscription_plans (
+CREATE TABLE IF NOT EXISTS subscription_plans (
     plan_id SERIAL PRIMARY KEY,
     plan_name VARCHAR(50) UNIQUE NOT NULL,
     plan_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
@@ -16,7 +16,7 @@ CREATE TABLE subscription_plans (
 -- ==============================================================
 -- 2. user_subscriptions
 -- ==============================================================
-CREATE TABLE user_subscriptions (
+CREATE TABLE IF NOT EXISTS user_subscriptions (
     subscription_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     plan_id INT NOT NULL REFERENCES subscription_plans(plan_id) ON DELETE RESTRICT,
@@ -31,7 +31,7 @@ CREATE TABLE user_subscriptions (
 -- ==============================================================
 -- 3. payments
 -- ==============================================================
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
     payment_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     subscription_id INT REFERENCES user_subscriptions(subscription_id) ON DELETE SET NULL,
