@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rate-pulse-api-deployment
+  labels:
+    app: rate-pulse-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rate-pulse-api
+  template:
+    metadata:
+      labels:
+        app: rate-pulse-api
+    spec:
+      containers:
+      - name: rate-pulse-api
+        image: 724772065915.dkr.ecr.ap-southeast-1.amazonaws.com/rate-pulse:b4ea8afbf9ee50245b696c1a24d413b0d6bd9d4d
+        ports:
+        - containerPort: 8080
