@@ -55,6 +55,9 @@ design/
 .env
 .env.local
 .env.*.local
+app.env
+app.env.*
+!app.env.example
 
 # Temporary files
 *.tmp
