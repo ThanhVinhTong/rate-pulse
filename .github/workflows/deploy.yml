@@ -15,35 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          port: ${{ secrets.DROPLET_PORT || '22' }}
-          script_stop: true
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
           script: |
             set -euo pipefail
-
-            APP_DIR="${{ secrets.DROPLET_APP_DIR }}"
+            APP_DIR="${{ secrets.APP_DIR }}"
             REPO_URL="https://github.com/${{ github.repository }}.git"
             BRANCH="${{ github.ref_name }}"
-
-            if [ -z "${APP_DIR}" ]; then
-              echo "Missing required secret: DROPLET_APP_DIR"
-              exit 1
-            fi
-
-            if [ ! -d "${APP_DIR}/.git" ]; then
-              mkdir -p "${APP_DIR}"
-              git clone --branch "${BRANCH}" --single-branch "${REPO_URL}" "${APP_DIR}"
-            fi
-
-            cd "${APP_DIR}"
-            git fetch origin "${BRANCH}"
-            git checkout "${BRANCH}"
-            git reset --hard "origin/${BRANCH}"
-
             docker compose -f docker-compose.yaml down --remove-orphans || true
             docker compose -f docker-compose.yaml up -d --build
             docker image prune -f
