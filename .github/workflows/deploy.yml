@@ -1,41 +1,49 @@
-name: Deploy to production
+name: Deploy to DigitalOcean Droplet
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
-
-  build:
-    name: Build image
+  deploy:
+    name: Deploy app on droplet
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          role-to-assume: arn:aws:iam::724772065915:role/github-actions-rate-pulse-deploy-role
-          aws-region: ap-southeast-1
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      
-      - name: Load secrets and save to app.env
-        run: aws secretsmanager get-secret-value --secret-id rate_pulse --query SecretString --output text | jq -r "to_entries|map(\"\(.key)=\(.value)\")|.[]" > app.env
+            APP_DIR="${{ secrets.DROPLET_APP_DIR }}"
+            REPO_URL="https://github.com/${{ github.repository }}.git"
+            BRANCH="${{ github.ref_name }}"
 
-      - name: Build, tag, and push docker image to Amazon ECR
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: rate-pulse
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+            if [ -z "${APP_DIR}" ]; then
+              echo "Missing required secret: DROPLET_APP_DIR"
+              exit 1
+            fi
+
+            if [ ! -d "${APP_DIR}/.git" ]; then
+              mkdir -p "${APP_DIR}"
+              git clone --branch "${BRANCH}" --single-branch "${REPO_URL}" "${APP_DIR}"
+            fi
+
+            cd "${APP_DIR}"
+            git fetch origin "${BRANCH}"
+            git checkout "${BRANCH}"
+            git reset --hard "origin/${BRANCH}"
+
+            docker compose -f docker-compose.yaml down --remove-orphans || true
+            docker compose -f docker-compose.yaml up -d --build
+            docker image prune -f
