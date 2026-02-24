@@ -13,19 +13,50 @@ jobs:
   deploy:
     name: Deploy app on droplet
     runs-on: ubuntu-latest
+    environment: production
     steps:
+      - name: Validate required secrets
+        env:
+          HOST: ${{ secrets.DROPLET_HOST || secrets.HOST }}
+          USERNAME: ${{ secrets.DROPLET_USER || secrets.USERNAME }}
+          APP_DIR: ${{ secrets.DROPLET_APP_DIR || secrets.APP_DIR }}
+          APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+        run: |
+          test -n "$HOST" || (echo "Missing secret: DROPLET_HOST (or HOST)" && exit 1)
+          test -n "$USERNAME" || (echo "Missing secret: DROPLET_USER (or USERNAME)" && exit 1)
+          test -n "$APP_DIR" || (echo "Missing secret: DROPLET_APP_DIR (or APP_DIR)" && exit 1)
+          test -n "$APP_ENV_FILE" || (echo "Missing secret: APP_ENV_FILE" && exit 1)
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
+          host: ${{ secrets.DROPLET_HOST || secrets.HOST }}
+          username: ${{ secrets.DROPLET_USER || secrets.USERNAME }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
+          port: ${{ secrets.DROPLET_PORT || secrets.PORT || '22' }}
+          script_stop: true
           script: |
             set -euo pipefail
-            APP_DIR="${{ secrets.APP_DIR }}"
+            APP_DIR="${{ secrets.DROPLET_APP_DIR || secrets.APP_DIR }}"
             REPO_URL="https://github.com/${{ github.repository }}.git"
             BRANCH="${{ github.ref_name }}"
+
+            if [ ! -d "${APP_DIR}/.git" ]; then
+              mkdir -p "${APP_DIR}"
+              git clone --branch "${BRANCH}" --single-branch "${REPO_URL}" "${APP_DIR}"
+            fi
+
+            cd "${APP_DIR}"
+            git fetch origin "${BRANCH}"
+            git checkout "${BRANCH}"
+            git reset --hard "origin/${BRANCH}"
+
+            cat > app.env <<'EOF'
+            ${{ secrets.APP_ENV_FILE }}
+            EOF
+            chmod 600 app.env
+
             docker compose -f docker-compose.yaml down --remove-orphans || true
             docker compose -f docker-compose.yaml up -d --build
             docker image prune -f
