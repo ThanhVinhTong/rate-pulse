@@ -33,6 +33,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST || secrets.HOST }}
           username: ${{ secrets.DROPLET_USER || secrets.USERNAME }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           port: ${{ secrets.DROPLET_PORT || secrets.PORT || '22' }}
           script_stop: true
