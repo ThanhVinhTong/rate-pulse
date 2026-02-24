@@ -7,13 +7,11 @@ services:
       POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: rate_pulse
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: vinhtongthanh57/rate-pulse:${IMAGE_TAG:-latest}
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
-      - DB_SOURCE=postgresql://root:12345678@postgres:5432/rate_pulse?sslmode=disable
+      DB_SOURCE: postgresql://root:12345678@postgres:5432/rate_pulse?sslmode=disable
     depends_on:
       - postgres
     entrypoint: [ "/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh" ]
