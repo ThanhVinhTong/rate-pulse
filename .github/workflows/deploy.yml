@@ -24,12 +24,11 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build & push (docker compose)
+      - name: Build & push Docker image
         run: |
-          export IMAGE_TAG=${IMAGE_TAG}
-          docker compose build
-          docker compose push
-
+          docker build -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest .
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          docker push $IMAGE_NAME:latest
   deploy:
     name: Deploy on Droplet
     runs-on: ubuntu-latest
