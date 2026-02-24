@@ -2,135 +2,46 @@ name: Deploy to production
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: deploy-production-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
-    name: Build image
+    name: Build & Push Image
     runs-on: ubuntu-latest
-    # Move env to job level (cleaner)
+
     env:
-      REPOSITORY: rate-pulse
+      IMAGE_NAME: vinhtongthanh57/rate-pulse
       IMAGE_TAG: ${{ github.sha }}
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v6   # still latest major
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image to Docker Hub
-        uses: docker/build-push-action@v6   # v6.19+ is current
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.REPOSITORY }}:${{ env.IMAGE_TAG }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.REPOSITORY }}:latest
-          # Optional but highly recommended: faster rebuilds
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.REPOSITORY }}:buildcache
-          cache-to: type=inline
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & push (docker compose)
+        run: |
+          export IMAGE_TAG=${IMAGE_TAG}
+          docker compose build
+          docker compose push
 
   deploy:
     name: Deploy on Droplet
     runs-on: ubuntu-latest
     needs: build
-    environment: production
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.5   # ← updated (latest as of Jan 2026)
+      - name: SSH → pull & run
+        uses: appleboy/ssh-action@v1.2.5
         with:
-          host: ${{ secrets.DROPLET_HOST || secrets.HOST }}
-          username: ${{ secrets.DROPLET_USER || secrets.USERNAME }}
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
-          port: ${{ secrets.DROPLET_PORT || secrets.PORT || '22' }}
-          command_timeout: 30m
-          script_stop: true
           script: |
-            set -euo pipefail
-            APP_DIR="${{ secrets.DROPLET_APP_DIR || secrets.APP_DIR }}"
-            REPO_URL="https://github.com/${{ github.repository }}.git"
-            BRANCH="${{ github.ref_name }}"
-            DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
-            DOCKERHUB_TOKEN="${{ secrets.DOCKERHUB_TOKEN }}"
-
-            if [ -z "${APP_DIR}" ]; then
-              echo "Missing required secret: DROPLET_APP_DIR (or APP_DIR)"
-              exit 1
-            fi
-
-            if [ ! -d "${APP_DIR}/.git" ]; then
-              mkdir -p "${APP_DIR}"
-              git clone --branch "${BRANCH}" --single-branch "${REPO_URL}" "${APP_DIR}"
-            fi
-
-            cd "${APP_DIR}"
-            git fetch origin "${BRANCH}"
-            git checkout "${BRANCH}"
-            git reset --hard "origin/${BRANCH}"
-
-            cat > app.env <<'EOF'
-            ${{ secrets.APP_ENV_FILE }}
-            EOF
-            chmod 600 app.env
-
-            echo "IMAGE_TAG=${{ github.sha }}" > .deploy.env
-            echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> .deploy.env
-
-            retry() {
-              local attempts="$1"
-              local sleep_seconds="$2"
-              shift 2
-              local n=1
-              until "$@"; do
-                if [ "$n" -ge "$attempts" ]; then
-                  echo "Command failed after ${attempts} attempts: $*"
-                  return 1
-                fi
-                echo "Attempt ${n}/${attempts} failed. Retrying in ${sleep_seconds}s..."
-                n=$((n + 1))
-                sleep "${sleep_seconds}"
-              done
-            }
-
-            retry_docker_login() {
-              local attempts=5
-              local sleep_seconds=10
-              local n=1
-              while true; do
-                if printf '%s' "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin; then
-                  return 0
-                fi
-                if [ "$n" -ge "$attempts" ]; then
-                  echo "Docker Hub login failed after ${attempts} attempts."
-                  return 1
-                fi
-                echo "Docker Hub login attempt ${n}/${attempts} failed. Retrying in ${sleep_seconds}s..."
-                n=$((n + 1))
-                sleep "${sleep_seconds}"
-              done
-            }
-
-            retry_docker_login
-            retry 5 15 docker compose --env-file .deploy.env -f docker-compose.yaml pull
-            docker compose --env-file .deploy.env -f docker-compose.yaml up -d --remove-orphans
-            docker compose -f docker-compose.yaml ps
+            docker compose pull
+            docker compose up -d
