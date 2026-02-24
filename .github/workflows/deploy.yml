@@ -41,6 +41,7 @@ jobs:
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             docker compose pull
