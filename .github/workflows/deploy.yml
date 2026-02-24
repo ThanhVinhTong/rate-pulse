@@ -36,6 +36,19 @@ jobs:
     needs: build
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy docker-compose file
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "docker-compose.yaml"
+          target: "~/"
+
       - name: SSH → pull & run
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -45,5 +58,6 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
+            export IMAGE_TAG=${{ github.sha }}
             docker compose pull
             docker compose up -d
