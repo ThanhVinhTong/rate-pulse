@@ -22,11 +22,3 @@ spec:
         envFrom:
         - secretRef:
             name: rate-pulse-secrets
-        volumeMounts:
-          - name: config-file
-            mountPath: /app/app.env
-            subPath: app.env
-      volumes:
-      - name: config-file
-        hostPath:
-          path: /root/rate-pulse/app.env
