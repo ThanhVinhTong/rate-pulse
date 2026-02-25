@@ -46,7 +46,6 @@ jobs:
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          # We no longer need to copy docker-compose.yaml
           source: "digitalocean/deployment.yaml, digitalocean/service.yaml"
           target: "~/rate-pulse"
 
@@ -67,11 +66,11 @@ jobs:
           script: |
             # 1. Update/Create the Secret using GitHub Secrets
             kubectl create secret generic rate-pulse-secrets \
-              --from-literal=DB_SOURCE="${DB_SOURCE}" \
-              --from-literal=DB_DRIVER="${DB_DRIVER}" \
-              --from-literal=SERVER_ADDRESS="${SERVER_ADDRESS}" \
-              --from-literal=ACCESS_TOKEN_DURATION="${ACCESS_TOKEN_DURATION}" \
-              --from-literal=TOKEN_SYMMETRIC_KEY="${TOKEN_SYMMETRIC_KEY}" \
+              --from-literal=DB_SOURCE="$DB_SOURCE" \
+              --from-literal=DB_DRIVER="$DB_DRIVER" \
+              --from-literal=SERVER_ADDRESS="$SERVER_ADDRESS" \
+              --from-literal=ACCESS_TOKEN_DURATION="$ACCESS_TOKEN_DURATION" \
+              --from-literal=TOKEN_SYMMETRIC_KEY="$TOKEN_SYMMETRIC_KEY" \
               --dry-run=client -o yaml | kubectl apply -f -
 
             # 2. Apply the Kubernetes Blueprints
