@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rate-pulse-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rate-pulse
+  template:
+    metadata:
+      labels:
+        app: rate-pulse
+    spec:
+      containers:
+      - name: rate-pulse
+        image: vinhtongthanh57/rate-pulse:latest
+        ports:
+        - containerPort: 8080 # Change this if your app uses a different port (e.g. 8080)
