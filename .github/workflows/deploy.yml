@@ -79,7 +79,7 @@ jobs:
             ACCESS_TOKEN_DURATION=${{ secrets.ACCESS_TOKEN_DURATION }}
             EOF
             chmod 644 /root/rate-pulse/app.env
-            kubectl rollout restart deployment/rate-pulse-api-deployment
+            kubectl create configmap app-env --from-env-file=app.env
             
             # 3. Apply your deployment (Make sure the deployment mounts this file!)
             kubectl apply -f digitalocean/deployment.yaml
