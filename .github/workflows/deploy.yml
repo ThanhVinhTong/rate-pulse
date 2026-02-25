@@ -59,6 +59,9 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             cd ~/rate-pulse
+            kubectl create configmap app-config \
+            --from-literal=SERVER_ADDRESS=0.0.0.0:8080 \
+            --from-literal=ACCESS_TOKEN_DURATION=15m
             
             # 1. Create/Update the Kubernetes Secret
             kubectl create secret generic rate-pulse-secrets \
