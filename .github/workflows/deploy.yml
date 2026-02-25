@@ -59,18 +59,15 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            # 1. Update/Create the Secret using GitHub Secrets
+            # 1. Create secret directly from the file sitting on the Droplet
+            # This bypasses the empty GitHub Secrets issue!
             kubectl create secret generic rate-pulse-secrets \
-              --from-literal=DB_SOURCE=${{ secrets.DB_SOURCE }} \
-              --from-literal=DB_DRIVER=${{ secrets.DB_DRIVER }} \
-              --from-literal=SERVER_ADDRESS=${{ secrets.SERVER_ADDRESS }} \
-              --from-literal=ACCESS_TOKEN_DURATION=${{ secrets.ACCESS_TOKEN_DURATION }} \
-              --from-literal=TOKEN_SYMMETRIC_KEY=${{ secrets.TOKEN_SYMMETRIC_KEY }} \
+              --from-env-file=~/rate-pulse/app.env \
               --dry-run=client -o yaml | kubectl apply -f -
 
-            # 2. Apply the Kubernetes Blueprints
+            # 2. Apply the Kubernetes manifests
             kubectl apply -f ~/rate-pulse/digitalocean/deployment.yaml
             kubectl apply -f ~/rate-pulse/digitalocean/service.yaml
 
-            # 3. Force a restart to ensure the latest image is pulled
+            # 3. Restart to pull the new image
             kubectl rollout restart deployment/rate-pulse-api-deployment
