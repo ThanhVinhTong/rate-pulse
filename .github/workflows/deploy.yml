@@ -57,12 +57,12 @@ jobs:
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: |
-            DB_SOURCE=${{ secrets.DB_SOURCE }}
-            DB_DRIVER=${{ secrets.DB_DRIVER }}
-            SERVER_ADDRESS=${{ secrets.SERVER_ADDRESS }}
-            ACCESS_TOKEN_DURATION=${{ secrets.ACCESS_TOKEN_DURATION }}
-            TOKEN_SYMMETRIC_KEY=${{ secrets.TOKEN_SYMMETRIC_KEY }}
+          env: |
+            DB_SOURCE="${{ secrets.DB_SOURCE }}"
+            DB_DRIVER="${{ secrets.DB_DRIVER }}"
+            SERVER_ADDRESS="${{ secrets.SERVER_ADDRESS }}"
+            ACCESS_TOKEN_DURATION="${{ secrets.ACCESS_TOKEN_DURATION }}"
+            TOKEN_SYMMETRIC_KEY="${{ secrets.TOKEN_SYMMETRIC_KEY }}"
           script: |
             # 1. Update/Create the Secret using GitHub Secrets
             kubectl create secret generic rate-pulse-secrets \
