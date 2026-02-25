@@ -22,3 +22,5 @@ spec:
         envFrom:
         - secretRef:
             name: rate-pulse-secrets
+        - configMapRef:
+            name: app-env
