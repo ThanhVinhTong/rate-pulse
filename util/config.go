@@ -19,13 +19,19 @@ type Config struct {
 func LoadConfig(path string) (config Config, err error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("app")
-	viper.SetConfigType("env") // look for .env file in the given path
+	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		return config, err
+		// Check if the error is because the config file was not found
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			// It's a real error (like a syntax error in the file), so return it
+			return config, err
+		}
+		// If it's just a missing file, we ignore it and continue
+		// because AutomaticEnv() will catch the Kubernetes Secrets
 	}
 
 	err = viper.Unmarshal(&config)
