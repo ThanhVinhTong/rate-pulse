@@ -26,6 +26,8 @@ COPY start.sh wait-for.sh ./
 RUN chmod +x /app/start.sh /app/wait-for.sh
 COPY db/migration ./migration
 
+RUN touch app.env
+
 EXPOSE 8080
 ENTRYPOINT ["/app/start.sh"]
 CMD ["/app/main"]
