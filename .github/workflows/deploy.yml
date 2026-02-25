@@ -71,13 +71,15 @@ jobs:
 
             # 2. Create the physical app.env file on the Droplet
             # This satisfies the Go app's requirement for a config file.
-            cat <<EOF > app.env
-            DB_SOURCE=${{ secrets.DB_SOURCE }}
+            cat <<'EOF' > /root/rate-pulse/app.env
             DB_DRIVER=${{ secrets.DB_DRIVER }}
+            DB_SOURCE=${{ secrets.DB_SOURCE }}
             SERVER_ADDRESS=${{ secrets.SERVER_ADDRESS }}
-            ACCESS_TOKEN_DURATION=${{ secrets.ACCESS_TOKEN_DURATION }}
             TOKEN_SYMMETRIC_KEY=${{ secrets.TOKEN_SYMMETRIC_KEY }}
+            ACCESS_TOKEN_DURATION=${{ secrets.ACCESS_TOKEN_DURATION }}
             EOF
+            chmod 644 /root/rate-pulse/app.env
+            kubectl rollout restart deployment/rate-pulse-api-deployment
             
             # 3. Apply your deployment (Make sure the deployment mounts this file!)
             kubectl apply -f digitalocean/deployment.yaml
