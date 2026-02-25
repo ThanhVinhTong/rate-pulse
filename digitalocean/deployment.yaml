@@ -19,3 +19,6 @@ spec:
         image: vinhtongthanh57/rate-pulse:latest
         ports:
         - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: rate-pulse-secrets

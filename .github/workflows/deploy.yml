@@ -29,6 +29,7 @@ jobs:
           docker build -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:$IMAGE_TAG
           docker push $IMAGE_NAME:latest
+
   deploy:
     name: Deploy on Droplet
     runs-on: ubuntu-latest
@@ -37,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy docker-compose file
+      - name: Copy Kubernetes manifests
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
@@ -45,10 +46,11 @@ jobs:
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "digitalocean/deployment.yaml, digitalocean/service.yaml, docker-compose.yaml"
+          # We no longer need to copy docker-compose.yaml
+          source: "digitalocean/deployment.yaml, digitalocean/service.yaml"
           target: "~/rate-pulse"
 
-      - name: SSH → pull & run
+      - name: SSH → Apply Secrets & Deploy
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.DROPLET_HOST }}
@@ -57,6 +59,18 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            export IMAGE_TAG=${{ github.sha }}
-            docker compose pull
-            docker compose up -d
+            # 1. Update/Create the Secret using GitHub Secrets
+            kubectl create secret generic rate-pulse-secrets \
+              --from-literal=DB_SOURCE='${{ secrets.DB_SOURCE }}' \
+              --from-literal=DB_DRIVER='${{ secrets.DB_DRIVER }}' \
+              --from-literal=SERVER_ADDRESS='${{ secrets.SERVER_ADDRESS }}' \
+              --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
+              --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
+              --dry-run=client -o yaml | kubectl apply -f -
+
+            # 2. Apply the Kubernetes Blueprints
+            kubectl apply -f ~/rate-pulse/digitalocean/deployment.yaml
+            kubectl apply -f ~/rate-pulse/digitalocean/service.yaml
+
+            # 3. Force a restart to ensure the latest image is pulled
+            kubectl rollout restart deployment/rate-pulse-api-deployment
