@@ -15,7 +15,7 @@ spec:
         app: rate-pulse-api
     spec:
       containers:
-      - name: rate-pulse-api
-        image: vinhtongthanh57/rate-pulse:${IMAGE_TAG:-latest}
+      - name: rate-pulse-api  
+        image: vinhtongthanh57/rate-pulse:latest
         ports:
         - containerPort: 8080
