@@ -45,8 +45,8 @@ jobs:
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "docker-compose.yaml"
-          target: "~/"
+          source: "digitalocean/deployment.yaml, digitalocean/service.yaml, docker-compose.yaml"
+          target: "~/rate-pulse"
 
       - name: SSH → pull & run
         uses: appleboy/ssh-action@v1.2.5
