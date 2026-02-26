@@ -15,7 +15,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Cannot load config: ", err)
 	}
-	log.Printf("DEBUG: Driver loaded is '%s'", config.DBDriver)
 
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
