@@ -3,12 +3,17 @@ kind: Ingress
 metadata:
   name: rate-pulse-ingress
   annotations:
-    # Optional: if you want TLS later, Traefik handles it
-    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - api.rate-pulse.me
+      secretName: rate-pulse-tls
   rules:
-    - host: "*.rate-pulse.me"
+    - host: api.rate-pulse.me
       http:
         paths:
           - path: /
