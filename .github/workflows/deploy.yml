@@ -46,7 +46,7 @@ jobs:
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "digitalocean/deployment.yaml, digitalocean/service.yaml"
+          source: "digitalocean/*"
           target: "~/rate-pulse"
 
       - name: SSH → Apply Secrets & Deploy
