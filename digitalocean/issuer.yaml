@@ -5,9 +5,9 @@ metadata:
 spec:
   acme:
     email: vinhtongthanh57@gmail.com
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
-      name: letsencrypt-staging-account-key
+      name: letsencrypt-prod-account-key
     solvers:
     - http01:
         ingress:

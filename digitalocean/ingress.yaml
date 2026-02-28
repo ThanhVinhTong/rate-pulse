@@ -11,7 +11,7 @@ spec:
   tls:
     - hosts:
         - api.rate-pulse.me
-      secretName: rate-pulse-tls
+      secretName: rate-pulse-api-certificate
   rules:
     - host: api.rate-pulse.me
       http:
