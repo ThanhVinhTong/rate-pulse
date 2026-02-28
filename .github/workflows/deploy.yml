@@ -86,4 +86,6 @@ jobs:
             
             # 3. Apply your deployment (Make sure the deployment mounts this file!)
             kubectl apply -f digitalocean/deployment.yaml
+            kubectl apply -f digitalocean/service.yaml
+            kubectl apply -f digitalocean/ingress.yaml
             kubectl rollout restart deployment/rate-pulse-api-deployment
