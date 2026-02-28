@@ -313,7 +313,7 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 
 // Authentication
 type loginUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
+	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
