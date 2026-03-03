@@ -59,3 +59,16 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+// adminMiddleware checks if the authenticated user has admin privileges
+func adminMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+		if authPayload.UserType != UserTypeAdmin {
+			err := errors.New("user is not authorized, admin only")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+		ctx.Next()
+	}
+}

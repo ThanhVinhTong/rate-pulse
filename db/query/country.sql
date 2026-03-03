@@ -20,7 +20,10 @@ OFFSET $2;
 
 -- name: UpdateCountry :one
 UPDATE countries
-SET country_name = $2, currency_id = $3, updated_at = CURRENT_TIMESTAMP
+SET 
+    country_name = COALESCE($2, country_name),
+    currency_id = COALESCE($3, currency_id),
+    updated_at = CURRENT_TIMESTAMP
 WHERE country_id = $1
 RETURNING *;
 

@@ -205,6 +205,22 @@ type updateUserRequest struct {
 	Username           *string `json:"username"`
 	Email              *string `json:"email"`
 	Password           *string `json:"password"`
+	TimeZone           *string `json:"time_zone"`
+	LanguagePreference *string `json:"language_preference"`
+	CountryOfResidence *string `json:"country_of_residence"`
+	CountryOfBirth     *string `json:"country_of_birth"`
+}
+
+type updateUserURIRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// adminUpdateUserRequest represents the request body for admin-only user updates.
+// Admins can update all fields including user_type, email_verified, and is_active.
+type adminUpdateUserRequest struct {
+	Username           *string `json:"username"`
+	Email              *string `json:"email"`
+	Password           *string `json:"password"`
 	UserType           *string `json:"user_type" binding:"omitempty,oneof=free premium enterprise admin"`
 	EmailVerified      *bool   `json:"email_verified"`
 	TimeZone           *string `json:"time_zone"`
@@ -212,10 +228,6 @@ type updateUserRequest struct {
 	CountryOfResidence *string `json:"country_of_residence"`
 	CountryOfBirth     *string `json:"country_of_birth"`
 	IsActive           *bool   `json:"is_active"`
-}
-
-type updateUserURIRequest struct {
-	ID int32 `uri:"id" binding:"required,min=1"`
 }
 
 // updateUser handles the updating of an existing user.
@@ -254,16 +266,71 @@ func (server *Server) updateUser(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateUserParams{
-		Username:           sql.NullString{String: util.StrValue(req.Username), Valid: req.Username != nil},
-		Email:              sql.NullString{String: util.StrValue(req.Email), Valid: req.Email != nil},
-		Password:           sql.NullString{String: util.StrValue(hashedPassword), Valid: hashedPassword != nil},
-		UserType:           sql.NullString{String: util.StrValue(req.UserType), Valid: req.UserType != nil},
-		EmailVerified:      sql.NullBool{Bool: util.BoolValue(req.EmailVerified), Valid: req.EmailVerified != nil},
-		TimeZone:           sql.NullString{String: util.StrValue(req.TimeZone), Valid: req.TimeZone != nil},
-		LanguagePreference: sql.NullString{String: util.StrValue(req.LanguagePreference), Valid: req.LanguagePreference != nil},
-		CountryOfResidence: sql.NullString{String: util.StrValue(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
-		CountryOfBirth:     sql.NullString{String: util.StrValue(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
-		IsActive:           sql.NullBool{Bool: util.BoolValue(req.IsActive), Valid: req.IsActive != nil},
+		Username:           sql.NullString{String: util.Value(req.Username), Valid: req.Username != nil},
+		Email:              sql.NullString{String: util.Value(req.Email), Valid: req.Email != nil},
+		Password:           sql.NullString{String: util.Value(hashedPassword), Valid: hashedPassword != nil},
+		TimeZone:           sql.NullString{String: util.Value(req.TimeZone), Valid: req.TimeZone != nil},
+		LanguagePreference: sql.NullString{String: util.Value(req.LanguagePreference), Valid: req.LanguagePreference != nil},
+		CountryOfResidence: sql.NullString{String: util.Value(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
+		CountryOfBirth:     sql.NullString{String: util.Value(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
+		UserID:             uriReq.ID,
+	}
+
+	user, err := server.store.UpdateUser(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUserResponse(user))
+}
+
+// adminUpdateUser handles admin-only updates to an existing user.
+// Admin users can update all fields including user_type, email_verified, and is_active.
+// This function is protected by adminMiddleware, so authorization is already enforced at the routing level.
+//
+// PUT /admin/users/:id
+// Request body: updateUserRequest (JSON)
+// Response: User object on success, error message on failure
+// Status codes:
+//   - 200 OK: User updated successfully
+//   - 400 Bad Request: Invalid request body or validation error
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) adminUpdateUser(ctx *gin.Context) {
+	var uriReq updateUserURIRequest
+	if err := ctx.ShouldBindUri(&uriReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req adminUpdateUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Hash password if provided
+	var hashedPassword *string
+	if req.Password != nil {
+		hashed, err := util.HashPassword(*req.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		hashedPassword = &hashed
+	}
+
+	arg := db.UpdateUserParams{
+		Username:           sql.NullString{String: util.Value(req.Username), Valid: req.Username != nil},
+		Email:              sql.NullString{String: util.Value(req.Email), Valid: req.Email != nil},
+		Password:           sql.NullString{String: util.Value(hashedPassword), Valid: hashedPassword != nil},
+		UserType:           sql.NullString{String: util.Value(req.UserType), Valid: req.UserType != nil},
+		EmailVerified:      sql.NullBool{Bool: util.Value(req.EmailVerified), Valid: req.EmailVerified != nil},
+		TimeZone:           sql.NullString{String: util.Value(req.TimeZone), Valid: req.TimeZone != nil},
+		LanguagePreference: sql.NullString{String: util.Value(req.LanguagePreference), Valid: req.LanguagePreference != nil},
+		CountryOfResidence: sql.NullString{String: util.Value(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
+		CountryOfBirth:     sql.NullString{String: util.Value(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
+		IsActive:           sql.NullBool{Bool: util.Value(req.IsActive), Valid: req.IsActive != nil},
 		UserID:             uriReq.ID,
 	}
 

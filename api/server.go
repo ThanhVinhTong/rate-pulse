@@ -47,47 +47,49 @@ func (server *Server) setupRouter() {
 
 	// Protected routes (authentication required)
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	adminRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker), adminMiddleware())
 
 	// add `users` routes
 	authRoutes.GET("/users/:id", server.getUser)
 	authRoutes.GET("/users", server.listUser)
 	authRoutes.PUT("/users/:id", server.updateUser)
-	authRoutes.DELETE("/users/:id", server.deleteUser)
+	adminRoutes.PUT("/admin//users/:id", server.adminUpdateUser)
+	adminRoutes.DELETE("/admin/users/:id", server.deleteUser)
 
 	// add `currencies` routes
 	authRoutes.POST("/currencies", server.createCurrency)
 	authRoutes.GET("/currencies/:id", server.getCurrency)
 	authRoutes.GET("/currencies", server.listCurrency)
-	// authRoutes.PUT("/currencies/:id", server.updateCurrency)
-	// authRoutes.DELETE("/currencies/:id", server.deleteCurrency)
+	adminRoutes.PUT("/admin/currencies/:id", server.updateCurrency)
+	adminRoutes.DELETE("/admin/currencies/:id", server.deleteCurrency)
 
 	// add `exchange-rates` routes
 	authRoutes.POST("/exchange-rates", server.createExchangeRate)
 	authRoutes.GET("/exchange-rates/:id", server.getExchangeRate)
 	authRoutes.GET("/exchange-rates", server.listExchangeRate)
 	authRoutes.GET("/exchange-rates/type", server.listExchangeRateByType)
-	// authRoutes.PUT("/exchange-rates/:id", server.updateExchangeRate)
-	// authRoutes.DELETE("/exchange-rates/:id", server.deleteExchangeRate)
+	adminRoutes.PUT("/admin/exchange-rates/:id", server.updateExchangeRate)
+	adminRoutes.DELETE("/admin/exchange-rates/:id", server.deleteExchangeRate)
 
 	// add `rate-sources` routes
 	authRoutes.POST("/rate-sources", server.createRateSource)
 	authRoutes.GET("/rate-sources/:id", server.getRateSource)
 	authRoutes.GET("/rate-sources", server.listRateSource)
-	// authRoutes.PUT("/rate-sources/:id", server.updateRateSource)
-	// authRoutes.DELETE("/rate-sources/:id", server.deleteRateSource)
+	adminRoutes.PUT("/admin/rate-sources/:id", server.updateRateSource)
+	adminRoutes.DELETE("/admin/rate-sources/:id", server.deleteRateSource)
 
 	// add `countries` routes (admin-only routes handle authorization in handlers)
 	authRoutes.POST("/countries", server.createCountry)
 	authRoutes.GET("/countries/:id", server.getCountry)
 	authRoutes.GET("/countries", server.listCountry)
-	// authRoutes.PUT("/countries/:id", server.updateCountry)
-	// authRoutes.DELETE("/countries/:id", server.deleteCountry)
+	adminRoutes.PUT("/admin/countries/:id", server.updateCountry)
+	adminRoutes.DELETE("/admin/countries/:id", server.deleteCountry)
 
 	authRoutes.POST("/rate-source-preferences", server.createRateSourcePreference)
 	authRoutes.GET("/rate-source-preferences-userid", server.getRateSourcePreferencesByUserID)
 	authRoutes.GET("/rate-source-preferences-sourceid", server.getRateSourcePreferencesBySourceID)
 	authRoutes.GET("/rate-source-preferences", server.listAllRateSourcePreferences)
-	authRoutes.PUT("/rate-source-preferences/:source_id",server.updateRateSourcePreference)
+	authRoutes.PUT("/rate-source-preferences/:source_id", server.updateRateSourcePreference)
 	authRoutes.DELETE("/rate-source-preferences/:source_id", server.deleteRateSourcePreference)
 
 	authRoutes.POST("/currency-preference", server.createCurrencyPreference)

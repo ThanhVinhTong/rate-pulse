@@ -118,7 +118,11 @@ func (q *Queries) GetRateSourceByID(ctx context.Context, sourceID int32) (RateSo
 
 const updateRateSource = `-- name: UpdateRateSource :one
 UPDATE rate_sources
-SET source_name = $2, source_link = $3, source_country = $4, source_status = $5
+SET 
+    source_name = COALESCE($2, source_name),
+    source_link = COALESCE($3, source_link),
+    source_country = COALESCE($4, source_country),
+    source_status = COALESCE($5, source_status)
 WHERE source_id = $1
 RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at
 `
