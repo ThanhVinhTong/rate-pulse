@@ -7,6 +7,7 @@ import (
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -137,4 +138,91 @@ func (server *Server) listRateSource(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rateSources)
 }
 
-// TODO: Implement updateRateSource and deleteRateSource functions
+// updateRateSourceRequest represents the request body for updating a rate source.
+// It contains all the optional fields for rate source updates.
+type updateRateSourceRequest struct {
+	SourceName    *string `json:"source_name"`
+	SourceLink    *string `json:"source_link"`
+	SourceCountry *string `json:"source_country"`
+	SourceStatus  *string `json:"source_status"`
+}
+
+type updateRateSourceURIRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// updateRateSource handles the updating of an existing rate source.
+// It binds the JSON request body to updateRateSourceRequest, validates the input,
+// and updates the rate source in the database.
+//
+// PUT /admin/rate-sources/:id
+// Request body: updateRateSourceRequest (JSON)
+// Response: RateSource object on success, error message on failure
+// Status codes:
+//   - 200 OK: Rate source updated successfully
+//   - 400 Bad Request: Invalid request body or validation error
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) updateRateSource(ctx *gin.Context) {
+	var uriReq updateRateSourceURIRequest
+	if err := ctx.ShouldBindUri(&uriReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req updateRateSourceRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdateRateSourceParams{
+		SourceID:      uriReq.ID,
+		SourceName:    util.Value(req.SourceName),
+		SourceLink:    sql.NullString{String: util.Value(req.SourceLink), Valid: req.SourceLink != nil},
+		SourceCountry: sql.NullString{String: util.Value(req.SourceCountry), Valid: req.SourceCountry != nil},
+		SourceStatus:  sql.NullString{String: util.Value(req.SourceStatus), Valid: req.SourceStatus != nil},
+	}
+
+	rateSource, err := server.store.UpdateRateSource(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, rateSource)
+}
+
+// deleteRateSourceRequest represents the URI parameters for deleting a single rate source.
+// The ID must be a positive integer.
+type deleteRateSourceRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// deleteRateSource deletes a single rate source by its ID.
+// The rate source ID is extracted from the URI path parameter.
+//
+// DELETE /admin/rate-sources/:id
+//
+// URI parameters:
+//   - id: The unique identifier of the rate source (required, must be >= 1)
+//
+// Response: Success message on success, error message on failure
+// Status codes:
+//   - 200 OK: Rate source deleted successfully
+//   - 400 Bad Request: Invalid or missing rate source ID
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) deleteRateSource(ctx *gin.Context) {
+	var req deleteRateSourceRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err := server.store.DeleteRateSource(ctx, req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Rate source deleted successfully"})
+}

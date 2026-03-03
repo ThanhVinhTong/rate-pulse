@@ -1,18 +1,11 @@
 // Package util provides utility functions for the application
 package util
 
-// StrValue safely dereferences a string pointer, returning empty string if nil
-func StrValue(s *string) string {
-	if s != nil {
-		return *s
+// Value safely dereferences a pointer of any type, returning the zero value if nil
+func Value[T any](ptr *T) T {
+	if ptr != nil {
+		return *ptr
 	}
-	return ""
-}
-
-// BoolValue safely dereferences a bool pointer, returning false if nil
-func BoolValue(b *bool) bool {
-	if b != nil {
-		return *b
-	}
-	return false
+	var zero T
+	return zero
 }

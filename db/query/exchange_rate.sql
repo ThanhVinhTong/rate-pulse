@@ -29,7 +29,15 @@ OFFSET $4;
 
 -- name: UpdateExchangeRate :one
 UPDATE exchange_rates
-SET rate_value = $2, source_currency_id = $3, destination_currency_id = $4, valid_from_date = $5, valid_to_date = $6, source_id = $7, type = $8, updated_at = CURRENT_TIMESTAMP
+SET 
+    rate_value = COALESCE($2, rate_value),
+    source_currency_id = COALESCE($3, source_currency_id),
+    destination_currency_id = COALESCE($4, destination_currency_id),
+    valid_from_date = COALESCE($5, valid_from_date),
+    valid_to_date = COALESCE($6, valid_to_date),
+    source_id = COALESCE($7, source_id),
+    type = COALESCE($8, type),
+    updated_at = CURRENT_TIMESTAMP
 WHERE rate_id = $1
 RETURNING *;
 

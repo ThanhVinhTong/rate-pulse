@@ -128,7 +128,11 @@ func (q *Queries) GetCurrencyByID(ctx context.Context, currencyID int32) (Curren
 
 const updateCurrency = `-- name: UpdateCurrency :one
 UPDATE currencies
-SET currency_code = $2, currency_name = $3, currency_symbol = $4, updated_at = CURRENT_TIMESTAMP
+SET 
+    currency_code = COALESCE($2, currency_code),
+    currency_name = COALESCE($3, currency_name),
+    currency_symbol = COALESCE($4, currency_symbol),
+    updated_at = CURRENT_TIMESTAMP
 WHERE currency_id = $1
 RETURNING currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at
 `

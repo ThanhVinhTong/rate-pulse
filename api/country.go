@@ -6,6 +6,7 @@ import (
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -131,4 +132,87 @@ func (server *Server) listCountry(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, countries)
 }
 
-// TODO: Implement updateCountry and deleteCountry functions
+// updateCountryRequest represents the request body for updating a country.
+// It contains all the optional fields for country updates.
+type updateCountryRequest struct {
+	CountryName *string `json:"country_name"`
+	CurrencyID  *int32  `json:"currency_id"`
+}
+
+type updateCountryURIRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// updateCountry handles the updating of an existing country.
+// It binds the JSON request body to updateCountryRequest, validates the input,
+// and updates the country in the database.
+//
+// PUT /admin/countries/:id
+// Request body: updateCountryRequest (JSON)
+// Response: Country object on success, error message on failure
+// Status codes:
+//   - 200 OK: Country updated successfully
+//   - 400 Bad Request: Invalid request body or validation error
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) updateCountry(ctx *gin.Context) {
+	var uriReq updateCountryURIRequest
+	if err := ctx.ShouldBindUri(&uriReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req updateCountryRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdateCountryParams{
+		CountryID:   uriReq.ID,
+		CountryName: util.Value(req.CountryName),
+		CurrencyID:  util.Value(req.CurrencyID),
+	}
+
+	country, err := server.store.UpdateCountry(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, country)
+}
+
+// deleteCountryRequest represents the URI parameters for deleting a single country.
+// The ID must be a positive integer.
+type deleteCountryRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// deleteCountry deletes a single country by its ID.
+// The country ID is extracted from the URI path parameter.
+//
+// DELETE /admin/countries/:id
+//
+// URI parameters:
+//   - id: The unique identifier of the country (required, must be >= 1)
+//
+// Response: Success message on success, error message on failure
+// Status codes:
+//   - 200 OK: Country deleted successfully
+//   - 400 Bad Request: Invalid or missing country ID
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) deleteCountry(ctx *gin.Context) {
+	var req deleteCountryRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err := server.store.DeleteCountry(ctx, req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Country deleted successfully"})
+}

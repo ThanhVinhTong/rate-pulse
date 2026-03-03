@@ -8,6 +8,7 @@ import (
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -188,4 +189,97 @@ func (server *Server) listExchangeRateByType(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, exchangeRates)
 }
 
-// TODO: Implement updateExchangeRate and deleteExchangeRate functions
+// updateExchangeRateRequest represents the request body for updating an exchange rate.
+// It contains all the optional fields for exchange rate updates.
+type updateExchangeRateRequest struct {
+	RateValue             *string    `json:"rate_value"`
+	SourceCurrencyID      *int32     `json:"source_currency_id"`
+	DestinationCurrencyID *int32     `json:"destination_currency_id"`
+	ValidFromDate         *time.Time `json:"valid_from_date"`
+	ValidToDate           *time.Time `json:"valid_to_date"`
+	SourceID              *int32     `json:"source_id"`
+	Type                  *int32     `json:"type"`
+}
+
+type updateExchangeRateURIRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// updateExchangeRate handles the updating of an existing exchange rate.
+// It binds the JSON request body to updateExchangeRateRequest, validates the input,
+// and updates the exchange rate in the database.
+//
+// PUT /admin/exchange-rates/:id
+// Request body: updateExchangeRateRequest (JSON)
+// Response: ExchangeRate object on success, error message on failure
+// Status codes:
+//   - 200 OK: Exchange rate updated successfully
+//   - 400 Bad Request: Invalid request body or validation error
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) updateExchangeRate(ctx *gin.Context) {
+	var uriReq updateExchangeRateURIRequest
+	if err := ctx.ShouldBindUri(&uriReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req updateExchangeRateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdateExchangeRateParams{
+		RateID:                uriReq.ID,
+		RateValue:             util.Value(req.RateValue),
+		SourceCurrencyID:      util.Value(req.SourceCurrencyID),
+		DestinationCurrencyID: util.Value(req.DestinationCurrencyID),
+		ValidFromDate:         util.Value(req.ValidFromDate),
+		ValidToDate:           sql.NullTime{Time: util.Value(req.ValidToDate), Valid: req.ValidToDate != nil},
+		SourceID:              sql.NullInt32{Int32: util.Value(req.SourceID), Valid: req.SourceID != nil},
+		Type:                  util.Value(req.Type),
+	}
+
+	exchangeRate, err := server.store.UpdateExchangeRate(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, exchangeRate)
+}
+
+// deleteExchangeRateRequest represents the URI parameters for deleting a single exchange rate.
+// The ID must be a positive integer.
+type deleteExchangeRateRequest struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+// deleteExchangeRate deletes a single exchange rate by its ID.
+// The exchange rate ID is extracted from the URI path parameter.
+//
+// DELETE /admin/exchange-rates/:id
+//
+// URI parameters:
+//   - id: The unique identifier of the exchange rate (required, must be >= 1)
+//
+// Response: Success message on success, error message on failure
+// Status codes:
+//   - 200 OK: Exchange rate deleted successfully
+//   - 400 Bad Request: Invalid or missing exchange rate ID
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) deleteExchangeRate(ctx *gin.Context) {
+	var req deleteExchangeRateRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err := server.store.DeleteExchangeRate(ctx, req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Exchange rate deleted successfully"})
+}
