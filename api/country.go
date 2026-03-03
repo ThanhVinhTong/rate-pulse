@@ -1,11 +1,9 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
-	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +19,7 @@ type createCountryRequest struct {
 // It binds the JSON request body to createCountryRequest, validates the input,
 // and persists the country to the database.
 //
-// POST /countries
+// POST /admin/countries
 //
 // Request body: createCountryRequest (JSON)
 // Response: Country object on success, error message on failure
@@ -33,12 +31,6 @@ func (server *Server) createCountry(ctx *gin.Context) {
 	var req createCountryRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if authPayload.UserType != UserTypeAdmin {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user is not authorized to create a country")))
 		return
 	}
 

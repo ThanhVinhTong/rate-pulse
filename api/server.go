@@ -53,35 +53,35 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/users/:id", server.getUser)
 	authRoutes.GET("/users", server.listUser)
 	authRoutes.PUT("/users/:id", server.updateUser)
-	adminRoutes.PUT("/admin//users/:id", server.adminUpdateUser)
+	adminRoutes.PUT("/admin/users/:id", server.adminUpdateUser)
 	adminRoutes.DELETE("/admin/users/:id", server.deleteUser)
 
 	// add `currencies` routes
-	authRoutes.POST("/currencies", server.createCurrency)
 	authRoutes.GET("/currencies/:id", server.getCurrency)
 	authRoutes.GET("/currencies", server.listCurrency)
+	adminRoutes.POST("/admin/currencies", server.createCurrency)
 	adminRoutes.PUT("/admin/currencies/:id", server.updateCurrency)
 	adminRoutes.DELETE("/admin/currencies/:id", server.deleteCurrency)
 
 	// add `exchange-rates` routes
-	authRoutes.POST("/exchange-rates", server.createExchangeRate)
 	authRoutes.GET("/exchange-rates/:id", server.getExchangeRate)
 	authRoutes.GET("/exchange-rates", server.listExchangeRate)
 	authRoutes.GET("/exchange-rates/type", server.listExchangeRateByType)
+	adminRoutes.POST("/admin/exchange-rates", server.createExchangeRate)
 	adminRoutes.PUT("/admin/exchange-rates/:id", server.updateExchangeRate)
 	adminRoutes.DELETE("/admin/exchange-rates/:id", server.deleteExchangeRate)
 
 	// add `rate-sources` routes
-	authRoutes.POST("/rate-sources", server.createRateSource)
 	authRoutes.GET("/rate-sources/:id", server.getRateSource)
 	authRoutes.GET("/rate-sources", server.listRateSource)
+	adminRoutes.POST("/admin/rate-sources", server.createRateSource)
 	adminRoutes.PUT("/admin/rate-sources/:id", server.updateRateSource)
 	adminRoutes.DELETE("/admin/rate-sources/:id", server.deleteRateSource)
 
-	// add `countries` routes (admin-only routes handle authorization in handlers)
-	authRoutes.POST("/countries", server.createCountry)
+	// add `countries` routes
 	authRoutes.GET("/countries/:id", server.getCountry)
 	authRoutes.GET("/countries", server.listCountry)
+	adminRoutes.POST("/admin/countries", server.createCountry)
 	adminRoutes.PUT("/admin/countries/:id", server.updateCountry)
 	adminRoutes.DELETE("/admin/countries/:id", server.deleteCountry)
 

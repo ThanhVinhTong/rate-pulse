@@ -2,12 +2,10 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
 	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
-	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +26,7 @@ type createExchangeRateRequest struct {
 // It binds the JSON request body to createExchangeRateRequest, validates the input,
 // and persists the exchange rate to the database.
 //
-// POST /exchange-rates
+// POST /admin/exchange-rates
 //
 // Request body: createExchangeRateRequest (JSON)
 // Response: ExchangeRate object on success, error message on failure
@@ -40,12 +38,6 @@ func (server *Server) createExchangeRate(ctx *gin.Context) {
 	var req createExchangeRateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if authPayload.UserType != UserTypeAdmin {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user is not authorized to create an exchange rate")))
 		return
 	}
 

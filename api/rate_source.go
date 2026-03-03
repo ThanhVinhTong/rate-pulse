@@ -2,11 +2,9 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
-	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +22,7 @@ type createRateSourceRequest struct {
 // It binds the JSON request body to createRateSourceRequest, validates the input,
 // and persists the rate source to the database.
 //
-// POST /rate-sources
+// POST /admin/rate-sources
 //
 // Request body: createRateSourceRequest (JSON)
 // Response: RateSource object on success, error message on failure
@@ -36,12 +34,6 @@ func (server *Server) createRateSource(ctx *gin.Context) {
 	var req createRateSourceRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if authPayload.UserType != UserTypeAdmin {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("user is not authorized to create a rate source")))
 		return
 	}
 
