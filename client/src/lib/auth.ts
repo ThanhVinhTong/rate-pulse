@@ -2,26 +2,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AUTH_COOKIE } from "@/lib/constants";
+import { createSessionCookieValue, readSessionCookieValue, SESSION_MAX_AGE } from "@/lib/session";
 import type { AuthSession, SessionRole } from "@/types";
-
-function decodeSession(value: string): AuthSession | null {
-  try {
-    const decoded = Buffer.from(value, "base64url").toString("utf8");
-    const parsed = JSON.parse(decoded) as AuthSession;
-
-    if (!parsed.email || !parsed.name || !parsed.role) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function encodeSession(session: AuthSession) {
-  return Buffer.from(JSON.stringify(session)).toString("base64url");
-}
 
 export function simulateAuth(email: string, name?: string): AuthSession {
   const normalizedEmail = email.trim().toLowerCase();
@@ -38,11 +20,13 @@ export async function getSession() {
   const cookieStore = await cookies();
   const rawSession = cookieStore.get(AUTH_COOKIE)?.value;
 
-  if (!rawSession) {
+  const envelope = await readSessionCookieValue(rawSession);
+
+  if (!envelope) {
     return null;
   }
 
-  return decodeSession(rawSession);
+  return envelope.session;
 }
 
 export async function getUserFromCookie() {
@@ -51,13 +35,14 @@ export async function getUserFromCookie() {
 
 export async function createSession(session: AuthSession) {
   const cookieStore = await cookies();
+  const value = await createSessionCookieValue(session);
 
-  cookieStore.set(AUTH_COOKIE, encodeSession(session), {
+  cookieStore.set(AUTH_COOKIE, value, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: SESSION_MAX_AGE,
   });
 }
 

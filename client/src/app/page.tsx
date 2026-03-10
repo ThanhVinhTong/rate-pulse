@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default function Home() {
-  const highlightPairs = exchangeRates["1D"].slice(0, 3);
+  const highlightPairs = exchangeRates["48h"].slice(0, 3);
 
   return (
     <div className="space-y-6">

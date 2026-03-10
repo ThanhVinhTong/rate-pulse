@@ -1,4 +1,22 @@
-export type TimeRange = "1D" | "1W" | "1M" | "1Y";
+import { TIME_RANGES } from "@/lib/constants";
+
+export type TimeRange = typeof TIME_RANGES[number];
+
+export interface BankRate {
+  id: string;
+  source: string;
+  cashBuy: number;
+  wireBuy: number;
+  cashSell: number;
+  wireSell: number;
+  change: number;
+  country: string;
+}
+
+export interface MarketTrendPoint {
+  date: string;
+  rate: number;
+}
 
 export interface CurrencyPair {
   pair: string;

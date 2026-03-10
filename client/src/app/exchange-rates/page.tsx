@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 function normalizeRange(range?: string): TimeRange {
-  return timeRanges.includes(range as TimeRange) ? (range as TimeRange) : "1D";
+  return timeRanges.includes(range as TimeRange) ? (range as TimeRange) : "48h";
 }
 
 export default async function ExchangeRatesPage({

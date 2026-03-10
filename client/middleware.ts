@@ -2,42 +2,35 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { AUTH_COOKIE } from "@/lib/constants";
+import { readSessionCookieValue } from "@/lib/session";
 
-function readRole(request: NextRequest) {
-  const rawSession = request.cookies.get(AUTH_COOKIE)?.value;
-
-  if (!rawSession) {
-    return null;
-  }
-
-  try {
-    const normalized = rawSession.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const decoded = atob(padded);
-    const session = JSON.parse(decoded) as { role?: "admin" | "trader" };
-    return session.role ?? null;
-  } catch {
-    return null;
-  }
+function buildRedirectResponse(request: NextRequest, pathname: string) {
+  const response = NextResponse.redirect(new URL(pathname, request.url));
+  response.cookies.delete(AUTH_COOKIE);
+  return response;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const role = readRole(request);
+  const rawSession = request.cookies.get(AUTH_COOKIE)?.value;
+  const envelope = await readSessionCookieValue(rawSession);
+  const role = envelope?.session.role ?? null;
 
-  if (pathname.startsWith("/profile") && !role) {
+  if ((pathname.startsWith("/profile") || pathname.startsWith("/settings")) && !role) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete(AUTH_COOKIE);
+    return response;
   }
 
   if (pathname.startsWith("/admin")) {
     if (!role) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return buildRedirectResponse(request, "/login");
     }
 
     if (role !== "admin") {
-      return NextResponse.redirect(new URL("/analytics", request.url));
+      return buildRedirectResponse(request, "/analytics");
     }
   }
 
@@ -45,5 +38,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/admin/:path*"],
+  matcher: ["/profile/:path*", "/settings/:path*", "/admin/:path*"],
 };
