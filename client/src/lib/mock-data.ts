@@ -8,65 +8,84 @@ import type {
 
 export const timeRanges = TIME_RANGES;
 
-export const exchangeRates: Record<TimeRange, CurrencyPair[]> = TIME_RANGES.reduce((acc, range) => {
+const generateSparkline = (base: number, volatility: number, points = 8) => {
+  return Array.from({ length: points }, (_, i) => base + Math.sin(i) * volatility + (i * volatility * 0.2));
+};
+
+export const exchangeRates: Record<TimeRange, CurrencyPair[]> = TIME_RANGES.reduce((acc, range, index) => {
+  const vol = 1 + (index * 0.5); // Increase volatility for larger time ranges
   acc[range] = [
     {
       pair: "EUR/USD",
       base: "Euro",
       quote: "US Dollar",
-      rate: 1.0862,
-      change: 0.42,
-      volume: "$1.84B",
-      high: 1.0893,
-      low: 1.0799,
-      sparkline: [1.08, 1.081, 1.083, 1.082, 1.085, 1.084, 1.086, 1.0862],
+      rate: Number((1.0862 + Math.sin(index) * 0.05).toFixed(4)),
+      change: Number((0.42 * vol * (index % 2 === 0 ? 1 : -1)).toFixed(2)),
+      volume: `$${(1.84 + index * 0.5).toFixed(2)}B`,
+      high: Number((1.0893 + index * 0.02).toFixed(4)),
+      low: Number((1.0799 - index * 0.01).toFixed(4)),
+      sparkline: generateSparkline(1.08, 0.01 * vol),
     },
     {
       pair: "GBP/USD",
       base: "British Pound",
       quote: "US Dollar",
-      rate: 1.2748,
-      change: -0.19,
-      volume: "$1.26B",
-      high: 1.2792,
-      low: 1.2712,
-      sparkline: [1.281, 1.279, 1.278, 1.276, 1.277, 1.275, 1.275, 1.2748],
+      rate: Number((1.2748 + Math.cos(index) * 0.05).toFixed(4)),
+      change: Number((-0.19 * vol).toFixed(2)),
+      volume: `$${(1.26 + index * 0.3).toFixed(2)}B`,
+      high: Number((1.2792 + index * 0.02).toFixed(4)),
+      low: Number((1.2712 - index * 0.01).toFixed(4)),
+      sparkline: generateSparkline(1.27, 0.015 * vol),
     },
     {
       pair: "USD/JPY",
       base: "US Dollar",
       quote: "Japanese Yen",
-      rate: 149.82,
-      change: 0.61,
-      volume: "$2.93B",
-      high: 150.1,
-      low: 148.94,
-      sparkline: [148.9, 149.04, 149.12, 149.28, 149.36, 149.5, 149.73, 149.82],
+      rate: Number((149.82 - index * 0.5).toFixed(2)),
+      change: Number((0.61 * vol).toFixed(2)),
+      volume: `$${(2.93 + index * 0.8).toFixed(2)}B`,
+      high: Number((150.1 + index * 0.5).toFixed(2)),
+      low: Number((148.94 - index * 1.5).toFixed(2)),
+      sparkline: generateSparkline(149.0, 0.5 * vol),
     },
     {
       pair: "AUD/USD",
       base: "Australian Dollar",
       quote: "US Dollar",
-      rate: 0.6634,
-      change: 0.23,
-      volume: "$768M",
-      high: 0.6651,
-      low: 0.6598,
-      sparkline: [0.659, 0.66, 0.661, 0.6607, 0.6618, 0.6621, 0.663, 0.6634],
+      rate: Number((0.6634 + index * 0.005).toFixed(4)),
+      change: Number((0.23 * vol).toFixed(2)),
+      volume: `$${(768 + index * 100)}M`,
+      high: Number((0.6651 + index * 0.01).toFixed(4)),
+      low: Number((0.6598 - index * 0.01).toFixed(4)),
+      sparkline: generateSparkline(0.66, 0.005 * vol),
     },
   ];
   return acc;
 }, {} as Record<TimeRange, CurrencyPair[]>);
 
-export const analyticsData: Record<TimeRange, AnalyticsSeriesPoint[]> = TIME_RANGES.reduce((acc, range) => {
-  acc[range] = [
-    { label: "09:00", value: 128400, volume: 340, pnl: 420 },
-    { label: "11:00", value: 129020, volume: 410, pnl: 610 },
-    { label: "13:00", value: 128760, volume: 385, pnl: -230 },
-    { label: "15:00", value: 130180, volume: 462, pnl: 920 },
-    { label: "17:00", value: 131040, volume: 508, pnl: 1210 },
-    { label: "19:00", value: 131820, volume: 530, pnl: 780 },
-  ];
+export const analyticsData: Record<TimeRange, AnalyticsSeriesPoint[]> = TIME_RANGES.reduce((acc, range, index) => {
+  const pointsCount = range === "48h" ? 12 : range === "7D" ? 7 : range === "15D" ? 15 : range === "30D" ? 30 : 12;
+  const volBase = 300 * (index + 1);
+  const pnlBase = 500 * (index + 1);
+  const valBase = 120000 + (index * 5000);
+
+  acc[range] = Array.from({ length: pointsCount }, (_, i) => {
+    let label = `P${i + 1}`;
+    if (range === "48h") label = `${(i * 2).toString().padStart(2, '0')}:00`;
+    else if (range === "7D") label = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i];
+    else if (range.endsWith("M") || range.endsWith("Y") || range === "MAX") label = `M${i + 1}`;
+
+    // Use deterministic math functions instead of random for stable hydration
+    const pseudoRandom = Math.abs(Math.sin(i * index + 1));
+
+    return {
+      label,
+      value: Math.floor(valBase + Math.sin(i) * 5000 + (i * 1000)),
+      volume: Math.floor(volBase + pseudoRandom * volBase * 0.5),
+      pnl: Math.floor(pnlBase + (Math.sin(i) * pnlBase * 0.8)),
+    };
+  });
+  
   return acc;
 }, {} as Record<TimeRange, AnalyticsSeriesPoint[]>);
 
