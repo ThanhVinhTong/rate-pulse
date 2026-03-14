@@ -5,6 +5,10 @@ export type TimeRange = typeof TIME_RANGES[number];
 export interface BankRate {
   id: string;
   source: string;
+  baseCurrency: string;
+  targetCurrency: string;
+  favorite: boolean;
+  fetchCountToday: number;
   cashBuy: number;
   wireBuy: number;
   cashSell: number;
