@@ -7,10 +7,17 @@ import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
 
-import { SubmitButton } from "@/components/common/SubmitButton";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Select } from "@/components/ui/Select";
 
 interface ProfileFormProps {
   session: AuthSession;
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  return `${local.slice(0, 2)}•••••@${domain.slice(0, 2)}•••••`;
 }
 
 export function ProfileForm({ session }: ProfileFormProps) {
@@ -41,39 +48,37 @@ export function ProfileForm({ session }: ProfileFormProps) {
 
       <label className="space-y-2 md:col-span-2">
         <span className="text-sm text-text-muted">Email address</span>
-        <input
-          name="email"
-          defaultValue={session.email}
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        />
+        <div className="relative">
+          <input
+            name="email"
+            value={maskEmail(session.email)}
+            readOnly
+            className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-text-muted outline-none cursor-not-allowed select-none"
+          />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-text-muted/60">
+            protected
+          </span>
+        </div>
       </label>
 
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Base currency</span>
-        <select
-          name="currency"
-          defaultValue="USD"
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        >
+        <Select name="currency" defaultValue="USD">
           <option>USD</option>
           <option>EUR</option>
           <option>GBP</option>
           <option>JPY</option>
-        </select>
+        </Select>
       </label>
 
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Risk profile</span>
-        <select
-          name="riskProfile"
-          defaultValue="Balanced"
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        >
+        <Select name="riskProfile" defaultValue="Balanced">
           <option>Conservative</option>
           <option>Balanced</option>
           <option>Growth</option>
           <option>Aggressive</option>
-        </select>
+        </Select>
       </label>
 
       <label className="space-y-2 md:col-span-2">
