@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
-import { requireAdmin } from "@/lib/auth";
-import { systemMetrics, userRows } from "@/lib/mock-data";
+import { systemMetrics, userRows } from "@/lib/server/admin-data";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -10,7 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  await requireAdmin();
-
   return <AdminDashboard systemMetrics={systemMetrics} userRows={userRows} />;
 }
