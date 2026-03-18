@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SettingsAccordion } from "@/components/common/SettingsAccordion";
+import { SettingsAccordion } from "@/components/profile/SettingsAccordion";
 import { settingsSections } from "@/lib/mock-data";
 
 export const metadata: Metadata = {

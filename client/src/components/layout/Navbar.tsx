@@ -62,7 +62,7 @@ export function Navbar({ session }: NavbarProps) {
       return [...publicItems];
     }
 
-    const items = [...publicItems, { href: "/profile", label: "Profile" }, { href: "/settings", label: "Settings" }];
+    const items = [...publicItems, { href: "/profile", label: "Profile" }];
 
     if (auth.isAdmin) {
       items.push({ href: "/admin", label: "Admin" });

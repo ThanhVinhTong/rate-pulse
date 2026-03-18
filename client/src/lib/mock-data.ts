@@ -436,12 +436,7 @@ export const settingsSections: SettingsSection[] = [
   },
   {
     id: "privacy",
-    title: "Data & Privacy",
-    description: "Control exports, retention preferences, and analytics visibility.",
-  },
-  {
-    id: "support",
-    title: "Support",
-    description: "Access help channels and escalation preferences for urgent trading issues.",
+    title: "Localization & Data",
+    description: "Set your trading timezone, number format, and how often the platform fetches fresh rates.",
   },
 ];

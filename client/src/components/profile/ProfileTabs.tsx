@@ -1,31 +1,31 @@
 "use client";
 
-import { Bell, Settings2, Shield, UserRound } from "lucide-react";
+import { Bell, Shield, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { AuthSession } from "@/types";
 
 import { ProfileForm } from "./ProfileForm";
+import { PreferencesForm } from "./PreferencesForm";
+import { SecurityForm } from "./SecurityForm";
 
 const tabs = [
   {
     id: "personal",
     label: "Personal Information",
+    title: "Profile workspace",
     icon: UserRound,
   },
   {
     id: "preferences",
     label: "Preferences",
+    title: "Platform Preferences",
     icon: Bell,
-  },
-  {
-    id: "trading",
-    label: "Trading Settings",
-    icon: Settings2,
   },
   {
     id: "security",
     label: "Account Security",
+    title: "Security Settings",
     icon: Shield,
   },
 ] as const;
@@ -41,7 +41,6 @@ export function ProfileTabs({ session }: ProfileTabsProps) {
     () => ({
       personal: "Update your contact information and keep your trading identity current.",
       preferences: "Fine tune summaries, watchlists, and market digest delivery windows.",
-      trading: "Adjust default order behavior, leverage reminders, and execution safeguards.",
       security: "Review access controls and reinforce account protection settings.",
     }),
     [],
@@ -77,11 +76,15 @@ export function ProfileTabs({ session }: ProfileTabsProps) {
           <p className="text-sm uppercase tracking-[0.24em] text-accent">
             {tabs.find((tab) => tab.id === activeTab)?.label}
           </p>
-          <h1 className="mt-3 text-2xl font-semibold text-white">Profile workspace</h1>
+          <h1 className="mt-3 text-2xl font-semibold text-white">
+            {tabs.find((tab) => tab.id === activeTab)?.title}
+          </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted">
             {tabCopy[activeTab]}
           </p>
-          <ProfileForm session={session} />
+          {activeTab === "personal" && <ProfileForm session={session} />}
+          {activeTab === "preferences" && <PreferencesForm />}
+          {activeTab === "security" && <SecurityForm session={session} />}
         </div>
       </div>
     </section>

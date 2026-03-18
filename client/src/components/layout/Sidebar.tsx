@@ -47,7 +47,9 @@ export function Sidebar({ session }: SidebarProps) {
           </div>
           <div>
             <p className="font-semibold text-white">{session.name}</p>
-            <p className="text-sm text-text-muted">{session.email}</p>
+            <p className="text-sm text-text-muted">
+              {`${session.email.split("@")[0].slice(0, 2)}•••••@${session.email.split("@")[1].slice(0, 2)}•••••`}
+            </p>
           </div>
         </div>
         <p className="mt-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary">
