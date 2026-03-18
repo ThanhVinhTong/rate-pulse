@@ -1,156 +1,332 @@
 "use client";
 
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import { BarChart3, Filter, Newspaper, Search, Sparkles } from "lucide-react";
 
-import { formatCompactCurrency } from "@/lib/utils";
-import type { AnalyticsSeriesPoint, TimeRange } from "@/types";
+import { cn } from "@/lib/utils";
+import type { AIInsight, AnalyticsTab, NewsArticle, NewsCategory, NewsRegion, SectorData } from "@/types";
 
-import { RevenueChart } from "./RevenueChart";
-import { TimeFilter } from "./TimeFilter";
+import { AIInsightCard } from "./AIInsightCard";
+import { NewsArticleCard } from "./NewsArticleCard";
+import { SectorHeatmapTile } from "./SectorHeatmapTile";
 
-const pieColors = ["#0069fe", "#00d3e5", "#ffcc00", "#00af30", "#5c5769"];
+type RegionFilter = NewsRegion | "All";
+type CategoryFilter = NewsCategory | "All";
 
 interface AnalyticsDashboardProps {
-  range: TimeRange;
-  data: AnalyticsSeriesPoint[];
-  marketTrendData: { name: string; value: number }[];
+  insights: AIInsight[];
+  articles: NewsArticle[];
+  sectors: SectorData[];
+  regions: readonly NewsRegion[];
+  categories: readonly NewsCategory[];
+}
+
+interface TabItem {
+  id: AnalyticsTab;
+  label: string;
+  icon: LucideIcon;
+}
+
+interface FilterGroupProps<T extends string> {
+  label: string;
+  allLabel: string;
+  items: readonly T[];
+  value: T | "All";
+  onChange: (value: T | "All") => void;
+}
+
+const tabItems: TabItem[] = [
+  { id: "ai-insights", label: "AI Insights", icon: Sparkles },
+  { id: "news", label: "News Hub", icon: Newspaper },
+  { id: "heatmap", label: "Sector Heatmap", icon: BarChart3 },
+];
+
+function AnalyticsTabButton({
+  item,
+  activeTab,
+  onSelect,
+}: {
+  item: TabItem;
+  activeTab: AnalyticsTab;
+  onSelect: (tab: AnalyticsTab) => void;
+}) {
+  const Icon = item.icon;
+  const isActive = activeTab === item.id;
+
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
+      aria-controls={`${item.id}-panel`}
+      id={`${item.id}-tab`}
+      onClick={() => onSelect(item.id)}
+      className={cn(
+        "relative inline-flex min-h-11 items-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-medium transition-all",
+        isActive ? "text-primary" : "text-text-muted hover:text-text-primary",
+      )}
+    >
+      <Icon size={18} aria-hidden="true" />
+      <span>{item.label}</span>
+      <span
+        className={cn(
+          "absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-primary transition-all",
+          isActive ? "opacity-100" : "opacity-0",
+        )}
+        aria-hidden="true"
+      />
+    </button>
+  );
+}
+
+function FilterGroup<T extends string>({
+  label,
+  allLabel,
+  items,
+  value,
+  onChange,
+}: FilterGroupProps<T>) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
+        <Filter size={16} aria-hidden="true" />
+        <span>{label}</span>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onChange("All")}
+          aria-pressed={value === "All"}
+          className={cn(
+            "rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            value === "All"
+              ? "bg-primary text-white"
+              : "border border-border bg-transparent text-text-primary hover:border-primary/50 hover:bg-primary/10 hover:text-primary",
+          )}
+        >
+          {allLabel}
+        </button>
+
+        {items.map((item) => {
+          const isActive = value === item;
+
+          return (
+            <button
+              key={item}
+              type="button"
+              onClick={() => onChange(item)}
+              aria-pressed={isActive}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-medium transition-all",
+                isActive
+                  ? "bg-primary text-white"
+                  : "border border-border bg-transparent text-text-primary hover:border-primary/50 hover:bg-primary/10 hover:text-primary",
+              )}
+            >
+              {item}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-panel px-6 py-10 text-center">
+      <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+      <p className="mt-2 text-sm text-text-muted">{description}</p>
+    </div>
+  );
 }
 
 export function AnalyticsDashboard({
-  range,
-  data,
-  marketTrendData,
+  insights,
+  articles,
+  sectors,
+  regions,
+  categories,
 }: AnalyticsDashboardProps) {
-  const latestPoint = data[data.length - 1];
-  const firstPoint = data[0];
-  const change = latestPoint.value - firstPoint.value;
-  const totalVolume = data.reduce((sum, item) => sum + item.volume, 0);
-  const totalPnl = data.reduce((sum, item) => sum + item.pnl, 0);
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>("ai-insights");
+  const [selectedRegion, setSelectedRegion] = useState<RegionFilter>("All");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim().toLowerCase());
+    }, 200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter((article) => {
+      const matchesRegion = selectedRegion === "All" || article.region === selectedRegion;
+      const matchesCategory =
+        selectedCategory === "All" || article.category === selectedCategory;
+      const matchesSearch =
+        debouncedSearchQuery.length === 0 ||
+        article.title.toLowerCase().includes(debouncedSearchQuery) ||
+        article.summary.toLowerCase().includes(debouncedSearchQuery);
+
+      return matchesRegion && matchesCategory && matchesSearch;
+    });
+  }, [articles, debouncedSearchQuery, selectedCategory, selectedRegion]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.24em] text-accent">Desk analytics</p>
-          <h1 className="mt-3 text-3xl font-semibold text-white">
-            Performance and market trend dashboard
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted">
-            Compare portfolio value, execution volume, and market mix across
-            different time ranges using server-fed data with client-side charting.
-          </p>
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold text-text-primary lg:text-3xl">News &amp; Analytics</h1>
+        <p className="text-sm text-text-muted lg:text-base">
+          Real-time market news and AI-powered insights
+        </p>
+      </header>
+
+      <div className="overflow-x-auto border-b border-border">
+        <div className="flex min-w-max items-center" role="tablist" aria-label="Analytics sections">
+          {tabItems.map((item) => (
+            <AnalyticsTabButton
+              key={item.id}
+              item={item}
+              activeTab={activeTab}
+              onSelect={setActiveTab}
+            />
+          ))}
         </div>
-        <TimeFilter value={range} />
       </div>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-2xl border border-white/10 bg-[#0d1322] p-5">
-          <p className="text-sm text-text-muted">Portfolio value</p>
-          <p className="mt-3 text-3xl font-semibold text-white">
-            {formatCompactCurrency(latestPoint.value)}
-          </p>
-          <p className={`mt-2 text-sm ${change >= 0 ? "text-status-success" : "text-status-danger"}`}>
-            {change >= 0 ? "+" : ""}
-            {formatCompactCurrency(change)} over selected range
-          </p>
-        </article>
-        <article className="rounded-2xl border border-white/10 bg-[#0d1322] p-5">
-          <p className="text-sm text-text-muted">Trade volume</p>
-          <p className="mt-3 text-3xl font-semibold text-white">{totalVolume.toLocaleString()}</p>
-          <p className="mt-2 text-sm text-text-muted">Orders captured in mock analytics</p>
-        </article>
-        <article className="rounded-2xl border border-white/10 bg-[#0d1322] p-5">
-          <p className="text-sm text-text-muted">Net P&amp;L</p>
-          <p className="mt-3 text-3xl font-semibold text-white">
-            {formatCompactCurrency(totalPnl)}
-          </p>
-          <p className="mt-2 text-sm text-status-success">Positive trend across diversified assets</p>
-        </article>
-      </section>
+      {activeTab === "ai-insights" ? (
+        <section
+          id="ai-insights-panel"
+          role="tabpanel"
+          aria-labelledby="ai-insights-tab"
+          className="space-y-4"
+        >
+          {insights.length > 0 ? (
+            insights.map((insight) => <AIInsightCard key={insight.id} insight={insight} />)
+          ) : (
+            <EmptyState
+              title="No AI insights available"
+              description="AI-generated insight cards will appear here once the feed is ready."
+            />
+          )}
+        </section>
+      ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <article className="min-w-0 rounded-2xl border border-white/10 bg-[#0d1322] p-5">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">Portfolio performance</h2>
-            <p className="text-sm text-text-muted">Area chart with responsive breakpoints</p>
-          </div>
-          <RevenueChart data={data} />
-        </article>
-
-        <article className="min-w-0 rounded-2xl border border-white/10 bg-[#0d1322] p-5">
-          <h2 className="text-lg font-semibold text-white">Market composition</h2>
-          <p className="mt-1 text-sm text-text-muted">Diversification by asset class</p>
-          <div className="h-80 min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <PieChart>
-                <Pie
-                  data={marketTrendData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={70}
-                  outerRadius={95}
-                  paddingAngle={3}
-                >
-                  {marketTrendData.map((entry, index) => (
-                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#111827",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 12,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {marketTrendData.map((item, index) => (
-              <div key={item.name} className="flex items-center gap-2 text-text-muted">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: pieColors[index % pieColors.length] }}
-                />
-                {item.name} {item.value}%
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-
-      <article className="min-w-0 rounded-2xl border border-white/10 bg-[#0d1322] p-5">
-        <h2 className="text-lg font-semibold text-white">Trade volume by period</h2>
-        <p className="mt-1 text-sm text-text-muted">Bar chart for quick throughput comparison</p>
-        <div className="mt-6 h-80 min-w-0">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <BarChart data={data}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-              <XAxis dataKey="label" stroke="#bcc3d3" />
-              <YAxis stroke="#bcc3d3" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#111827",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                }}
+      {activeTab === "news" ? (
+        <section id="news-panel" role="tabpanel" aria-labelledby="news-tab" className="space-y-6">
+          <div className="rounded-xl border border-border bg-panel p-4">
+            <label htmlFor="news-search" className="sr-only">
+              Search news
+            </label>
+            <div className="flex items-center gap-3">
+              <Search className="h-5 w-5 text-text-muted" aria-hidden="true" />
+              <input
+                id="news-search"
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search news..."
+                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
               />
-              <Bar dataKey="volume" radius={[10, 10, 0, 0]} fill="#0069fe" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </article>
+            </div>
+          </div>
+
+          <FilterGroup
+            label="Regions"
+            allLabel="All Regions"
+            items={regions}
+            value={selectedRegion}
+            onChange={setSelectedRegion}
+          />
+
+          <FilterGroup
+            label="Topics"
+            allLabel="All Topics"
+            items={categories}
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+          />
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-text-tertiary">
+              {filteredArticles.length} {filteredArticles.length === 1 ? "story" : "stories"} matched
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {filteredArticles.length > 0 ? (
+              filteredArticles.map((article) => (
+                <NewsArticleCard key={article.id} article={article} />
+              ))
+            ) : (
+              <EmptyState
+                title="No news articles found matching your filters"
+                description="Try adjusting the region, topic, or search query to broaden the results."
+              />
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "heatmap" ? (
+        <section
+          id="heatmap-panel"
+          role="tabpanel"
+          aria-labelledby="heatmap-tab"
+          className="space-y-4"
+        >
+          <div className="rounded-xl border border-border bg-panel p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-text-primary lg:text-xl">
+                Market Sector Performance
+              </h2>
+              <p className="mt-2 text-sm text-text-muted">
+                Relative 24-hour moves across sectors, sized by intensity for faster scanning.
+              </p>
+            </div>
+
+            {sectors.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {sectors.map((sector) => (
+                  <SectorHeatmapTile key={sector.sector} item={sector} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No sector data available"
+                description="Sector performance tiles will appear here when data is available."
+              />
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-6 rounded-xl border border-border bg-panel p-4 text-sm">
+            <div className="flex items-center gap-2 text-text-muted">
+              <span className="h-4 w-4 rounded bg-[#00af30]" aria-hidden="true" />
+              Positive Performance
+            </div>
+            <div className="flex items-center gap-2 text-text-muted">
+              <span className="h-4 w-4 rounded bg-[#f30000]" aria-hidden="true" />
+              Negative Performance
+            </div>
+            <div className="flex items-center gap-2 text-text-muted">
+              <span className="h-4 w-4 rounded bg-[#5c5769]" aria-hidden="true" />
+              Neutral
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

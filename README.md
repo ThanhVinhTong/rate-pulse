@@ -1,76 +1,106 @@
 # Rate Pulse
 
-A currency exchange rate tracking API built with Go and PostgreSQL.
+## Live Demo
 
-## About
+## Overview and Purpose
 
-Rate Pulse tracks exchange rates from multiple sources across different countries. It stores currency data, rate sources, and exchange rates with support for different rate types (cash and card).
+Rate Pulse is designed to help users move from fragmented market signals to faster, data-driven FX decisions. Instead of checking rates, market headlines, and sector movement across multiple tools, the platform centralizes these inputs into one workflow:
+
+- Real-time exchange-rate monitoring and conversion
+- Curated analytics views (AI insights, news hub, and sector heatmap)
+- User personalization for preferred currencies and rate sources
+- Automated market/news ingestion from multiple web sources (`news-scapper`)
+
+The long-term goal is to provide a cloud-native intelligence layer that combines transactional FX data with contextual market signals, making analysis more actionable for traders, analysts, and finance-focused teams.
+
+## What Is New
+
+The project has evolved from an API-only service into a broader platform:
+
+- Added a modern `client/` web app (Next.js, React, Tailwind)
+- Added analytics UI features (AI insight cards, news feed, sector heatmap)
+- Added deployment automation via GitHub Actions + Docker Hub + Kubernetes manifests (`digitalocean/`)
+- Started a separate scraping pipeline (`news-scapper`) to feed market/news intelligence data
+
+## Architecture
+
+```text
+rate-pulse/
+├── api/                    # Go HTTP handlers and middleware
+├── db/                     # Migrations, sqlc queries, generated data layer
+├── token/                  # Paseto/JWT token logic
+├── util/                   # Config + helper utilities
+├── client/                 # Next.js frontend dashboard
+├── digitalocean/           # Kubernetes manifests (deployment/service/ingress/issuer)
+├── .github/workflows/      # CI/CD pipeline
+├── main.go                 # API entrypoint
+├── docker-compose.yaml     # Local API + Postgres runtime
+└── README.md
+```
 
 ## Tech Stack
 
-- **Go** (Golang) - Backend language
-- **Gin** - HTTP Web Framework
-- **PostgreSQL** - Relational Database
-- **Docker & Docker Compose** - Containerization
-- **sqlc** - Type-safe SQL code generation
-- **golang-migrate** - Database migrations
-- **Paseto / JWT** - Structured tokens for authentication
+### Backend
 
-## Features
+- Go 1.25+
+- Gin
+- PostgreSQL
+- sqlc
+- golang-migrate
+- Paseto / JWT
 
-- **User Management**:
-    - User registration and login.
-    - Token-based authentication (Paseto/JWT).
-    - **User Preferences**:
-        - Manage favorite currencies and rate sources.
-        - Set primary rate sources.
-- **Currency & Country Management**:
-    - CRUD operations for currencies and countries.
-- **Exchange Rate Tracking**:
-    - Record and retrieve exchange rates.
-    - Filter rates by type (Cash/Card).
-- **Rate Sources**:
-    - Manage different sources of exchange rate data (e.g., Banks, APIs).
-- **Middleware**:
-    - Secure routes with Paseto/JWT authentication middleware.
-- **Data Models** (Internal/Roadmap):
-    - Subscriptions and Payments (defined in schema).
+### Frontend
 
-## Project Structure
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Recharts
 
-```
-rate-pulse/
-├── api/                        # HTTP handlers & business logic
-│   ├── server.go               # Server setup and router
-│   ├── user.go                 # User auth & profile handlers
-│   ├── user_currency_preference.go # User currency favorites
-│   ├── user_rate_source_preference.go # User source preferences
-│   ├── middleware.go           # Auth middleware
-│   └── ... (other handlers)
-├── db/
-│   ├── migration/              # SQL migration files
-│   ├── query/                  # SQL queries for sqlc
-│   └── sqlc/                   # Generated Go code for DB interaction
-├── token/                      # Token generators (Paseto/JWT)
-├── util/                       # Configuration & helper functions
-├── Dockerfile                  # API Container definition
-├── docker-compose.yaml         # Multi-container setup
-├── Makefile                    # Development commands
-└── app.env                     # Environment variables
-```
+### DevOps
+
+- Docker / Docker Compose
+- GitHub Actions
+- Kubernetes manifests (DigitalOcean-style deployment setup)
+
+### Data Collection (WIP)
+
+- Python
+- Selenium + Microsoft Edge WebDriver
+- Cronjob
+
+## Core Features
+
+### API and Data Model
+
+- User registration and login
+- Token-protected routes
+- Currency, country, and rate-source management
+- Exchange-rate tracking and filtering by type
+- User currency/source preference management
+
+### Frontend Dashboard
+
+- Exchange rate dashboard and converter UI
+- Analytics page with:
+  - AI Insights cards
+  - News Hub (region/category filters + search)
+  - Sector heatmap tiles
+- Auth and protected route layouts for profile/settings/admin pages
 
 ## Getting Started
+
+## 1) Backend API
 
 ### Prerequisites
 
 - [Go](https://go.dev/dl/) 1.25+
 - [Docker](https://www.docker.com/products/docker-desktop)
-- [Make](https://www.gnu.org/software/make/)
-- [golang-migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate) (optional, if running locally without Docker)
+- [Make](https://www.gnu.org/software/make/) (optional but recommended)
 
-### Environment Variables
+### Environment setup
 
-Create an `app.env` file in the root directory:
+Create `app.env` in the project root:
 
 ```env
 DB_DRIVER=postgres
@@ -80,207 +110,184 @@ TOKEN_SYMMETRIC_KEY=12345678901234567890123456789012
 ACCESS_TOKEN_DURATION=15m
 ```
 
-### Running with Docker Compose (Recommended)
-
-To start the entire application (Postgres + API):
+### Run with Docker Compose (recommended)
 
 ```bash
 docker-compose up --build
 ```
 
-The API will be available at `http://localhost:8080`.
+API: `http://localhost:8080`
 
-### Running Locally
-
-1.  **Start Postgres**:
-    ```bash
-    make postgres
-    ```
-
-2.  **Create Database**:
-    ```bash
-    make createdb
-    ```
-
-3.  **Run Migrations**:
-    ```bash
-    make migrateup
-    ```
-
-4.  **Start Server**:
-    ```bash
-    make server
-    ```
-
-## CLI Commands (Makefile)
-
-| Command | Description |
-|---------|-------------|
-| `make postgres` | Start PostgreSQL container |
-| `make createdb` | Create database |
-| `make dropdb` | Drop database |
-| `make migrateup` | Run all up migrations |
-| `make migratedown` | Revert all migrations |
-| `make sqlc` | Generate Go code from SQL queries |
-| `make server` | Start the Go server locally |
-| `make test` | Run unit tests |
-
-## API Reference
-
-### Authentication (Public)
-
-- `POST /users` - Register a new user
-- `POST /users/login` - Login and get access token
-
-### User Preferences (Protected)
-
-- **Currencies**:
-    - `POST /currency-preference` - Add a favorite currency
-    - `GET /currency-preferences` - List all favorite currencies
-    - `GET /currency-preference-userid` - Get preferences by User ID
-    - `GET /currency-preference-currid/:currency_id` - Get preferences by Currency ID
-    - `PUT /currency-preference/:currency_id` - Update preference
-    - `DELETE /currency-preference/:currency_id` - Remove a favorite currency
-
-- **Rate Sources**:
-    - `POST /rate-source-preferences` - Add a preferred rate source
-    - `GET /rate-source-preferences` - List all rate source preferences
-    - `GET /rate-source-preferences-userid` - Get preferences by User ID
-    - `GET /rate-source-preferences-sourceid` - Get preferences by Source ID
-    - `PUT /rate-source-preferences/:source_id` - Update preference
-    - `DELETE /rate-source-preferences/:source_id` - Remove a preferred source
-
-### Core Resources (Protected)
-
-- **Users**:
-    - `GET /users/:id` - Get user profile
-    - `GET /users` - List users
-    - `PUT /users/:id` - Update user
-    - `DELETE /users/:id` - Delete user
-
-- **Currencies**:
-    - `POST /currencies` - Create currency
-    - `GET /currencies/:id` - Get currency details
-    - `GET /currencies` - List currencies
-
-- **Countries**:
-    - `POST /countries` - Create country
-    - `GET /countries/:id` - Get country details
-    - `GET /countries` - List countries
-
-- **Rate Sources**:
-    - `POST /rate-sources` - Create rate source
-    - `GET /rate-sources/:id` - Get rate source details
-    - `GET /rate-sources` - List rate sources
-
-- **Exchange Rates**:
-    - `POST /exchange-rates` - Record an exchange rate
-    - `GET /exchange-rates/:id` - Get exchange rate details
-    - `GET /exchange-rates` - List exchange rates
-    - `GET /exchange-rates/type` - Filter rates by type (Credit/Cash)
-
-## API Examples
-
-### Create User
+### Run locally with Make
 
 ```bash
-curl -X POST http://localhost:8080/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "john",
-    "email": "john@example.com",
-    "password": "password123",
-    "user_type": "free",
-    "email_verified": false,
-    "is_active": true
-  }'
+make postgres
+make createdb
+make migrateup
+make server
 ```
 
-### Login User
+`make migrateup` currently uses the migration database URL configured in `Makefile`. Update it first if you want migrations to run against your local Postgres instance.
+
+## 2) Frontend App
+
+In a new terminal:
 
 ```bash
-curl -X POST http://localhost:8080/users/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "john",
-    "password": "password123"
-  }'
+cd client
+npm install
+npm run dev
 ```
 
-### Create Currency
+Frontend: `http://localhost:3000`
+
+## API Overview
+
+### Public
+
+- `POST /users`
+- `POST /users/login`
+
+### Protected resources
+
+- Users: `GET/PUT/DELETE /users/:id`, `GET /users`
+- Currencies: `POST /currencies`, `GET /currencies/:id`, `GET /currencies`
+- Countries: `POST /countries`, `GET /countries/:id`, `GET /countries`
+- Rate Sources: `POST /rate-sources`, `GET /rate-sources/:id`, `GET /rate-sources`
+- Exchange Rates: `POST /exchange-rates`, `GET /exchange-rates/:id`, `GET /exchange-rates`, `GET /exchange-rates/type`
+- Currency Preferences: `POST /currency-preference`, `GET /currency-preferences`, `PUT/DELETE /currency-preference/:currency_id`
+- Rate Source Preferences: `POST /rate-source-preferences`, `GET /rate-source-preferences`, `PUT/DELETE /rate-source-preferences/:source_id`
+
+## CI/CD and Deployment
+
+Current pipeline (`.github/workflows/deploy.yml`) includes:
+
+- Build and push image to Docker Hub: `vinhtongthanh57/rate-pulse`
+- Tag strategy:
+  - Commit SHA (`${{ github.sha }}`)
+  - `latest`
+- Deploy Kubernetes manifests from `digitalocean/` to the target droplet/cluster
+
+## `news-scapper` (WIP)
+
+A Selenium-based multi-source news and market scraper project that is being built alongside Rate Pulse.
+
+### Scope
+
+Implemented / current sources:
+
+- World Monitor
+- Yahoo Finance
+- Gold/Oil price website
+
+Collected data includes:
+
+- AI Insights
+- Intel Feed
+- Regional news sections
+- Topic-based sections (energy, government, think tanks)
+
+### Planned scraper structure
+
+```text
+news-scapper/
+├── main.py
+├── README.md
+├── requirements.txt
+├── scripts/
+│   ├── scrapper.py
+│   ├── wms.py
+│   ├── yahoo_finance_scraper.py
+│   └── gold_oil_price_scraper.py
+└── utils/
+    ├── constants.py
+    ├── dates.py
+    ├── folders.py
+    └── sessions.py
+```
+
+### World Monitor sections currently implemented
+
+- `ai_insights`
+- `intel_feed`
+- `world_news`
+- `united_states`
+- `europe`
+- `middle_east`
+- `africa`
+- `latin_america`
+- `asia_pacific`
+- `energy_and_resources`
+- `government`
+- `think_tanks`
+
+Additional section IDs already exist for expansion:
+
+- `economic_indicators`
+- `trade_policy`
+- `supply_chain`
+- `financial`
+- `technology`
+- `crypto`
+- `ai_ml`
+
+### Scraper flow
+
+1. Read config from `utils/constants.py`
+2. Create output folder for current day
+3. Start Microsoft Edge Selenium session
+4. Open World Monitor
+5. Scrape selected sections
+6. Return nested Python dictionary output
+
+### Scraper requirements
+
+- Python 3.10+
+- Microsoft Edge
+- Matching Edge WebDriver
+- `selenium`
+
+Install:
 
 ```bash
-curl -X POST http://localhost:8080/currencies \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "currency_code": "USD",
-    "currency_name": "US Dollar",
-    "currency_symbol": "$"
-  }'
+pip install -r requirements.txt
 ```
 
-### Create Rate Source
+Run:
 
 ```bash
-curl -X POST http://localhost:8080/rate-sources \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "source_name": "Vietcombank",
-    "source_link": "https://vietcombank.com.vn",
-    "source_country": "Vietnam",
-    "source_status": "active"
-  }'
+python main.py
 ```
 
-### Create Exchange Rate
+### Example output shape
 
-```bash
-curl -X POST http://localhost:8080/exchange-rates \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "rate_value": "25415.50",
-    "source_currency_id": 1,
-    "destination_currency_id": 2,
-    "valid_from_date": "2025-01-01T00:00:00Z",
-    "source_id": 1,
-    "type": 1
-  }'
+```python
+{
+    "ai_insights": {
+        "world_brief": "...",
+        "geo_insights": [...],
+        "break_news": [...]
+    },
+    "intel_feed": {
+        "Headline": {
+            "href": "https://example.com",
+            "time": "5 hours ago"
+        }
+    }
+}
 ```
 
-### Create Country
+## Notes and Roadmap
 
-```bash
-curl -X POST http://localhost:8080/countries \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "country_name": "Vietnam",
-    "currency_id": 1
-  }'
-```
-
-### List with Pagination
-
-All list endpoints support pagination:
-
-```bash
-curl "http://localhost:8080/users?page_id=1&page_size=5" \
-  -H "Authorization: Bearer <access_token>"
-
-curl "http://localhost:8080/currencies?page_id=1&page_size=10" \
-  -H "Authorization: Bearer <access_token>"
-
-curl "http://localhost:8080/exchange-rates?page_id=1&page_size=5" \
-  -H "Authorization: Bearer <access_token>"
-```
-
-Query parameters:
-- page_id: Page number (starts from 1)
-- page_size: Items per page (min 5, max 10)
+- The scraper currently uses Edge headless mode
+- Browser log noise is reduced in scraper session setup
+- CSV/SQLite export is in progress
+- Near-term goals:
+  - Normalize output schema
+  - Add CSV export
+  - Add SQLite local storage and CRUD
+  - Expand market and economic coverage
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).

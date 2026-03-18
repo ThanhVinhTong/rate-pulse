@@ -2,34 +2,26 @@ import type { Metadata } from "next";
 
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import {
-  analyticsData,
-  marketTrendData,
-  timeRanges,
-} from "@/lib/mock-data";
-import type { TimeRange } from "@/types";
+  AI_INSIGHTS,
+  NEWS_ARTICLES,
+  NEWS_CATEGORIES,
+  NEWS_REGIONS,
+  SECTOR_HEATMAP,
+} from "@/data/newsData";
 
 export const metadata: Metadata = {
-  title: "Analytics",
-  description: "Portfolio performance, trade volume, and market trend analytics.",
+  title: "News & Analytics",
+  description: "Real-time market news, AI-powered insights, and sector intelligence.",
 };
 
-function normalizeRange(range?: string): TimeRange {
-  return timeRanges.includes(range as TimeRange) ? (range as TimeRange) : "48h";
-}
-
-export default async function AnalyticsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ range?: string }>;
-}) {
-  const params = await searchParams;
-  const range = normalizeRange(params.range);
-
+export default function AnalyticsPage() {
   return (
     <AnalyticsDashboard
-      range={range}
-      data={analyticsData[range]}
-      marketTrendData={marketTrendData}
+      insights={AI_INSIGHTS}
+      articles={NEWS_ARTICLES}
+      sectors={SECTOR_HEATMAP}
+      regions={NEWS_REGIONS}
+      categories={NEWS_CATEGORIES}
     />
   );
 }
