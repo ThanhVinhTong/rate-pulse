@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: rate_pulse
   api:
-    image: vinhtongthanh57/rate-pulse:${IMAGE_TAG:-latest}
+    image: vinhtongthanh57/rate-pulse-api:${IMAGE_TAG:-latest}
     ports:
       - "8080:8080"
     environment:

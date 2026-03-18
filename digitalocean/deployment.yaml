@@ -16,11 +16,9 @@ spec:
     spec:
       containers:
       - name: rate-pulse-api  
-        image: vinhtongthanh57/rate-pulse:latest
+        image: vinhtongthanh57/rate-pulse-api:latest
         ports:
         - containerPort: 8080
         envFrom:
         - secretRef:
             name: rate-pulse-secrets
-        - configMapRef:
-            name: app-env

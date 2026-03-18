@@ -3,6 +3,10 @@ name: Deploy to production
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'rate-pulse-api/**'
+      - 'digitalocean/**'
+      - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
 jobs:
@@ -11,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE_NAME: vinhtongthanh57/rate-pulse
+      IMAGE_NAME: vinhtongthanh57/rate-pulse-api
       IMAGE_TAG: ${{ github.sha }}
 
     steps:
@@ -26,7 +30,7 @@ jobs:
 
       - name: Build & push Docker image
         run: |
-          docker build -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest .
+          docker build -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest ./rate-pulse-api
           docker push $IMAGE_NAME:$IMAGE_TAG
           docker push $IMAGE_NAME:latest
 
@@ -47,7 +51,7 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           source: "digitalocean/*"
-          target: "~/rate-pulse"
+          target: "~/rate-pulse-api"
 
       - name: SSH → Apply Secrets & Deploy
         uses: appleboy/ssh-action@master
@@ -58,10 +62,7 @@ jobs:
           password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            cd ~/rate-pulse
-            kubectl create configmap app-config \
-            --from-literal=SERVER_ADDRESS=0.0.0.0:8080 \
-            --from-literal=ACCESS_TOKEN_DURATION=15m
+            cd ~/rate-pulse-api
             
             # 1. Create/Update the Kubernetes Secret
             kubectl create secret generic rate-pulse-secrets \
@@ -71,22 +72,17 @@ jobs:
               --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
               --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
               --dry-run=client -o yaml | kubectl apply -f -
-
-            # 2. Create the physical app.env file on the Droplet
-            # This satisfies the Go app's requirement for a config file.
-            cat <<'EOF' > /root/rate-pulse/app.env
-            DB_DRIVER=${{ secrets.DB_DRIVER }}
-            DB_SOURCE=${{ secrets.DB_SOURCE }}
-            SERVER_ADDRESS=${{ secrets.SERVER_ADDRESS }}
-            TOKEN_SYMMETRIC_KEY=${{ secrets.TOKEN_SYMMETRIC_KEY }}
-            ACCESS_TOKEN_DURATION=${{ secrets.ACCESS_TOKEN_DURATION }}
-            EOF
-            chmod 644 /root/rate-pulse/app.env
-            kubectl create configmap app-env --from-env-file=app.env
             
-            # 3. Apply your deployment (Make sure the deployment mounts this file!)
+            # 2. Apply deployment manifests
             kubectl apply -f digitalocean/deployment.yaml
             kubectl apply -f digitalocean/service.yaml
             kubectl apply -f digitalocean/issuer.yaml
             kubectl apply -f digitalocean/ingress.yaml
+              
+            # 3. Restart deployment and wait for it to be ready
             kubectl rollout restart deployment/rate-pulse-api-deployment
+            kubectl rollout status deployment/rate-pulse-api-deployment --timeout=180s
+
+            # 4. Delete configmap and app.env file
+            kubectl delete configmap app-env --ignore-not-found=true
+            rm -f ~/rate-pulse-api/app.env

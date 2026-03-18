@@ -1,0 +1,17 @@
+name: Deploy Client to production
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'client/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: vinhtongthanh57/rate-pulse-client
+      IMAGE_TAG: ${{ github.sha }}

@@ -67,7 +67,7 @@ rate-pulse/
 
 - Python
 - Selenium + Microsoft Edge WebDriver
-- Cronjob (planned)
+- Cronjob
 
 ## Core Features
 

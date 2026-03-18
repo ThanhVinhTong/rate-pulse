@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-surface: #242e44;
+  --color-card: #ffffff;
+  --color-panel: #1a2235;
+  --color-border: #5c5769;
+  --color-primary: #0069fe;
+  --color-accent: #00d3e5;
+  --color-text-primary: #ffffff;
+  --color-text-muted: #bcc3d3;
+  --color-text-tertiary: #8f98ad;
+  --color-text-inverse: #242e44;
+  --color-danger: #f30000;
+  --color-warning: #ffcc00;
+  --color-success: #00af30;
+}
+
+.light {
+  --color-surface: #f5f8ff;
+  --color-card: #ffffff;
+  --color-panel: #ffffff;
+  --color-border: #d6dceb;
+  --color-primary: #0069fe;
+  --color-accent: #00d3e5;
+  --color-text-primary: #242e44;
+  --color-text-muted: #5c5769;
+  --color-text-tertiary: #7d7a88;
+  --color-text-inverse: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(0, 105, 254, 0.18), transparent 22%),
+    linear-gradient(180deg, rgba(36, 46, 68, 1) 0%, rgba(15, 21, 34, 1) 100%);
+}
+
+.light body {
+  background:
+    radial-gradient(circle at top, rgba(0, 105, 254, 0.08), transparent 24%),
+    linear-gradient(180deg, #f7faff 0%, #eaf0fb 100%);
+}
+
+* {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+::selection {
+  background: rgba(0, 211, 229, 0.32);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight;
+  }
+
+  a,
+  button,
+  input,
+  textarea,
+  select {
+    @apply outline-none;
+  }
+}
