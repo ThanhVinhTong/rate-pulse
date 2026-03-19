@@ -1,17 +1,42 @@
-name: Deploy Client to production
+name: Client CI
 
 on:
-  push:
-    branches: [ main ]
+  pull_request:
+    branches: [main]
     paths:
-      - 'client/**'
+      - "client/**"
+      - ".github/workflows/deploy-client.yml"
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - ".github/workflows/deploy-client.yml"
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build & Push Image
+  ci:
+    name: Lint and Build Client
     runs-on: ubuntu-latest
 
-    env:
-      IMAGE_NAME: vinhtongthanh57/rate-pulse-client
-      IMAGE_TAG: ${{ github.sha }}
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
