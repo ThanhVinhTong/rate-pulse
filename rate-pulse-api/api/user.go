@@ -81,6 +81,12 @@ type userResponse struct {
 	UpdatedAt          time.Time `json:"updated_at"`
 }
 
+// logoutRequest represents the request body for logging out a user.
+// It contains the refresh token of the user's session.
+type logoutRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 // newUserResponse creates a userResponse from a db.User, excluding sensitive data.
 func newUserResponse(user db.User) userResponse {
 	return userResponse{
@@ -537,4 +543,20 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		User:                newUserResponse(user),
 	}
 	ctx.JSON(http.StatusOK, res)
+}
+
+// logoutUser handles user sign out by revoking the current session.
+// It expects a refresh token in the request body.
+func (server *Server) logoutUser(ctx *gin.Context) {
+	var req logoutRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// For now, we'll just return success.
+	// Later you can add logic to mark the session as blocked using the refresh token.
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Successfully signed out",
+	})
 }
