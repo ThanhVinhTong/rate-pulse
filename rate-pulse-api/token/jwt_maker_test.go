@@ -18,17 +18,20 @@ func TestJWTMaker(t *testing.T) {
 	}
 
 	username := string(make([]byte, MAX_LENGTH))
+	email := string(make([]byte, MAX_LENGTH))
+	userID := int32(1)
 	duration := time.Minute
 
 	issued_at := time.Now()
 	expired_at := issued_at.Add(duration)
 
-	token, err := maker.CreateToken(username, "user_type", duration)
+	token, payload, err := maker.CreateToken(userID, username, email, "user_type", duration)
 	fmt.Println(token)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
+	require.NotEmpty(t, payload)
 
-	payload, err := maker.VerifyToken(token)
+	payload, err = maker.VerifyToken(token)
 	fmt.Println(payload)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
@@ -46,13 +49,16 @@ func TestExpiredToken(t *testing.T) {
 	}
 
 	username := string(make([]byte, MAX_LENGTH))
+	email := string(make([]byte, MAX_LENGTH))
+	userID := int32(1)
 	duration := -time.Minute
 
-	token, err := maker.CreateToken(username, "user_type", duration)
+	token, payload, err := maker.CreateToken(userID, username, email, "user_type", duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
+	require.NotEmpty(t, payload)
 
-	payload, err := maker.VerifyToken(token)
+	payload, err = maker.VerifyToken(token)
 	require.Error(t, err)
 	require.EqualError(t, err, ErrExpiredToken.Error())
 	require.Nil(t, payload)
@@ -60,7 +66,12 @@ func TestExpiredToken(t *testing.T) {
 
 // to test for attacks like tampering with the token
 func TestInvalidToken(t *testing.T) {
-	payload, err := NewPayload(string(make([]byte, MAX_LENGTH)), "user_type", time.Minute)
+	userID := int32(1)
+	username := string(make([]byte, MAX_LENGTH))
+	email := string(make([]byte, MAX_LENGTH))
+	duration := time.Minute
+
+	payload, err := NewPayload(userID, username, email, "user_type", duration)
 	require.NoError(t, err)
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodNone, payload)

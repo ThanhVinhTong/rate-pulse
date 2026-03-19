@@ -3,13 +3,54 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
+
+// normalizeEmail normalizes an email for consistent uniqueness checking.
+// - Always lowercases and trims whitespace
+// - Applies Gmail-specific rules (dots and +aliases are ignored)
+// - For other providers, only does basic normalization
+func normalizeEmail(email string) string {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return ""
+	}
+
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) != 2 {
+		return email
+	}
+
+	local, domain := parts[0], parts[1]
+
+	switch domain {
+	case "gmail.com", "googlemail.com":
+		// Gmail ignores dots and everything after +
+		local = strings.ReplaceAll(local, ".", "")
+		if idx := strings.Index(local, "+"); idx != -1 {
+			local = local[:idx]
+		}
+		return local + "@gmail.com"
+
+	case "outlook.com", "hotmail.com", "live.com":
+		// Outlook treats dots as significant, but supports +alias
+		if idx := strings.Index(local, "+"); idx != -1 {
+			local = local[:idx]
+		}
+		return local + "@" + domain
+
+	default:
+		// For Yahoo and all other providers, only trim + lowercase
+		return email
+	}
+}
 
 // createUserRequest represents the request body for creating a new user.
 // It contains all the required and optional fields for user registration.
@@ -74,6 +115,15 @@ func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Normalize the email address
+	req.Email = normalizeEmail(req.Email)
+
+	// Check if the password is weak or not
+	if err := util.ValidatePassword(req.Password); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -377,13 +427,17 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 
 // Authentication
 type loginUserRequest struct {
-	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
 type loginUserResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        userResponse `json:"user"`
+	SessionID           uuid.UUID    `json:"session_id"`
+	AccessToken         string       `json:"access_token"`
+	AccessTokenPayload  time.Time    `json:"access_token_expires_at"`
+	RefreshToken        string       `json:"refresh_token"`
+	RefreshTokenPayload time.Time    `json:"refresh_token_expires_at"`
+	User                userResponse `json:"user"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -393,24 +447,53 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserByUsername(ctx, req.Username)
+	const invalidCredentialsMsg = "invalid email or password"
+
+	/// Early validation to prevent hitting database on bad input
+	if req.Email == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "email is required"})
+		return
+	}
+	if len(req.Email) > 254 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "email is too long"})
+		return
+	}
+	if req.Password == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "password is required"})
+		return
+	}
+
+	// Normalize the email address
+	req.Email = normalizeEmail(req.Email)
+
+	user, err := server.store.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": invalidCredentialsMsg})
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	err = util.CheckPassword(req.Password, user.Password)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+	if err := util.CheckPassword(req.Password, user.Password); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": invalidCredentialsMsg})
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(
+	// Check if the user is email verified
+	// TODO: Implement this check after finishing email verification
+
+	// Check if the user is active
+	if user.IsActive.Valid && !user.IsActive.Bool {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": invalidCredentialsMsg})
+		return
+	}
+
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
+		user.UserID,
 		user.Username,
+		user.Email,
 		user.UserType.String,
 		server.config.AccessTokenDuration,
 	)
@@ -419,9 +502,39 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
+		user.UserID,
+		user.Username,
+		user.Email,
+		user.UserType.String,
+		server.config.RefreshTokenDuration,
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		SessionID:    refreshPayload.ID,
+		UserID:       user.UserID,
+		RefreshToken: refreshToken,
+		UserAgent:    ctx.Request.UserAgent(),
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    sql.NullBool{Bool: false, Valid: true},
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	res := loginUserResponse{
-		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		SessionID:           session.SessionID,
+		AccessToken:         accessToken,
+		AccessTokenPayload:  accessPayload.ExpiredAt,
+		RefreshToken:        refreshToken,
+		RefreshTokenPayload: refreshPayload.ExpiredAt,
+		User:                newUserResponse(user),
 	}
 	ctx.JSON(http.StatusOK, res)
 }

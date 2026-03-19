@@ -38,8 +38,8 @@ func (server *Server) setupRouter() {
 	router := gin.Default()
 
 	// Public routes (no authentication required)
-	router.POST("/users", server.createUser)
-	router.POST("/users/login", server.loginUser)
+	router.POST("/users/signup", server.createUser)
+	router.POST("/users/signin", server.loginUser)
 
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})

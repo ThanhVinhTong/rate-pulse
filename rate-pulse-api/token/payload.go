@@ -2,6 +2,7 @@ package token
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,14 +18,16 @@ var (
 // Implements jwt.Claims interface for golang-jwt/jwt/v5
 type Payload struct {
 	ID        uuid.UUID `json:"id"`
-	Username  string    `json:"username"`
+	UserID    int32     `json:"user_id"`  // primary identity
+	Username  string    `json:"username"` // display only
+	Email     string    `json:"email"`    // optional display
 	UserType  string    `json:"user_type"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiredAt time.Time `json:"expired_at"`
 }
 
 // NewPayload creates a new payload for a given username, userType and duration.
-func NewPayload(username string, userType string, duration time.Duration) (*Payload, error) {
+func NewPayload(userID int32, username, email, userType string, duration time.Duration) (*Payload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -32,6 +35,8 @@ func NewPayload(username string, userType string, duration time.Duration) (*Payl
 
 	payload := &Payload{
 		ID:        tokenID,
+		UserID:    userID,
+		Email:     email,
 		Username:  username,
 		UserType:  userType,
 		IssuedAt:  time.Now(),
@@ -71,7 +76,7 @@ func (payload *Payload) GetIssuer() (string, error) {
 
 // GetSubject implements jwt.Claims interface
 func (payload *Payload) GetSubject() (string, error) {
-	return payload.Username, nil
+	return fmt.Sprintf("%d", payload.UserID), nil // better to use stable ID
 }
 
 // GetAudience implements jwt.Claims interface
