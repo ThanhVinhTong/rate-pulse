@@ -7,6 +7,8 @@ package db
 import (
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Country struct {
@@ -61,6 +63,18 @@ type RateSource struct {
 	SourceStatus  sql.NullString
 	UpdatedAt     sql.NullTime
 	CreatedAt     sql.NullTime
+}
+
+type Session struct {
+	SessionID    uuid.UUID
+	UserID       int32
+	RefreshToken string
+	UserAgent    string
+	ClientIp     string
+	IsBlocked    sql.NullBool
+	ExpiresAt    time.Time
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
 }
 
 type SubscriptionPlan struct {

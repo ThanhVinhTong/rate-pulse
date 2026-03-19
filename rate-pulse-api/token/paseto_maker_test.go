@@ -18,17 +18,20 @@ func TestPasetoMaker(t *testing.T) {
 	}
 
 	username := string(make([]byte, SYMMETRIC_KEY_LENGTH))
+	email := string(make([]byte, SYMMETRIC_KEY_LENGTH))
+	userID := int32(1)
 	duration := time.Minute
 
 	issued_at := time.Now()
 	expired_at := issued_at.Add(duration)
 
-	token, err := maker.CreateToken(username, "user_type", duration)
+	token, payload, err := maker.CreateToken(userID, username, email, "user_type", duration)
 	fmt.Println(token)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
+	require.NotEmpty(t, payload)
 
-	payload, err := maker.VerifyToken(token)
+	payload, err = maker.VerifyToken(token)
 	fmt.Println(payload)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
@@ -44,13 +47,16 @@ func TestExpiredPasetoToken(t *testing.T) {
 	require.NoError(t, err)
 
 	username := string(make([]byte, SYMMETRIC_KEY_LENGTH))
+	email := string(make([]byte, SYMMETRIC_KEY_LENGTH))
 	duration := -time.Minute
+	userID := int32(1)
 
-	token, err := maker.CreateToken(username, "user_type", duration)
+	token, payload, err := maker.CreateToken(userID, username, email, "user_type", duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
+	require.NotEmpty(t, payload)
 
-	payload, err := maker.VerifyToken(token)
+	payload, err = maker.VerifyToken(token)
 	require.Error(t, err)
 	require.EqualError(t, err, ErrExpiredToken.Error())
 	require.Nil(t, payload)
@@ -58,7 +64,12 @@ func TestExpiredPasetoToken(t *testing.T) {
 
 // to test for attacks like tampering with the token
 func TestInvalidPasetoToken(t *testing.T) {
-	payload, err := NewPayload(string(make([]byte, SYMMETRIC_KEY_LENGTH)), "user_type", time.Minute)
+	userID := int32(1)
+	username := string(make([]byte, SYMMETRIC_KEY_LENGTH))
+	email := string(make([]byte, SYMMETRIC_KEY_LENGTH))
+	duration := time.Minute
+
+	payload, err := NewPayload(userID, username, email, "user_type", duration)
 	require.NoError(t, err)
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodNone, payload)

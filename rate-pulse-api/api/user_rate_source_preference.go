@@ -52,7 +52,7 @@ func (server *Server) createRateSourcePreference(ctx *gin.Context) {
 	}
 
 	// Get user from database using username from token
-	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	user, err := server.store.GetUserByID(ctx, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
@@ -125,7 +125,7 @@ func (server *Server) deleteRateSourcePreference(ctx *gin.Context) {
 	}
 
 	// Get user from database using username from token
-	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	user, err := server.store.GetUserByID(ctx, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
@@ -185,7 +185,7 @@ func (server *Server) getRateSourcePreferencesBySourceID(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	// Get user from database using username from token
-	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	user, err := server.store.GetUserByID(ctx, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
@@ -242,7 +242,7 @@ func (server *Server) getRateSourcePreferencesByUserID(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	// Get user from database using username from token
-	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	user, err := server.store.GetUserByID(ctx, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))
@@ -314,7 +314,7 @@ func (server *Server) updateRateSourcePreference(ctx *gin.Context) {
 	}
 
 	// Get user from database using username from token
-	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	user, err := server.store.GetUserByID(ctx, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("user not found")))

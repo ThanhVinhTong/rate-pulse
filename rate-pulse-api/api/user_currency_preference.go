@@ -408,7 +408,7 @@ func (server *Server) updateCurrencyPreference(ctx *gin.Context) {
 // Helper functions
 func (server *Server) getAuthenticatedUser(ctx *gin.Context) (*db.User, error) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	user, err := server.store.GetUserByUsername(ctx, authPayload.Username)
+	user, err := server.store.GetUserByID(ctx, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("user not found")
