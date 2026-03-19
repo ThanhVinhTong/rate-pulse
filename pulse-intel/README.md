@@ -1,4 +1,4 @@
-# news-scapper
+# Pulse-Intel
 
 A Selenium-based multi-source news and market scraper project.
 
@@ -100,6 +100,7 @@ The current flow is:
 4. Open World Monitor
 5. Scrape selected sections
 6. Return the scraped result as a nested Python dictionary
+7. Export a normalized Excel workbook to the daily output folder
 
 ## Requirements
 
@@ -107,6 +108,7 @@ The current flow is:
 - Microsoft Edge installed
 - Matching Microsoft Edge WebDriver
 - `selenium`
+- `openpyxl`
 
 Install dependencies:
 
@@ -145,7 +147,14 @@ python main.py
 
 ## Output
 
-The current script prints the scraped result to the console as a nested dictionary.
+The current script exports an Excel workbook to `output_news/<YYYYMMDD>/` with:
+
+- `overview` summary sheet
+- `geo_insights` and `breaking_news` sheets
+- `feeds_all` sheet across all sections
+- one sheet per section (`intel_feed`, `world_news`, etc.)
+
+The nested dictionary shape is still used internally and includes keys like:
 
 Typical top-level output keys include:
 
@@ -184,7 +193,7 @@ Example shape:
 
 - The current implementation uses Selenium with Edge in headless mode.
 - Browser log noise is reduced in `utils/sessions.py`.
-- Output export to CSV or SQLite is not fully integrated yet.
+- Excel export is integrated through `utils/excel_export.py`.
 - The project uses a multi-source scraping approach, not just one website.
 
 ## Roadmap
