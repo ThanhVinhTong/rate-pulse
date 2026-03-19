@@ -1,4 +1,4 @@
-name: Deploy to production
+name: Deploy API to production
 
 on:
   push:
@@ -6,7 +6,11 @@ on:
     paths:
       - 'rate-pulse-api/**'
       - 'digitalocean/**'
-      - '.github/workflows/deploy-api.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'rate-pulse-api/**'
+      - 'digitalocean/**'
   workflow_dispatch:
 
 jobs:
@@ -71,6 +75,7 @@ jobs:
               --from-literal=SERVER_ADDRESS='${{ secrets.SERVER_ADDRESS }}' \
               --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
               --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
+              --from-literal=REFRESH_TOKEN_DURATION='${{ secrets.REFRESH_TOKEN_DURATION }}' \
               --dry-run=client -o yaml | kubectl apply -f -
             
             # 2. Apply deployment manifests
