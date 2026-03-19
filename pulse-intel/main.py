@@ -1,14 +1,12 @@
-import os
-
-from utils.folders import init_root_folder, init_subfolder
+from utils.folders import init_root_folder
 from utils.sessions import start_driver
 from utils.constants import get_output_folder, get_website, get_wms_ids, get_webdriver_path
-from utils.dates import handle_publish_date
+from utils.excel_export import export_news_to_excel
 
 from scripts.wms import WMS
 
 if __name__ == "__main__":
-	# Link info
+    # Link info
     website = get_website()
     output_folder = get_output_folder()
     webdriver_path = get_webdriver_path()
@@ -20,4 +18,5 @@ if __name__ == "__main__":
     wms = WMS(driver, website)
     ids = get_wms_ids()
     news_data = wms.scrape_news(ids)
-    print(news_data)
+    excel_path = export_news_to_excel(news_data, root)
+    print(f"Excel report saved: {excel_path}")

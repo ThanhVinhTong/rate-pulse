@@ -3,9 +3,9 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-from scripts.scrapper import Scrapper
+from scripts.scrapper import Scraper
 
-class WMS(Scrapper):
+class WMS(Scraper):
     def __init__(self, driver: webdriver.Edge, website: str) -> None:
         super().__init__(driver)
         self.website = website
@@ -40,21 +40,6 @@ class WMS(Scrapper):
         
         return insights
 
-    def get_intel_feed(self, id: str) -> dict[str, dict[str, str]]:
-        contents = self.driver.find_element(By.ID, id)
-        intel_feed = {}
-
-        infos = contents.find_elements(By.CLASS_NAME, "item-title")
-        times = contents.find_elements(By.CLASS_NAME, "item-time")
-        for info, time in zip(infos, times):
-            intel, href = info.text, info.get_attribute("href")
-            intel_feed[intel] = {
-                "href": href,
-                "time": time.text
-            }
-            
-        return intel_feed
-
     def get_section_news(self, id: str) -> dict[str, dict[str, str]]:
         contents = self.driver.find_element(By.ID, id)
         continent_news = {}
@@ -69,6 +54,33 @@ class WMS(Scrapper):
             
         return continent_news
 
+    def get_feed_news(self, id: str) -> dict[str, dict[str, str]]:
+        contents = self.driver.find_element(By.ID, id)
+        financial_news = {}
+        read = set()
+
+        alert_cards = contents.find_elements(By.CLASS_NAME, "item.alert")
+        for card in alert_cards:
+            source = card.find_element(By.CLASS_NAME, "item-source").text
+            title = card.find_element(By.CLASS_NAME, "item-title").text
+            href = card.find_element(By.CLASS_NAME, "item-title").get_attribute("href")
+            financial_news[title] = {
+                "source": source,
+                "href": href,
+            }
+            read.add(title)
+        normal_cards = contents.find_elements(By.CLASS_NAME, "item")
+        for card in normal_cards:
+            title = card.find_element(By.CLASS_NAME, "item-title").text
+            if title in read:
+                continue
+            source = card.find_element(By.CLASS_NAME, "item-source").text
+            href = card.find_element(By.CLASS_NAME, "item-title").get_attribute("href")
+            financial_news[title] = { "source": source, "href": href }
+            read.add(title)
+            
+        return financial_news
+
     def scrape_news(self, ids: dict[str, str]) -> dict[str, dict]:
         self.driver.get(self.website)
         print(f"Website loaded successfully {self.website}")
@@ -80,7 +92,7 @@ class WMS(Scrapper):
         self.news_data["ai_insights"] = self.get_ai_insights(ids["ai_insights"])
 
         # Fetch intel feed
-        self.news_data["intel_feed"] = self.get_intel_feed(ids["intel_feed"])
+        self.news_data["intel_feed"] = self.get_feed_news(ids["intel_feed"])
         
         # Fetch continent news
         self.news_data["world_news"] = self.get_section_news(ids["world_news"])
@@ -94,6 +106,8 @@ class WMS(Scrapper):
         self.news_data["government"] = self.get_section_news(ids["government"])
         self.news_data["think_tanks"] = self.get_section_news(ids["think_tanks"])
 
+        # Fetch financial news
+        self.news_data["financial"] = self.get_feed_news(ids["financial"])
 
         print("Quitting driver")
         self.driver.quit()
