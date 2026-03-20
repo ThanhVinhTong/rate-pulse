@@ -1,9 +1,14 @@
-export type SessionRole = "admin" | "trader";
+export type SessionRole = "free" | "premium" | "enterprise" | "admin";
 
 export interface AuthSession {
   email: string;
   name: string;
   role: SessionRole;
+  sessionId?: string;
+  accessToken?: string;
+  accessTokenExpiresAt?: string;
+  refreshToken?: string;
+  refreshTokenExpiresAt?: string;
 }
 
 export interface SettingsSection {
