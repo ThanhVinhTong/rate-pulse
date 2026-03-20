@@ -3,8 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { clearSession, createSession, simulateAuth } from "@/lib/auth";
+import { clearSession, createSession, getSession } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
+import type { AuthSession } from "@/types";
+
+const API_BASE_URL = "https://api.rate-pulse.me";
+
+function toSessionRole(userType: string): AuthSession["role"] {
+  switch (userType) {
+    case "admin":
+    case "premium":
+    case "enterprise":
+    case "free":
+      return userType;
+    default:
+      return "free";
+  }
+}
 
 function buildDisplayName(name: FormDataEntryValue | null, fallbackEmail: string) {
   const value = typeof name === "string" ? name.trim() : "";
@@ -19,6 +34,7 @@ function buildDisplayName(name: FormDataEntryValue | null, fallbackEmail: string
 export async function loginAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "").trim();
+  let redirectTo = "/profile";
 
   if (!email || !password) {
     return {
@@ -27,17 +43,57 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     };
   }
 
-  const session = simulateAuth(email, buildDisplayName(formData.get("name"), email));
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/signin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
 
-  await createSession(session);
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: "Login failed" }));
+      return {
+        status: "error",
+        message: error.error || "Login failed. Please check your credentials.",
+      };
+    }
 
-  redirect(session.role === "admin" ? "/admin" : "/profile");
+    const data = await res.json();
+    const user = data.user ?? data;
+    const userType = user.user_type ?? "free";
+
+    const session: AuthSession = {
+      email: user.email,
+      name: user.username,
+      role: toSessionRole(userType),
+      sessionId: data.session_id,
+      accessToken: data.access_token,
+      accessTokenExpiresAt: data.access_token_expires_at,
+      refreshToken: data.refresh_token,
+      refreshTokenExpiresAt: data.refresh_token_expires_at,
+    };
+
+    await createSession(session);
+    redirectTo = session.role === "admin" ? "/admin" : "/profile";
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  redirect(redirectTo);
 }
 
 export async function signupAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "").trim();
   const name = buildDisplayName(formData.get("name"), email);
+  const username = email.includes("@") ? (email.split("@")[0] ?? "") : email;
+  let redirectTo = "/profile";
 
   if (!name || !email || !password) {
     return {
@@ -46,15 +102,87 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
     };
   }
 
-  await createSession({
-    ...simulateAuth(email, name),
-    role: "trader",
-  });
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        email,
+        password,
+      }),
+    });
 
-  redirect("/profile");
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: "Signup failed" }));
+      return {
+        status: "error",
+        message: error.error || "Signup failed. Please try again.",
+      };
+    }
+
+    await res.json();
+
+    // After signup, login the user
+    const loginRes = await fetch(`${API_BASE_URL}/users/signin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    if (!loginRes.ok) {
+      return {
+        status: "error",
+        message: "Account created but login failed. Please try logging in.",
+      };
+    }
+
+    const loginData = await loginRes.json();
+    const loginUser = loginData.user ?? loginData;
+    const loginUserType = loginUser.user_type ?? "free";
+
+    const session: AuthSession = {
+      email: loginUser.email,
+      name: loginUser.username,
+      role: toSessionRole(loginUserType),
+      sessionId: loginData.session_id,
+      accessToken: loginData.access_token,
+      accessTokenExpiresAt: loginData.access_token_expires_at,
+      refreshToken: loginData.refresh_token,
+      refreshTokenExpiresAt: loginData.refresh_token_expires_at,
+    };
+
+    await createSession(session);
+    redirectTo = "/profile";
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  redirect(redirectTo);
 }
 
 export async function logoutAction() {
+  const session = await getSession();
+
+  if (session?.refreshToken) {
+    await fetch(`${API_BASE_URL}/users/signout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        refresh_token: session.refreshToken,
+      }),
+      cache: "no-store",
+    }).catch(() => undefined);
+  }
+
   await clearSession();
   redirect("/");
 }
