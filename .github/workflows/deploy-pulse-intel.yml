@@ -1,11 +1,6 @@
 name: Deploy pulse-intel to production
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "pulse-intel/**"
-      - ".github/workflows/deploy-pulse-intel.yml"
   push:
     branches: [main]
     paths:
