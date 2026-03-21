@@ -57,6 +57,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 
     const session: AuthSession = {
       email: user.email,
+      name: user.username,
       firstName: user.first_name,
       lastName: user.last_name,
       role: toSessionRole(userType),
@@ -140,6 +141,7 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
 
     const session: AuthSession = {
       email: loginUser.email,
+      name: loginUser.username,
       firstName: loginUser.first_name,
       lastName: loginUser.last_name,
       role: toSessionRole(loginUserType),
