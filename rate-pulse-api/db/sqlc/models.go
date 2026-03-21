@@ -103,6 +103,8 @@ type User struct {
 	IsActive           sql.NullBool
 	CreatedAt          sql.NullTime
 	UpdatedAt          sql.NullTime
+	FirstName          sql.NullString
+	LastName           sql.NullString
 }
 
 type UserCurrencyPreference struct {

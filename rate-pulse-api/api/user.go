@@ -62,6 +62,8 @@ type createUserRequest struct {
 	LanguagePreference string `json:"language_preference"`
 	CountryOfResidence string `json:"country_of_residence"`
 	CountryOfBirth     string `json:"country_of_birth"`
+	FirstName          string `json:"first_name" binding:"required"`
+	LastName           string `json:"last_name" binding:"required"`
 }
 
 // userResponse represents the response body for user data.
@@ -76,6 +78,8 @@ type userResponse struct {
 	LanguagePreference string    `json:"language_preference"`
 	CountryOfResidence string    `json:"country_of_residence"`
 	CountryOfBirth     string    `json:"country_of_birth"`
+	FirstName          string    `json:"first_name"`
+	LastName           string    `json:"last_name"`
 	IsActive           bool      `json:"is_active"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
@@ -99,6 +103,8 @@ func newUserResponse(user db.User) userResponse {
 		LanguagePreference: user.LanguagePreference.String,
 		CountryOfResidence: user.CountryOfResidence.String,
 		CountryOfBirth:     user.CountryOfBirth.String,
+		FirstName:          user.FirstName.String,
+		LastName:           user.LastName.String,
 		IsActive:           user.IsActive.Bool,
 		CreatedAt:          user.CreatedAt.Time,
 		UpdatedAt:          user.UpdatedAt.Time,
@@ -151,6 +157,8 @@ func (server *Server) createUser(ctx *gin.Context) {
 		CountryOfResidence: sql.NullString{String: req.CountryOfResidence, Valid: true},
 		CountryOfBirth:     sql.NullString{String: req.CountryOfBirth, Valid: true},
 		IsActive:           sql.NullBool{Bool: true, Valid: true},
+		LastName:           sql.NullString{String: req.LastName, Valid: true},
+		FirstName: 			sql.NullString{String: req.FirstName, Valid: true},
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
@@ -262,6 +270,8 @@ type updateUserRequest struct {
 	LanguagePreference *string `json:"language_preference"`
 	CountryOfResidence *string `json:"country_of_residence"`
 	CountryOfBirth     *string `json:"country_of_birth"`
+	FirstName          *string `json:"first_name"`
+	LastName           *string `json:"last_name"`
 }
 
 type updateUserURIRequest struct {
@@ -280,6 +290,8 @@ type adminUpdateUserRequest struct {
 	LanguagePreference *string `json:"language_preference"`
 	CountryOfResidence *string `json:"country_of_residence"`
 	CountryOfBirth     *string `json:"country_of_birth"`
+	FirstName          *string `json:"first_name"`
+	LastName           *string `json:"last_name"`
 	IsActive           *bool   `json:"is_active"`
 }
 
@@ -326,6 +338,8 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		LanguagePreference: sql.NullString{String: util.Value(req.LanguagePreference), Valid: req.LanguagePreference != nil},
 		CountryOfResidence: sql.NullString{String: util.Value(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
 		CountryOfBirth:     sql.NullString{String: util.Value(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
+		FirstName:          sql.NullString{String: util.Value(req.FirstName), Valid: req.FirstName != nil},
+		LastName:           sql.NullString{String: util.Value(req.LastName), Valid: req.LastName != nil},
 		UserID:             uriReq.ID,
 	}
 
@@ -383,6 +397,8 @@ func (server *Server) adminUpdateUser(ctx *gin.Context) {
 		LanguagePreference: sql.NullString{String: util.Value(req.LanguagePreference), Valid: req.LanguagePreference != nil},
 		CountryOfResidence: sql.NullString{String: util.Value(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
 		CountryOfBirth:     sql.NullString{String: util.Value(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
+		FirstName:          sql.NullString{String: util.Value(req.FirstName), Valid: req.FirstName != nil},
+		LastName:           sql.NullString{String: util.Value(req.LastName), Valid: req.LastName != nil},
 		IsActive:           sql.NullBool{Bool: util.Value(req.IsActive), Valid: req.IsActive != nil},
 		UserID:             uriReq.ID,
 	}
