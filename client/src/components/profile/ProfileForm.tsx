@@ -50,9 +50,9 @@ export function ProfileForm({ session }: ProfileFormProps) {
         <span className="text-sm text-text-muted">Email address</span>
         <div className="relative">
           <input
-            name="email"
             value={maskEmail(session.email)}
             readOnly
+            disabled
             className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-text-muted outline-none cursor-not-allowed select-none"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-text-muted/60">

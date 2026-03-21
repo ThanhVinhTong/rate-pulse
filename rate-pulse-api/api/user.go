@@ -158,7 +158,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		CountryOfBirth:     sql.NullString{String: req.CountryOfBirth, Valid: true},
 		IsActive:           sql.NullBool{Bool: true, Valid: true},
 		LastName:           sql.NullString{String: req.LastName, Valid: true},
-		FirstName: 			sql.NullString{String: req.FirstName, Valid: true},
+		FirstName:          sql.NullString{String: req.FirstName, Valid: true},
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
