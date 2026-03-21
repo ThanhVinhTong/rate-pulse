@@ -38,15 +38,26 @@ export function AuthForm({ mode, action }: AuthFormProps) {
 
       <form action={formAction} className="space-y-4">
         {isSignup ? (
-          <label className="block space-y-2">
-            <span className="text-sm text-text-muted">Full name</span>
-            <input
-              required
-              name="name"
-              placeholder="Jordan Lee"
-              className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition placeholder:text-text-tertiary focus:border-primary"
-            />
-          </label>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <label className="block w-full space-y-2">
+              <span className="text-sm text-text-muted">First name</span>
+              <input
+                required
+                name="first_name"
+                placeholder="Jordan"
+                className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition placeholder:text-text-tertiary focus:border-primary"
+              />
+            </label>
+            <label className="block w-full space-y-2">
+              <span className="text-sm text-text-muted">Last name</span>
+              <input
+                required
+                name="last_name"
+                placeholder="Lee"
+                className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition placeholder:text-text-tertiary focus:border-primary"
+              />
+            </label>
+          </div>
         ) : null}
 
         <label className="block space-y-2">
