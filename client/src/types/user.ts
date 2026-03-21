@@ -2,7 +2,8 @@ export type SessionRole = "free" | "premium" | "enterprise" | "admin";
 
 export interface AuthSession {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: SessionRole;
   sessionId?: string;
   accessToken?: string;

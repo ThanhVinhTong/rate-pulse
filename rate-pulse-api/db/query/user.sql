@@ -9,9 +9,11 @@ INSERT INTO users (
     language_preference,
     country_of_residence,
     country_of_birth,
-    is_active
+    is_active,
+    first_name,
+    last_name
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 ) RETURNING *;
 
 -- name: GetUserByID :one
@@ -45,7 +47,9 @@ SET
     country_of_residence = COALESCE(sqlc.narg(country_of_residence), country_of_residence),
     country_of_birth = COALESCE(sqlc.narg(country_of_birth), country_of_birth),
     is_active = COALESCE(sqlc.narg(is_active), is_active),
-    updated_at = CURRENT_TIMESTAMP
+    updated_at = CURRENT_TIMESTAMP,
+    first_name = COALESCE(sqlc.narg(first_name), first_name),
+    last_name = COALESCE(sqlc.narg(last_name), last_name)
 WHERE user_id = sqlc.arg(user_id)
 RETURNING *;
 

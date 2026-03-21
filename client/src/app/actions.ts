@@ -21,16 +21,6 @@ function toSessionRole(userType: string): AuthSession["role"] {
   }
 }
 
-function buildDisplayName(name: FormDataEntryValue | null, fallbackEmail: string) {
-  const value = typeof name === "string" ? name.trim() : "";
-
-  if (value) {
-    return value;
-  }
-
-  return fallbackEmail.split("@")[0] ?? "Trader";
-}
-
 export async function loginAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "").trim();
@@ -67,7 +57,8 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 
     const session: AuthSession = {
       email: user.email,
-      name: user.username,
+      firstName: user.first_name,
+      lastName: user.last_name,
       role: toSessionRole(userType),
       sessionId: data.session_id,
       accessToken: data.access_token,
@@ -91,14 +82,15 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 export async function signupAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "").trim();
-  const name = buildDisplayName(formData.get("name"), email);
+  const firstName = String(formData.get("first_name") ?? "").trim();
+  const lastName = String(formData.get("last_name") ?? "").trim();
   const username = email.includes("@") ? (email.split("@")[0] ?? "") : email;
   let redirectTo = "/profile";
 
-  if (!name || !email || !password) {
+  if (!firstName || !lastName || !email || !password) {
     return {
       status: "error",
-      message: "Name, email, and password are required.",
+      message: "First name, last name, email, and password are required.",
     };
   }
 
@@ -110,6 +102,8 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
         username,
         email,
         password,
+        first_name: firstName,
+        last_name: lastName,
       }),
     });
 
@@ -146,7 +140,8 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
 
     const session: AuthSession = {
       email: loginUser.email,
-      name: loginUser.username,
+      firstName: loginUser.first_name,
+      lastName: loginUser.last_name,
       role: toSessionRole(loginUserType),
       sessionId: loginData.session_id,
       accessToken: loginData.access_token,

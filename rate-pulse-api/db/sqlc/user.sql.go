@@ -21,10 +21,12 @@ INSERT INTO users (
     language_preference,
     country_of_residence,
     country_of_birth,
-    is_active
+    is_active,
+    first_name,
+    last_name
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-) RETURNING user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+) RETURNING user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at, first_name, last_name
 `
 
 type CreateUserParams struct {
@@ -38,6 +40,8 @@ type CreateUserParams struct {
 	CountryOfResidence sql.NullString
 	CountryOfBirth     sql.NullString
 	IsActive           sql.NullBool
+	FirstName          sql.NullString
+	LastName           sql.NullString
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -52,6 +56,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.CountryOfResidence,
 		arg.CountryOfBirth,
 		arg.IsActive,
+		arg.FirstName,
+		arg.LastName,
 	)
 	var i User
 	err := row.Scan(
@@ -68,6 +74,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FirstName,
+		&i.LastName,
 	)
 	return i, err
 }
@@ -93,7 +101,7 @@ func (q *Queries) DeleteUserByID(ctx context.Context, userID int32) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
+SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at, first_name, last_name FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -114,12 +122,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FirstName,
+		&i.LastName,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
+SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at, first_name, last_name FROM users
 WHERE user_id = $1 LIMIT 1
 `
 
@@ -140,12 +150,14 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int32) (User, error) {
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FirstName,
+		&i.LastName,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
+SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at, first_name, last_name FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -166,12 +178,14 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FirstName,
+		&i.LastName,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at FROM users
+SELECT user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at, first_name, last_name FROM users
 ORDER BY created_at 
 LIMIT $1
 OFFSET $2
@@ -205,6 +219,8 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FirstName,
+			&i.LastName,
 		); err != nil {
 			return nil, err
 		}
@@ -232,9 +248,11 @@ SET
     country_of_residence = COALESCE($8, country_of_residence),
     country_of_birth = COALESCE($9, country_of_birth),
     is_active = COALESCE($10, is_active),
-    updated_at = CURRENT_TIMESTAMP
-WHERE user_id = $11
-RETURNING user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at
+    updated_at = CURRENT_TIMESTAMP,
+    first_name = COALESCE($11, first_name),
+    last_name = COALESCE($12, last_name)
+WHERE user_id = $13
+RETURNING user_id, username, email, password, user_type, email_verified, time_zone, language_preference, country_of_residence, country_of_birth, is_active, created_at, updated_at, first_name, last_name
 `
 
 type UpdateUserParams struct {
@@ -248,6 +266,8 @@ type UpdateUserParams struct {
 	CountryOfResidence sql.NullString
 	CountryOfBirth     sql.NullString
 	IsActive           sql.NullBool
+	FirstName          sql.NullString
+	LastName           sql.NullString
 	UserID             int32
 }
 
@@ -263,6 +283,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.CountryOfResidence,
 		arg.CountryOfBirth,
 		arg.IsActive,
+		arg.FirstName,
+		arg.LastName,
 		arg.UserID,
 	)
 	var i User
@@ -280,6 +302,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FirstName,
+		&i.LastName,
 	)
 	return i, err
 }

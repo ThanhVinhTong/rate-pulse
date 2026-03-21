@@ -3,21 +3,10 @@ import { redirect } from "next/navigation";
 
 import { AUTH_COOKIE } from "@/lib/constants";
 import { createSessionCookieValue, readSessionCookieValue, SESSION_MAX_AGE } from "@/lib/session";
-import type { AuthSession, SessionRole } from "@/types";
+import type { AuthSession } from "@/types";
 
 const API_BASE_URL = "https://api.rate-pulse.me";
 const ACCESS_TOKEN_SKEW_MS = 30_000;
-
-export function simulateAuth(email: string, name?: string): AuthSession {
-  const normalizedEmail = email.trim().toLowerCase();
-  const role: SessionRole = normalizedEmail.includes("admin") ? "admin" : "free";
-
-  return {
-    email: normalizedEmail,
-    name: name?.trim() || normalizedEmail.split("@")[0] || "Trader",
-    role,
-  };
-}
 
 export async function getSession() {
   const cookieStore = await cookies();
