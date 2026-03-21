@@ -32,7 +32,7 @@ export function ProfileForm({ session }: ProfileFormProps) {
         <span className="text-sm text-text-muted">First name</span>
         <input
           name="firstName"
-          defaultValue={session.name.split(" ")[0]}
+          defaultValue={session.firstName}
           className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
         />
       </label>
@@ -41,7 +41,7 @@ export function ProfileForm({ session }: ProfileFormProps) {
         <span className="text-sm text-text-muted">Last name</span>
         <input
           name="lastName"
-          defaultValue={session.name.split(" ").slice(1).join(" ") || "Trader"}
+          defaultValue={session.lastName}
           className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
         />
       </label>
