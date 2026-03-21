@@ -1,0 +1,1 @@
+ALTER TABLE countries ADD COLUMN country_code VARCHAR(3);
