@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, RefreshCw, Star } from "lucide-react";
 
 import { useRealtimeRates } from "@/hooks/useRealtimeRates";
@@ -64,11 +64,9 @@ export function ExchangeRatesDashboard({
     [selectedBaseCurrency],
   );
 
-  useEffect(() => {
-    if (!sourceOptions.includes(selectedSource)) {
-      setSelectedSource("All Sources");
-    }
-  }, [selectedSource, sourceOptions]);
+  const effectiveSelectedSource = sourceOptions.includes(selectedSource)
+    ? selectedSource
+    : "All Sources";
 
   const chartSeries = (directPair?.sparkline ?? inversePair?.sparkline ?? []).map((rate, index) => ({
     date: `P${index + 1}`,
@@ -78,7 +76,7 @@ export function ExchangeRatesDashboard({
   const rates = bankRates.filter((rate) => {
     const matchPair =
       rate.baseCurrency === selectedBaseCurrency && rate.targetCurrency === selectedTargetCurrency;
-    const matchSource = selectedSource === "All Sources" || rate.source === selectedSource;
+    const matchSource = effectiveSelectedSource === "All Sources" || rate.source === effectiveSelectedSource;
     const matchFavorite = !favoritesOnly || rate.favorite;
     return matchPair && matchSource && matchFavorite;
   });
@@ -158,7 +156,7 @@ export function ExchangeRatesDashboard({
         targetCurrency={selectedTargetCurrency}
         currencies={availableCurrencies}
         sourceOptions={sourceOptions}
-        selectedSource={selectedSource}
+        selectedSource={effectiveSelectedSource}
         conversionUpdatedAt={conversionUpdatedAt}
         favoritesOnly={favoritesOnly}
         onBaseCurrencyChange={handleBaseCurrencyChange}
