@@ -1,23 +1,18 @@
 from constants.Constant import Constant
 
-class VCBBank(Constant):
+class VietinBank(Constant):
     def __init__(self):
-        self.website = "https://www.vietcombank.com.vn/vi-VN/khcn/Cong-cu-Tien-ich/Ty-gia"
+        self.website = "https://www.vietinbank.vn/ca-nhan/ty-gia-khcn"
         self.info = {
-            "source_currency": "VND",
+            "source_currency": "source_currency",
             "destination_currency": "currency_code",
             "buy_cash": "buy-cash",
             "buy_transfer": "buy-transfer",
+            "buy_cheque": "buy-cheque",
             "sell_cash": "sell-cash",
             "sell_transfer": "sell-transfer",
             "time_zone": "UTC+7",
             "updated_at": "updated_at"
-        }
-        self.translate_column = {
-            "buy-cash": 1,
-            "sell-cash": 2,
-            "buy-transfer": 3,
-            "sell-transfer": 4
         }
 
     def get_website(self) -> str:
@@ -25,6 +20,3 @@ class VCBBank(Constant):
 
     def get_info(self) -> dict:
         return self.info
-
-    def get_translate_column(self) -> dict:
-        return self.translate_column

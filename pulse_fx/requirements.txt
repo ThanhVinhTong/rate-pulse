@@ -1,2 +1,5 @@
 selenium
 openpyxl
+dotenv
+SQLAlchemy
+psycopg2

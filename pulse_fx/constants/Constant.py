@@ -6,5 +6,5 @@ class Constant:
         pass
 
     @abstractmethod
-    def get_elements_info(self) -> dict:
+    def get_info(self) -> dict:
         pass
