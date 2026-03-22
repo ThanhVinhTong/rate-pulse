@@ -22,6 +22,7 @@ exchange_rate_types_data = {
 
     # "7": "Load currency to TMC",
     # "8": "Unload currency from TMC"
+    # "9": "Sell Cash/Transfer"
 }
 
 currency_data = {

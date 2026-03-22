@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 
 from utils.sessions import start_driver
 from fxs.script import Script
@@ -15,13 +14,7 @@ def main() -> None:
 
     try:
         script = Script(driver, db_uri)
-        fx_data = script.get_fx()
-
-        print(f"Fetched {len(fx_data)} currencies")
-        # show first 5 for quick check
-        preview_keys = list(fx_data.keys())[:5]
-        preview = {k: fx_data[k] for k in preview_keys}
-        pprint(preview)
+        script.get_fx()
     finally:
         driver.quit()
         print("Driver closed")

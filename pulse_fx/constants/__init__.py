@@ -13,8 +13,8 @@ BANK_CONSTANTS = {
 }
 
 BANK_UPDATE_TIMES = {
-    "vcb": ["23:00 UTC+7"],
-    "bidv": ["9:00 UTC+7", "21:00 UTC+7"],
+    "vcb": ["00:00:00 UTC+7"],
+    "bidv": ["09:00:00 UTC+7", "21:00:00 UTC+7"],
 
 }
 

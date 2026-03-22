@@ -8,16 +8,14 @@ class VCBBank(Constant):
             "destination_currency": "currency_code",
             "buy_cash": "buy-cash",
             "buy_transfer": "buy-transfer",
-            "sell_cash": "sell-cash",
-            "sell_transfer": "sell-transfer",
+            "sell_cash_transfer": "sell",
             "time_zone": "UTC+7",
             "updated_at": "updated_at"
         }
         self.translate_column = {
             "buy-cash": 1,
-            "sell-cash": 2,
             "buy-transfer": 3,
-            "sell-transfer": 4
+            "sell": 9
         }
 
     def get_website(self) -> str:

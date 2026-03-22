@@ -8,7 +8,6 @@ class Script:
         self.driver = driver
         self.db_uri = db_uri
 
-    def get_fx(self) -> dict[str, dict[str, str]]:
+    def get_fx(self) -> None:
         connection_engine = create_engine(self.db_uri)
-        vn_data = VN(self.driver, connection_engine).get_fx()
-        return vn_data
+        VN(self.driver, connection_engine).get_fx()

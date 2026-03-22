@@ -7,26 +7,41 @@ from selenium.webdriver.common.by import By
 from sqlalchemy import text
 
 from fxs.FX import FX
-from constants import get_bank_constants
+from constants import get_bank_constants, get_bank_update_time
 from utils.numeric_cleaner import parse_rate
 
 class VN(FX):
     def __init__(self, driver: webdriver.Edge, connection_engine: Engine) -> None:
         self.driver = driver
         self.bank_constants = get_bank_constants()
-        self.fx_data = defaultdict(list)
         self.connection = connection_engine.connect()
+        self.current_time = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
     def get_fx(self) -> dict[str, dict[str, str]]:
-        self.fx_data["vcb"].append(self.get_fx_vcb())
-        # self.fx_data["bidv"].append(self.get_fx_bidv())
-        # self.fx_data["vtb"].append(self.get_fx_vtb())
-        # self.fx_data["acb"].append(self.get_fx_acb())
+        # Grab current time as a timezone-AWARE UTC datetime
+        current_dt_utc = datetime.now(timezone.utc)
+        
+        # Check if current time is in the window to get VCB fx
+        vcb_schedules = get_bank_update_time("vcb")
+        for schedule in vcb_schedules:
+            time_str = schedule.split(" ")[0] # extract "hh:mm:ss"
+            hour, minute, second = map(int, time_str.split(':'))
+            
+            # Build today's date using that specific time, attached to UTC+7
+            tz_utc_plus_7 = timezone(timedelta(hours=7), 'UTC+7')
+            schedule_dt = datetime.now(tz_utc_plus_7).replace(
+                hour=hour, minute=minute, second=second, microsecond=0
+            )
+            open_window, close_window = schedule_dt, schedule_dt + timedelta(hours=1)
+            if open_window <= current_dt_utc <= close_window:
+                self.get_fx_vcb()
+                break
+            else:
+                print(f"Not in window {open_window} - {close_window} to get VCB fx")
+                break
         self.connection.close()
 
-        return self.fx_data
-
-    def get_fx_vcb(self) -> dict[str, dict[str, str]]:
+    def get_fx_vcb(self) -> None:
         website = self.bank_constants["vcb"].get_website()
         info = self.bank_constants["vcb"].get_info()
         translate_column = self.bank_constants["vcb"].get_translate_column()
@@ -55,8 +70,7 @@ class VN(FX):
             rates_to_save = {
                 info["buy_cash"]: parse_rate(cells[2].text),
                 info["buy_transfer"]: parse_rate(cells[3].text),
-                info["sell_cash"]: parse_rate(cells[4].text),
-                info["sell_transfer"]: parse_rate(cells[4].text), # Assuming sell is same
+                info["sell_cash_transfer"]: parse_rate(cells[4].text),
             }
 
             # Map them into individual rows
@@ -92,7 +106,7 @@ class VN(FX):
             self.connection.commit()
         print(f"Inserted {len(fx_list)} records for VCB")
 
-        return {}
+        return
 
     def get_fx_bidv(self) -> dict[str, dict[str, str]]:
         website = self.bank_constants["bidv"].get_website()
