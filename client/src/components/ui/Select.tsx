@@ -1,12 +1,23 @@
 "use client";
 
-import { type SelectHTMLAttributes, forwardRef, useState, useRef, useEffect, Children, isValidElement } from "react";
+import {
+  type SelectHTMLAttributes,
+  Children,
+  forwardRef,
+  isValidElement,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Search } from "lucide-react";
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {}
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, name, defaultValue, value, onChange, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [query, setQuery] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
     
     // Extract options from standard <option> children to map them to the custom UI
@@ -21,6 +32,23 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
     const selectedLabel = options.find((opt) => String(opt.value) === String(selectedValue))?.label || selectedValue;
 
+    const filteredOptions = useMemo(() => {
+      const normalizedQuery = query.trim().toLowerCase();
+      if (!normalizedQuery) {
+        return options;
+      }
+
+      return options.filter((option) => {
+        const rawLabel = option.label;
+        const labelText =
+          typeof rawLabel === "string" || typeof rawLabel === "number"
+            ? String(rawLabel)
+            : String(option.value);
+
+        return labelText.toLowerCase().includes(normalizedQuery);
+      });
+    }, [options, query]);
+
     // Handle closing the dropdown when clicking outside
     useEffect(() => {
       const handleOutsideClick = (e: MouseEvent) => {
@@ -31,6 +59,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       document.addEventListener("mousedown", handleOutsideClick);
       return () => document.removeEventListener("mousedown", handleOutsideClick);
     }, []);
+
+    useEffect(() => {
+      if (!isOpen) {
+        setQuery("");
+      }
+    }, [isOpen]);
 
     const handleSelect = (val: string) => {
       setSelectedValue(val);
@@ -87,19 +121,36 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             isOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"
           }`}
         >
-          {options.map((option) => (
-            <div
-              key={String(option.value)}
-              onClick={() => handleSelect(String(option.value))}
-              className={`cursor-pointer rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                String(selectedValue) === String(option.value)
-                  ? "hidden" /* Hide the current selected option like the design */
-                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
-              }`}
-            >
-              {option.label}
+          <div className="px-1 pb-1">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Lookup..."
+                className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm text-gray-900 outline-none transition focus:border-primary dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
+              />
             </div>
-          ))}
+          </div>
+
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <div
+                key={String(option.value)}
+                onClick={() => handleSelect(String(option.value))}
+                className={`cursor-pointer rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  String(selectedValue) === String(option.value)
+                    ? "hidden" /* Hide the current selected option like the design */
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+                }`}
+              >
+                {option.label}
+              </div>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No matching option</p>
+          )}
         </div>
       </div>
     );

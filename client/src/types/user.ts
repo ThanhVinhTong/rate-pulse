@@ -6,6 +6,8 @@ export interface AuthSession {
   name: string;
   firstName: string;
   lastName: string;
+  countryOfResidence?: string;
+  countryOfBirth?: string;
   role: SessionRole;
   sessionId?: string;
   accessToken?: string;

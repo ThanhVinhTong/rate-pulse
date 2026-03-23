@@ -5,13 +5,14 @@ import { useActionState } from "react";
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import type { AuthSession } from "@/types";
+import type { AuthSession, CountryOption } from "@/types";
 
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Select } from "@/components/ui/Select";
 
 interface ProfileFormProps {
   session: AuthSession;
+  countries: CountryOption[];
 }
 
 function maskEmail(email: string): string {
@@ -20,7 +21,7 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}•••••@${domain.slice(0, 2)}•••••`;
 }
 
-export function ProfileForm({ session }: ProfileFormProps) {
+export function ProfileForm({ session, countries }: ProfileFormProps) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     updateProfileAction,
     initialActionState,
@@ -62,22 +63,32 @@ export function ProfileForm({ session }: ProfileFormProps) {
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm text-text-muted">Base currency</span>
-        <Select name="currency" defaultValue="USD">
-          <option>USD</option>
-          <option>EUR</option>
-          <option>GBP</option>
-          <option>JPY</option>
+        <span className="text-sm text-text-muted">Country of Residence</span>
+        <Select name="countryOfResidence" defaultValue={session.countryOfResidence ?? ""}>
+          <option value="">Select country</option>
+          {countries.map((country) => (
+            <option
+              key={`residence-${country.countryId}`}
+              value={country.countryCode ?? country.countryName}
+            >
+              {country.countryName}
+            </option>
+          ))}
         </Select>
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm text-text-muted">Risk profile</span>
-        <Select name="riskProfile" defaultValue="Balanced">
-          <option>Conservative</option>
-          <option>Balanced</option>
-          <option>Growth</option>
-          <option>Aggressive</option>
+        <span className="text-sm text-text-muted">Country of Birth</span>
+        <Select name="countryOfBirth" defaultValue={session.countryOfBirth ?? ""}>
+          <option value="">Select country</option>
+          {countries.map((country) => (
+            <option
+              key={`birth-${country.countryId}`}
+              value={country.countryCode ?? country.countryName}
+            >
+              {country.countryName}
+            </option>
+          ))}
         </Select>
       </label>
 

@@ -61,6 +61,8 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
       name: user.username,
       firstName: user.first_name,
       lastName: user.last_name,
+      countryOfResidence: user.country_of_residence,
+      countryOfBirth: user.country_of_birth,
       role: toSessionRole(userType),
       sessionId: data.session_id,
       accessToken: data.access_token,
@@ -146,6 +148,8 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
       name: loginUser.username,
       firstName: loginUser.first_name,
       lastName: loginUser.last_name,
+      countryOfResidence: loginUser.country_of_residence,
+      countryOfBirth: loginUser.country_of_birth,
       role: toSessionRole(loginUserType),
       sessionId: loginData.session_id,
       accessToken: loginData.access_token,
@@ -192,6 +196,8 @@ export async function updateProfileAction(
 ): Promise<ActionState> {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
+  const countryOfResidence = String(formData.get("countryOfResidence") ?? "").trim();
+  const countryOfBirth = String(formData.get("countryOfBirth") ?? "").trim();
 
   if (!firstName || !lastName) {
     return {
@@ -236,6 +242,8 @@ export async function updateProfileAction(
       body: JSON.stringify({
         first_name: firstName,
         last_name: lastName,
+        country_of_residence: countryOfResidence,
+        country_of_birth: countryOfBirth,
       }),
     });
 
@@ -253,6 +261,12 @@ export async function updateProfileAction(
       ...session,
       firstName: typeof data.first_name === "string" ? data.first_name : firstName,
       lastName: typeof data.last_name === "string" ? data.last_name : lastName,
+      countryOfResidence:
+        typeof data.country_of_residence === "string"
+          ? data.country_of_residence
+          : countryOfResidence,
+      countryOfBirth:
+        typeof data.country_of_birth === "string" ? data.country_of_birth : countryOfBirth,
       name: typeof data.username === "string" ? data.username : session.name,
     });
   } catch (err) {
