@@ -17,6 +17,7 @@ type Country struct {
 	CurrencyID  int32
 	UpdatedAt   sql.NullTime
 	CreatedAt   sql.NullTime
+	CountryCode sql.NullString
 }
 
 type Currency struct {
@@ -38,7 +39,12 @@ type ExchangeRate struct {
 	SourceID              sql.NullInt32
 	UpdatedAt             sql.NullTime
 	CreatedAt             sql.NullTime
-	Type                  int32
+	TypeID                sql.NullInt32
+}
+
+type ExchangeRateType struct {
+	TypeID   int32
+	TypeName string
 }
 
 type Payment struct {
@@ -63,6 +69,7 @@ type RateSource struct {
 	SourceStatus  sql.NullString
 	UpdatedAt     sql.NullTime
 	CreatedAt     sql.NullTime
+	SourceCode    sql.NullString
 }
 
 type Session struct {

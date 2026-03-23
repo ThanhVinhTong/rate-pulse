@@ -7,21 +7,23 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createCountry = `-- name: CreateCountry :one
-INSERT INTO countries (country_name, currency_id)
-VALUES ($1, $2)
-RETURNING country_id, country_name, currency_id, updated_at, created_at
+INSERT INTO countries (country_name, country_code, currency_id)
+VALUES ($1, $2, $3)
+RETURNING country_id, country_name, currency_id, updated_at, created_at, country_code
 `
 
 type CreateCountryParams struct {
 	CountryName string
+	CountryCode sql.NullString
 	CurrencyID  int32
 }
 
 func (q *Queries) CreateCountry(ctx context.Context, arg CreateCountryParams) (Country, error) {
-	row := q.db.QueryRowContext(ctx, createCountry, arg.CountryName, arg.CurrencyID)
+	row := q.db.QueryRowContext(ctx, createCountry, arg.CountryName, arg.CountryCode, arg.CurrencyID)
 	var i Country
 	err := row.Scan(
 		&i.CountryID,
@@ -29,6 +31,7 @@ func (q *Queries) CreateCountry(ctx context.Context, arg CreateCountryParams) (C
 		&i.CurrencyID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.CountryCode,
 	)
 	return i, err
 }
@@ -44,7 +47,7 @@ func (q *Queries) DeleteCountry(ctx context.Context, countryID int32) error {
 }
 
 const getAllCountries = `-- name: GetAllCountries :many
-SELECT country_id, country_name, currency_id, updated_at, created_at FROM countries
+SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries
 ORDER BY country_id
 LIMIT $1
 OFFSET $2
@@ -70,6 +73,7 @@ func (q *Queries) GetAllCountries(ctx context.Context, arg GetAllCountriesParams
 			&i.CurrencyID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.CountryCode,
 		); err != nil {
 			return nil, err
 		}
@@ -85,7 +89,7 @@ func (q *Queries) GetAllCountries(ctx context.Context, arg GetAllCountriesParams
 }
 
 const getCountriesByCurrencyID = `-- name: GetCountriesByCurrencyID :many
-SELECT country_id, country_name, currency_id, updated_at, created_at FROM countries
+SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries
 WHERE currency_id = $1
 ORDER BY country_id
 `
@@ -105,6 +109,7 @@ func (q *Queries) GetCountriesByCurrencyID(ctx context.Context, currencyID int32
 			&i.CurrencyID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.CountryCode,
 		); err != nil {
 			return nil, err
 		}
@@ -119,8 +124,27 @@ func (q *Queries) GetCountriesByCurrencyID(ctx context.Context, currencyID int32
 	return items, nil
 }
 
+const getCountryByCode = `-- name: GetCountryByCode :one
+SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries 
+WHERE country_code = $1 LIMIT 1
+`
+
+func (q *Queries) GetCountryByCode(ctx context.Context, countryCode sql.NullString) (Country, error) {
+	row := q.db.QueryRowContext(ctx, getCountryByCode, countryCode)
+	var i Country
+	err := row.Scan(
+		&i.CountryID,
+		&i.CountryName,
+		&i.CurrencyID,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.CountryCode,
+	)
+	return i, err
+}
+
 const getCountryByID = `-- name: GetCountryByID :one
-SELECT country_id, country_name, currency_id, updated_at, created_at FROM countries 
+SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries 
 WHERE country_id = $1 LIMIT 1
 `
 
@@ -133,6 +157,7 @@ func (q *Queries) GetCountryByID(ctx context.Context, countryID int32) (Country,
 		&i.CurrencyID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.CountryCode,
 	)
 	return i, err
 }
@@ -141,20 +166,27 @@ const updateCountry = `-- name: UpdateCountry :one
 UPDATE countries
 SET 
     country_name = COALESCE($2, country_name),
-    currency_id = COALESCE($3, currency_id),
+    country_code = COALESCE($3, country_code),
+    currency_id = COALESCE($4, currency_id),
     updated_at = CURRENT_TIMESTAMP
 WHERE country_id = $1
-RETURNING country_id, country_name, currency_id, updated_at, created_at
+RETURNING country_id, country_name, currency_id, updated_at, created_at, country_code
 `
 
 type UpdateCountryParams struct {
 	CountryID   int32
 	CountryName string
+	CountryCode sql.NullString
 	CurrencyID  int32
 }
 
 func (q *Queries) UpdateCountry(ctx context.Context, arg UpdateCountryParams) (Country, error) {
-	row := q.db.QueryRowContext(ctx, updateCountry, arg.CountryID, arg.CountryName, arg.CurrencyID)
+	row := q.db.QueryRowContext(ctx, updateCountry,
+		arg.CountryID,
+		arg.CountryName,
+		arg.CountryCode,
+		arg.CurrencyID,
+	)
 	var i Country
 	err := row.Scan(
 		&i.CountryID,
@@ -162,6 +194,7 @@ func (q *Queries) UpdateCountry(ctx context.Context, arg UpdateCountryParams) (C
 		&i.CurrencyID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.CountryCode,
 	)
 	return i, err
 }

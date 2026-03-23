@@ -11,9 +11,9 @@ import (
 )
 
 const createRateSource = `-- name: CreateRateSource :one
-INSERT INTO rate_sources (source_name, source_link, source_country, source_status)
-VALUES ($1, $2, $3, $4)
-RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at
+INSERT INTO rate_sources (source_name, source_link, source_country, source_status, source_code)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code
 `
 
 type CreateRateSourceParams struct {
@@ -21,6 +21,7 @@ type CreateRateSourceParams struct {
 	SourceLink    sql.NullString
 	SourceCountry sql.NullString
 	SourceStatus  sql.NullString
+	SourceCode    sql.NullString
 }
 
 func (q *Queries) CreateRateSource(ctx context.Context, arg CreateRateSourceParams) (RateSource, error) {
@@ -29,6 +30,7 @@ func (q *Queries) CreateRateSource(ctx context.Context, arg CreateRateSourcePara
 		arg.SourceLink,
 		arg.SourceCountry,
 		arg.SourceStatus,
+		arg.SourceCode,
 	)
 	var i RateSource
 	err := row.Scan(
@@ -39,6 +41,7 @@ func (q *Queries) CreateRateSource(ctx context.Context, arg CreateRateSourcePara
 		&i.SourceStatus,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.SourceCode,
 	)
 	return i, err
 }
@@ -54,7 +57,7 @@ func (q *Queries) DeleteRateSource(ctx context.Context, sourceID int32) error {
 }
 
 const getAllRateSources = `-- name: GetAllRateSources :many
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at FROM rate_sources
+SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
 ORDER BY source_id
 LIMIT $1
 OFFSET $2
@@ -82,6 +85,7 @@ func (q *Queries) GetAllRateSources(ctx context.Context, arg GetAllRateSourcesPa
 			&i.SourceStatus,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.SourceCode,
 		); err != nil {
 			return nil, err
 		}
@@ -96,8 +100,29 @@ func (q *Queries) GetAllRateSources(ctx context.Context, arg GetAllRateSourcesPa
 	return items, nil
 }
 
+const getRateSourceByCode = `-- name: GetRateSourceByCode :one
+SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
+WHERE source_code = $1 LIMIT 1
+`
+
+func (q *Queries) GetRateSourceByCode(ctx context.Context, sourceCode sql.NullString) (RateSource, error) {
+	row := q.db.QueryRowContext(ctx, getRateSourceByCode, sourceCode)
+	var i RateSource
+	err := row.Scan(
+		&i.SourceID,
+		&i.SourceName,
+		&i.SourceLink,
+		&i.SourceCountry,
+		&i.SourceStatus,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.SourceCode,
+	)
+	return i, err
+}
+
 const getRateSourceByID = `-- name: GetRateSourceByID :one
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at FROM rate_sources
+SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
 WHERE source_id = $1 LIMIT 1
 `
 
@@ -112,6 +137,7 @@ func (q *Queries) GetRateSourceByID(ctx context.Context, sourceID int32) (RateSo
 		&i.SourceStatus,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.SourceCode,
 	)
 	return i, err
 }
@@ -122,9 +148,10 @@ SET
     source_name = COALESCE($2, source_name),
     source_link = COALESCE($3, source_link),
     source_country = COALESCE($4, source_country),
-    source_status = COALESCE($5, source_status)
+    source_status = COALESCE($5, source_status),
+    source_code = COALESCE($6, source_code)
 WHERE source_id = $1
-RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at
+RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code
 `
 
 type UpdateRateSourceParams struct {
@@ -133,6 +160,7 @@ type UpdateRateSourceParams struct {
 	SourceLink    sql.NullString
 	SourceCountry sql.NullString
 	SourceStatus  sql.NullString
+	SourceCode    sql.NullString
 }
 
 func (q *Queries) UpdateRateSource(ctx context.Context, arg UpdateRateSourceParams) (RateSource, error) {
@@ -142,6 +170,7 @@ func (q *Queries) UpdateRateSource(ctx context.Context, arg UpdateRateSourcePara
 		arg.SourceLink,
 		arg.SourceCountry,
 		arg.SourceStatus,
+		arg.SourceCode,
 	)
 	var i RateSource
 	err := row.Scan(
@@ -152,6 +181,7 @@ func (q *Queries) UpdateRateSource(ctx context.Context, arg UpdateRateSourcePara
 		&i.SourceStatus,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.SourceCode,
 	)
 	return i, err
 }

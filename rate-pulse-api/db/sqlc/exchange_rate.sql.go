@@ -12,9 +12,9 @@ import (
 )
 
 const createExchangeRate = `-- name: CreateExchangeRate :one
-INSERT INTO exchange_rates (rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type)
+INSERT INTO exchange_rates (rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type
+RETURNING rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type_id
 `
 
 type CreateExchangeRateParams struct {
@@ -24,7 +24,7 @@ type CreateExchangeRateParams struct {
 	ValidFromDate         time.Time
 	ValidToDate           sql.NullTime
 	SourceID              sql.NullInt32
-	Type                  int32
+	TypeID                sql.NullInt32
 }
 
 func (q *Queries) CreateExchangeRate(ctx context.Context, arg CreateExchangeRateParams) (ExchangeRate, error) {
@@ -35,7 +35,7 @@ func (q *Queries) CreateExchangeRate(ctx context.Context, arg CreateExchangeRate
 		arg.ValidFromDate,
 		arg.ValidToDate,
 		arg.SourceID,
-		arg.Type,
+		arg.TypeID,
 	)
 	var i ExchangeRate
 	err := row.Scan(
@@ -48,7 +48,7 @@ func (q *Queries) CreateExchangeRate(ctx context.Context, arg CreateExchangeRate
 		&i.SourceID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.Type,
+		&i.TypeID,
 	)
 	return i, err
 }
@@ -73,7 +73,7 @@ func (q *Queries) DeleteExchangeRate(ctx context.Context, rateID int32) error {
 }
 
 const getAllExchangeRates = `-- name: GetAllExchangeRates :many
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type FROM exchange_rates
+SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type_id FROM exchange_rates
 ORDER BY rate_id
 LIMIT $1
 OFFSET $2
@@ -103,7 +103,7 @@ func (q *Queries) GetAllExchangeRates(ctx context.Context, arg GetAllExchangeRat
 			&i.SourceID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
-			&i.Type,
+			&i.TypeID,
 		); err != nil {
 			return nil, err
 		}
@@ -119,7 +119,7 @@ func (q *Queries) GetAllExchangeRates(ctx context.Context, arg GetAllExchangeRat
 }
 
 const getExchangeRateByID = `-- name: GetExchangeRateByID :one
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type FROM exchange_rates
+SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type_id FROM exchange_rates
 WHERE rate_id = $1 LIMIT 1
 `
 
@@ -136,13 +136,13 @@ func (q *Queries) GetExchangeRateByID(ctx context.Context, rateID int32) (Exchan
 		&i.SourceID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.Type,
+		&i.TypeID,
 	)
 	return i, err
 }
 
 const getExchangeRatesByCurrencyPair = `-- name: GetExchangeRatesByCurrencyPair :many
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type FROM exchange_rates
+SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type_id FROM exchange_rates
 WHERE source_currency_id = $1 AND destination_currency_id = $2
 ORDER BY valid_from_date DESC
 LIMIT $3
@@ -180,7 +180,7 @@ func (q *Queries) GetExchangeRatesByCurrencyPair(ctx context.Context, arg GetExc
 			&i.SourceID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
-			&i.Type,
+			&i.TypeID,
 		); err != nil {
 			return nil, err
 		}
@@ -196,21 +196,21 @@ func (q *Queries) GetExchangeRatesByCurrencyPair(ctx context.Context, arg GetExc
 }
 
 const getExchangeRatesByType = `-- name: GetExchangeRatesByType :many
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type FROM exchange_rates
-WHERE type = $1
+SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type_id FROM exchange_rates
+WHERE type_id = $1
 ORDER BY rate_id
 LIMIT $2
 OFFSET $3
 `
 
 type GetExchangeRatesByTypeParams struct {
-	Type   int32
+	TypeID sql.NullInt32
 	Limit  int32
 	Offset int32
 }
 
 func (q *Queries) GetExchangeRatesByType(ctx context.Context, arg GetExchangeRatesByTypeParams) ([]ExchangeRate, error) {
-	rows, err := q.db.QueryContext(ctx, getExchangeRatesByType, arg.Type, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, getExchangeRatesByType, arg.TypeID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func (q *Queries) GetExchangeRatesByType(ctx context.Context, arg GetExchangeRat
 			&i.SourceID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
-			&i.Type,
+			&i.TypeID,
 		); err != nil {
 			return nil, err
 		}
@@ -252,10 +252,10 @@ SET
     valid_from_date = COALESCE($5, valid_from_date),
     valid_to_date = COALESCE($6, valid_to_date),
     source_id = COALESCE($7, source_id),
-    type = COALESCE($8, type),
+    type_id = COALESCE($8, type_id),
     updated_at = CURRENT_TIMESTAMP
 WHERE rate_id = $1
-RETURNING rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type
+RETURNING rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, updated_at, created_at, type_id
 `
 
 type UpdateExchangeRateParams struct {
@@ -266,7 +266,7 @@ type UpdateExchangeRateParams struct {
 	ValidFromDate         time.Time
 	ValidToDate           sql.NullTime
 	SourceID              sql.NullInt32
-	Type                  int32
+	TypeID                sql.NullInt32
 }
 
 func (q *Queries) UpdateExchangeRate(ctx context.Context, arg UpdateExchangeRateParams) (ExchangeRate, error) {
@@ -278,7 +278,7 @@ func (q *Queries) UpdateExchangeRate(ctx context.Context, arg UpdateExchangeRate
 		arg.ValidFromDate,
 		arg.ValidToDate,
 		arg.SourceID,
-		arg.Type,
+		arg.TypeID,
 	)
 	var i ExchangeRate
 	err := row.Scan(
@@ -291,7 +291,7 @@ func (q *Queries) UpdateExchangeRate(ctx context.Context, arg UpdateExchangeRate
 		&i.SourceID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.Type,
+		&i.TypeID,
 	)
 	return i, err
 }

@@ -1,11 +1,15 @@
 -- name: CreateCountry :one
-INSERT INTO countries (country_name, currency_id)
-VALUES ($1, $2)
+INSERT INTO countries (country_name, country_code, currency_id)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetCountryByID :one
 SELECT * FROM countries 
 WHERE country_id = $1 LIMIT 1;
+
+-- name: GetCountryByCode :one
+SELECT * FROM countries 
+WHERE country_code = $1 LIMIT 1;
 
 -- name: GetCountriesByCurrencyID :many
 SELECT * FROM countries
@@ -22,7 +26,8 @@ OFFSET $2;
 UPDATE countries
 SET 
     country_name = COALESCE($2, country_name),
-    currency_id = COALESCE($3, currency_id),
+    country_code = COALESCE($3, country_code),
+    currency_id = COALESCE($4, currency_id),
     updated_at = CURRENT_TIMESTAMP
 WHERE country_id = $1
 RETURNING *;
