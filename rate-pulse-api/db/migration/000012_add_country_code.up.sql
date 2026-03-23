@@ -1,0 +1,1 @@
+ALTER TABLE countries ADD COLUMN IF NOT EXISTS country_code VARCHAR(3);

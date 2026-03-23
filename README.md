@@ -1,6 +1,7 @@
 # Rate Pulse
 
 ## Live Demo
+https://www.rate-pulse.me/
 
 ## Overview and Purpose
 
@@ -20,20 +21,19 @@ The project has evolved from an API-only service into a broader platform:
 - Added a modern `client/` web app (Next.js, React, Tailwind)
 - Added analytics UI features (AI insight cards, news feed, sector heatmap)
 - Added deployment automation via GitHub Actions + Docker Hub + Kubernetes manifests (`digitalocean/`)
-- Started a separate scraping pipeline (`news-scapper`) to feed market/news intelligence data
+- Started a separate scraping pipeline (`pulse-intel`) to feed market/news intelligence data
+- Added an FX information gathering tool (`pulse_fx`) to acquire specific exchange rate data
 
 ## Architecture
 
 ```text
 rate-pulse/
-├── api/                    # Go HTTP handlers and middleware
-├── db/                     # Migrations, sqlc queries, generated data layer
-├── token/                  # Paseto/JWT token logic
-├── util/                   # Config + helper utilities
+├── rate-pulse-api/         # Go HTTP API, DB schema, and token logic
 ├── client/                 # Next.js frontend dashboard
+├── pulse-intel/            # Python automated news/market ingestion pipeline
+├── pulse_fx/               # Python FX information gathering tool
 ├── digitalocean/           # Kubernetes manifests (deployment/service/ingress/issuer)
-├── .github/workflows/      # CI/CD pipeline
-├── main.go                 # API entrypoint
+├── .github/workflows/      # CI/CD pipelines (API, Client, Pulse-Intel)
 ├── docker-compose.yaml     # Local API + Postgres runtime
 └── README.md
 ```
@@ -160,15 +160,13 @@ Frontend: `http://localhost:3000`
 
 ## CI/CD and Deployment
 
-Current pipeline (`.github/workflows/deploy.yml`) includes:
+Current workflows (e.g., `deploy-api.yml`, `deploy-client.yml`, `deploy-pulse-intel.yml`) are triggered upon pushing to the `main` branch. They include:
 
-- Build and push image to Docker Hub: `vinhtongthanh57/rate-pulse`
-- Tag strategy:
-  - Commit SHA (`${{ github.sha }}`)
-  - `latest`
-- Deploy Kubernetes manifests from `digitalocean/` to the target droplet/cluster
+- Building and pushing images to Docker Hub (`vinhtongthanh57/rate-pulse-api`, `vinhtongthanh57/client`, etc.)
+- Tag strategy typically uses the Commit SHA (`${{ github.sha }}`) and `latest`
+- Deployments to target droplets/clusters (often applying Kubernetes manifests from `digitalocean/`)
 
-## `news-scapper` (WIP)
+## `pulse-intel` (WIP)
 
 A Selenium-based multi-source news and market scraper project that is being built alongside Rate Pulse.
 
@@ -190,15 +188,14 @@ Collected data includes:
 ### Planned scraper structure
 
 ```text
-news-scapper/
+pulse-intel/
 ├── main.py
 ├── README.md
 ├── requirements.txt
-├── scripts/
-│   ├── scrapper.py
+├── news/
+│   ├── scraper.py
 │   ├── wms.py
-│   ├── yahoo_finance_scraper.py
-│   └── gold_oil_price_scraper.py
+│   └── yfs.py
 └── utils/
     ├── constants.py
     ├── dates.py
@@ -287,6 +284,10 @@ python main.py
   - Add CSV export
   - Add SQLite local storage and CRUD
   - Expand market and economic coverage
+
+## `pulse_fx` (WIP)
+
+A newly added Python tool explicitly designed for broader FX (Foreign Exchange) information gathering. Like `pulse-intel`, it relies on Selenium Edge scraping but targets specific local or global banking and financial institutions to collect up-to-date exchange-rate metrics directly.
 
 ## License
 

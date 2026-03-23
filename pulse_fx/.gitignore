@@ -1,0 +1,31 @@
+# Python bytecode/cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+.env
+env/
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Local runtime output
+output_news/
+*.log
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Local webdriver artifacts (do not commit binaries/docs)
+edgedriver_*/
+msedgedriver*

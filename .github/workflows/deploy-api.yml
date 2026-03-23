@@ -6,11 +6,6 @@ on:
     paths:
       - 'rate-pulse-api/**'
       - 'digitalocean/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'rate-pulse-api/**'
-      - 'digitalocean/**'
   workflow_dispatch:
 
 jobs:

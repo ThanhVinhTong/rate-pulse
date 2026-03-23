@@ -1,0 +1,1 @@
+ALTER TABLE rate_sources ADD COLUMN IF NOT EXISTS source_code VARCHAR(10);

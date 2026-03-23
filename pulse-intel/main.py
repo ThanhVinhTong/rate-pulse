@@ -1,13 +1,13 @@
 from utils.folders import init_root_folder
 from utils.sessions import start_driver
-from utils.constants import get_output_folder, get_website, get_wms_ids, get_webdriver_path
+from utils.constants import get_output_folder, get_wms_website, get_wms_ids, get_webdriver_path
 from utils.excel_export import export_news_to_excel
 
-from scripts.wms import WMS
+from news.wms import WMS
 
 if __name__ == "__main__":
     # Link info
-    website = get_website()
+    website = get_wms_website()
     output_folder = get_output_folder()
     webdriver_path = get_webdriver_path()
 
