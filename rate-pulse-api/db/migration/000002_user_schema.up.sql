@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     user_type VARCHAR(20) DEFAULT 'free' CHECK (user_type IN ('free', 'premium', 'enterprise', 'admin')),
     email_verified BOOLEAN DEFAULT FALSE,
-    time_zone VARCHAR(50) DEFAULT 'UTC',
+    time_zone VARCHAR(50) DEFAULT 'utc',
     language_preference VARCHAR(10) DEFAULT 'en',
     country_of_residence VARCHAR(3),
     country_of_birth VARCHAR(3),

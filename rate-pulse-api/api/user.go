@@ -132,6 +132,18 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 	// Normalize the email address
 	req.Email = normalizeEmail(req.Email)
+	req.TimeZone = strings.TrimSpace(req.TimeZone)
+	req.LanguagePreference = strings.TrimSpace(req.LanguagePreference)
+	req.CountryOfResidence = strings.TrimSpace(req.CountryOfResidence)
+	req.CountryOfBirth = strings.TrimSpace(req.CountryOfBirth)
+
+	if req.TimeZone == "" {
+		req.TimeZone = "utc"
+	}
+
+	if req.LanguagePreference == "" {
+		req.LanguagePreference = "en"
+	}
 
 	// Check if the password is weak or not
 	if err := util.ValidatePassword(req.Password); err != nil {
@@ -158,7 +170,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		CountryOfBirth:     sql.NullString{String: req.CountryOfBirth, Valid: true},
 		IsActive:           sql.NullBool{Bool: true, Valid: true},
 		LastName:           sql.NullString{String: req.LastName, Valid: true},
-		FirstName: 			sql.NullString{String: req.FirstName, Valid: true},
+		FirstName:          sql.NullString{String: req.FirstName, Valid: true},
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
