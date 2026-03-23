@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { clearSession, createSession, getSession } from "@/lib/auth";
+import { clearSession, createSession, getSession, getValidAccessToken } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
 
@@ -56,6 +56,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     const userType = user.user_type ?? "free";
 
     const session: AuthSession = {
+      userId: user.user_id,
       email: user.email,
       name: user.username,
       firstName: user.first_name,
@@ -140,6 +141,7 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
     const loginUserType = loginUser.user_type ?? "free";
 
     const session: AuthSession = {
+      userId: loginUser.user_id,
       email: loginUser.email,
       name: loginUser.username,
       firstName: loginUser.first_name,
@@ -198,11 +200,73 @@ export async function updateProfileAction(
     };
   }
 
+  const session = await getSession();
+
+  if (!session) {
+    return {
+      status: "error",
+      message: "You must be signed in to update your profile.",
+    };
+  }
+
+  if (typeof session.userId !== "number") {
+    return {
+      status: "error",
+      message: "Unable to identify your account. Please sign in again.",
+    };
+  }
+
+  const accessToken = await getValidAccessToken();
+
+  if (!accessToken) {
+    return {
+      status: "error",
+      message: "Your session has expired. Please sign in again.",
+    };
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/${session.userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+      }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: "Profile update failed" }));
+      return {
+        status: "error",
+        message: error.error || "Profile update failed. Please try again.",
+      };
+    }
+
+    const data = await res.json();
+
+    await createSession({
+      ...session,
+      firstName: typeof data.first_name === "string" ? data.first_name : firstName,
+      lastName: typeof data.last_name === "string" ? data.last_name : lastName,
+      name: typeof data.username === "string" ? data.username : session.name,
+    });
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+
   revalidatePath("/profile");
 
   return {
     status: "success",
-    message: "Profile preferences updated for this demo workspace.",
+    message: "Profile updated successfully.",
   };
 }
 

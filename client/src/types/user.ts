@@ -1,6 +1,7 @@
 export type SessionRole = "free" | "premium" | "enterprise" | "admin";
 
 export interface AuthSession {
+  userId?: number;
   email: string;
   name: string;
   firstName: string;
