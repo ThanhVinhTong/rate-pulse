@@ -66,7 +66,6 @@ async function listAllCountries(accessToken: string): Promise<CountryOption[]> {
   const countries: CountryOption[] = [];
 
   for (let pageId = 1; pageId <= 100; pageId += 1) {
-    console.log("Fail 1")
     const res = await fetch(
       `${API_BASE_URL}/countries?page_id=${pageId}&page_size=${pageSize}`,
       {
@@ -88,7 +87,6 @@ async function listAllCountries(accessToken: string): Promise<CountryOption[]> {
       break;
     }
 
-    console.log(page)
     countries.push(
       ...page
         .map((item): CountryOption | null => {
@@ -130,7 +128,6 @@ async function listAllCountries(accessToken: string): Promise<CountryOption[]> {
         })
         .filter((item): item is CountryOption => item !== null),
     );
-    console.log(countries)
 
     if (page.length < pageSize) {
       break;
@@ -149,7 +146,6 @@ export default async function ProfilePage() {
   const session = await requireAuth();
   const accessToken = await getAccessTokenForRead(session);
   const countries = accessToken ? await listAllCountries(accessToken) : [];
-  console.log(countries)
 
   return <ProfileTabs session={session} countries={countries} />;
 }
