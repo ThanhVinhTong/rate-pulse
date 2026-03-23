@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from fxs.vn.VCB import VCB
 from fxs.vn.BIDV import BIDV
+from fxs.vn.ACB import ACB
 
 class Script:
     def __init__(self, driver, db_uri: str) -> None:
@@ -14,7 +15,8 @@ class Script:
         # List of all banks
         banks = [
             VCB(self.driver, connection),
-            BIDV(self.driver, connection)
+            BIDV(self.driver, connection),
+            ACB(self.driver, connection)
         ]
         
         for bank in banks:

@@ -4,7 +4,7 @@ class VietinBank(Constant):
     def __init__(self):
         self.website = "https://www.vietinbank.vn/ca-nhan/ty-gia-khcn"
         self.info = {
-            "source_currency": "source_currency",
+            "source_currency": "VND",
             "destination_currency": "currency_code",
             "buy_cash": "buy-cash",
             "buy_transfer": "buy-transfer",

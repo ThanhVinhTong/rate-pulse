@@ -28,7 +28,6 @@ class FX(ABC):
                           AND destination_currency_id = (SELECT currency_id FROM currencies WHERE currency_code = :destination_currency)
                           AND type_id = :type_id
                           AND rate_value = :rate_value
-                          AND valid_from_date = :valid_from_date
                         ORDER BY valid_from_date DESC
                         LIMIT 1
                     """)

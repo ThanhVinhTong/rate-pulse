@@ -6,12 +6,19 @@ class ACBBank(Constant):
         self.info = {
             "source_currency": "VND",
             "destination_currency": "currency_code",
-            "buy_cash": "buy-cash",
-            "buy_transfer": "buy-transfer",
-            "sell_cash": "sell-cash",
-            "sell_transfer": "sell-transfer",
+            "buy_cash": "buy_cash",
+            "buy_transfer": "buy_transfer",
+            "sell_cash": "sell_cash",
+            "sell_transfer": "sell_transfer",
             "time_zone": "UTC+7",
             "updated_at": "updated_at"
+        }
+
+        self.translate_column = {
+            "buy_cash": 1,
+            "buy_transfer": 3,
+            "sell_cash": 2,
+            "sell_transfer": 4
         }
 
     def get_website(self) -> str:
@@ -19,3 +26,6 @@ class ACBBank(Constant):
 
     def get_info(self) -> dict:
         return self.info
+
+    def get_translate_column(self) -> dict:
+        return self.translate_column
