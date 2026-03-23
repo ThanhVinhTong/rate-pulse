@@ -1,13 +1,23 @@
-from selenium import webdriver
-from fxs.vn.VN import VN
-
-from sqlalchemy.engine import create_engine, Engine
+from sqlalchemy import create_engine
+from fxs.vn.VCB import VCB
+from fxs.vn.BIDV import BIDV
 
 class Script:
-    def __init__(self, driver: webdriver.Edge, db_uri: str) -> None:
+    def __init__(self, driver, db_uri: str) -> None:
         self.driver = driver
         self.db_uri = db_uri
 
     def get_fx(self) -> None:
         connection_engine = create_engine(self.db_uri)
-        VN(self.driver, connection_engine).get_fx()
+        connection = connection_engine.connect()
+        
+        # List of all banks
+        banks = [
+            VCB(self.driver, connection),
+            BIDV(self.driver, connection)
+        ]
+        
+        for bank in banks:
+            bank.get_fx()  # each one checks its own time, scrapes, and inserts!
+            
+        connection.close()

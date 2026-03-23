@@ -4,7 +4,7 @@ class ACBBank(Constant):
     def __init__(self):
         self.website = "https://acb.com.vn/ty-gia-hoi-doai"
         self.info = {
-            "source_currency": "source_currency",
+            "source_currency": "VND",
             "destination_currency": "currency_code",
             "buy_cash": "buy-cash",
             "buy_transfer": "buy-transfer",

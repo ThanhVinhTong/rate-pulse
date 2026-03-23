@@ -17,7 +17,7 @@ class VN(FX):
         self.connection = connection_engine.connect()
         self.current_time = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
-    def get_fx(self) -> dict[str, dict[str, str]]:
+    def get_fx(self) -> None:
         # Grab current time as a timezone-AWARE UTC datetime
         current_dt_utc = datetime.now(timezone.utc)
         
