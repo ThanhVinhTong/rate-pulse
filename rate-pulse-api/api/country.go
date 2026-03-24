@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
@@ -12,6 +13,7 @@ import (
 // Each country must be linked to an existing currency.
 type createCountryRequest struct {
 	CountryName string `json:"country_name" binding:"required"`
+	CountryCode string `json:"country_code" binding:"required,len=3"`
 	CurrencyID  int32  `json:"currency_id" binding:"required,min=1"`
 }
 
@@ -36,6 +38,7 @@ func (server *Server) createCountry(ctx *gin.Context) {
 
 	arg := db.CreateCountryParams{
 		CountryName: req.CountryName,
+		CountryCode: sql.NullString{String: req.CountryCode, Valid: true},
 		CurrencyID:  req.CurrencyID,
 	}
 
@@ -128,6 +131,7 @@ func (server *Server) listCountry(ctx *gin.Context) {
 // It contains all the optional fields for country updates.
 type updateCountryRequest struct {
 	CountryName *string `json:"country_name"`
+	CountryCode *string `json:"country_code"`
 	CurrencyID  *int32  `json:"currency_id"`
 }
 
@@ -162,6 +166,7 @@ func (server *Server) updateCountry(ctx *gin.Context) {
 	arg := db.UpdateCountryParams{
 		CountryID:   uriReq.ID,
 		CountryName: util.Value(req.CountryName),
+		CountryCode: sql.NullString{String: util.Value(req.CountryCode), Valid: req.CountryCode != nil},
 		CurrencyID:  util.Value(req.CurrencyID),
 	}
 

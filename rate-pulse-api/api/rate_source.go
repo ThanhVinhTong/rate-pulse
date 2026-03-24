@@ -16,6 +16,7 @@ type createRateSourceRequest struct {
 	SourceLink    string `json:"source_link" binding:"required"`
 	SourceCountry string `json:"source_country" binding:"required"`
 	SourceStatus  string `json:"source_status" binding:"required"`
+	SourceCode    string `json:"source_code" binding:"required"`
 }
 
 // createRateSource handles the creation of a new rate source.
@@ -42,6 +43,7 @@ func (server *Server) createRateSource(ctx *gin.Context) {
 		SourceLink:    sql.NullString{String: req.SourceLink, Valid: true},
 		SourceCountry: sql.NullString{String: req.SourceCountry, Valid: true},
 		SourceStatus:  sql.NullString{String: req.SourceStatus, Valid: true},
+		SourceCode:    sql.NullString{String: req.SourceCode, Valid: true},
 	}
 
 	rateSource, err := server.store.CreateRateSource(ctx, arg)
@@ -137,6 +139,7 @@ type updateRateSourceRequest struct {
 	SourceLink    *string `json:"source_link"`
 	SourceCountry *string `json:"source_country"`
 	SourceStatus  *string `json:"source_status"`
+	SourceCode    *string `json:"source_code"`
 }
 
 type updateRateSourceURIRequest struct {
@@ -173,6 +176,7 @@ func (server *Server) updateRateSource(ctx *gin.Context) {
 		SourceLink:    sql.NullString{String: util.Value(req.SourceLink), Valid: req.SourceLink != nil},
 		SourceCountry: sql.NullString{String: util.Value(req.SourceCountry), Valid: req.SourceCountry != nil},
 		SourceStatus:  sql.NullString{String: util.Value(req.SourceStatus), Valid: req.SourceStatus != nil},
+		SourceCode:    sql.NullString{String: util.Value(req.SourceCode), Valid: req.SourceCode != nil},
 	}
 
 	rateSource, err := server.store.UpdateRateSource(ctx, arg)

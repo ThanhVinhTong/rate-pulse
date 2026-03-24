@@ -1,5 +1,5 @@
 -- name: CreateExchangeRate :one
-INSERT INTO exchange_rates (rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type)
+INSERT INTO exchange_rates (rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
@@ -15,7 +15,7 @@ OFFSET $2;
 
 -- name: GetExchangeRatesByType :many
 SELECT * FROM exchange_rates
-WHERE type = $1
+WHERE type_id = $1
 ORDER BY rate_id
 LIMIT $2
 OFFSET $3;
@@ -36,7 +36,7 @@ SET
     valid_from_date = COALESCE($5, valid_from_date),
     valid_to_date = COALESCE($6, valid_to_date),
     source_id = COALESCE($7, source_id),
-    type = COALESCE($8, type),
+    type_id = COALESCE($8, type_id),
     updated_at = CURRENT_TIMESTAMP
 WHERE rate_id = $1
 RETURNING *;

@@ -48,7 +48,7 @@ func (server *Server) createExchangeRate(ctx *gin.Context) {
 		ValidFromDate:         req.ValidFromDate,
 		ValidToDate:           sql.NullTime{Time: req.ValidToDate, Valid: !req.ValidToDate.IsZero()},
 		SourceID:              sql.NullInt32{Int32: req.SourceID, Valid: req.SourceID > 0},
-		Type:                  req.Type,
+		TypeID:                sql.NullInt32{Int32: req.Type, Valid: req.Type > 0},
 	}
 
 	exchangeRate, err := server.store.CreateExchangeRate(ctx, arg)
@@ -140,7 +140,7 @@ func (server *Server) listExchangeRate(ctx *gin.Context) {
 // listExchangeRateByTypeRequest represents the query parameters for listing exchange rates by type.
 // Type values: 0 = both, 1 = cash, 2 = card
 type listExchangeRateByTypeRequest struct {
-	Type     int32 `form:"type" binding:"min=0,max=2"`
+	TypeID   int32 `form:"type_id" binding:"min=1"`
 	PageID   int32 `form:"page_id" binding:"required,min=1"`
 	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
 }
@@ -167,7 +167,7 @@ func (server *Server) listExchangeRateByType(ctx *gin.Context) {
 	}
 
 	arg := db.GetExchangeRatesByTypeParams{
-		Type:   req.Type,
+		TypeID: sql.NullInt32{Int32: req.TypeID, Valid: req.TypeID > 0},
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}
@@ -190,7 +190,7 @@ type updateExchangeRateRequest struct {
 	ValidFromDate         *time.Time `json:"valid_from_date"`
 	ValidToDate           *time.Time `json:"valid_to_date"`
 	SourceID              *int32     `json:"source_id"`
-	Type                  *int32     `json:"type"`
+	TypeID                *int32     `json:"type_id"`
 }
 
 type updateExchangeRateURIRequest struct {
@@ -229,7 +229,7 @@ func (server *Server) updateExchangeRate(ctx *gin.Context) {
 		ValidFromDate:         util.Value(req.ValidFromDate),
 		ValidToDate:           sql.NullTime{Time: util.Value(req.ValidToDate), Valid: req.ValidToDate != nil},
 		SourceID:              sql.NullInt32{Int32: util.Value(req.SourceID), Valid: req.SourceID != nil},
-		Type:                  util.Value(req.Type),
+		TypeID:                sql.NullInt32{Int32: util.Value(req.TypeID), Valid: req.TypeID != nil},
 	}
 
 	exchangeRate, err := server.store.UpdateExchangeRate(ctx, arg)
