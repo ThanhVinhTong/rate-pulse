@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/util"
@@ -13,7 +14,7 @@ import (
 // Each country must be linked to an existing currency.
 type createCountryRequest struct {
 	CountryName string `json:"country_name" binding:"required"`
-	CountryCode string `json:"country_code" binding:"required,len=3"`
+	CountryCode string `json:"country_code" binding:"required,min=2,max=3"`
 	CurrencyID  int32  `json:"currency_id" binding:"required,min=1"`
 }
 
@@ -57,6 +58,12 @@ type getCountryRequest struct {
 	ID int32 `uri:"id" binding:"required,min=1"`
 }
 
+// getCountryByCodeRequest represents the URI parameters for fetching a single country.
+// The country code must be between 2 and 3 characters.
+type getCountryByCodeRequest struct {
+	CountryCode string `uri:"country_code" binding:"required,min=2,max=3"`
+}
+
 // getCountry retrieves a single country by its ID.
 // The country ID is extracted from the URI path parameter.
 //
@@ -78,6 +85,40 @@ func (server *Server) getCountry(ctx *gin.Context) {
 	}
 
 	country, err := server.store.GetCountryByID(ctx, req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, country)
+}
+
+// getCountryByCode retrieves a single country by its country code.
+// The country code is extracted from the URI path parameter.
+//
+// GET /countries/code/:country_code
+//
+// URI parameters:
+//   - country_code: The country code (required, 2-3 characters)
+//
+// Response: Country object on success, error message on failure
+// Status codes:
+//   - 200 OK: Country retrieved successfully
+//   - 400 Bad Request: Invalid or missing country code
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) getCountryByCode(ctx *gin.Context) {
+	var req getCountryByCodeRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := sql.NullString{
+		String: strings.ToUpper(strings.TrimSpace(req.CountryCode)),
+		Valid:  true,
+	}
+
+	country, err := server.store.GetCountryByCode(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
