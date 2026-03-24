@@ -11,7 +11,33 @@ interface CountryApiResponse {
   country_code?: string;
   CountryID?: number;
   CountryName?: string;
-  CountryCode?: string;
+  CountryCode?:
+    | string
+    | {
+        String?: string;
+        Valid?: boolean;
+      };
+}
+
+function normalizeCountryCode(item: CountryApiResponse): string | undefined {
+  if (typeof item.country_code === "string") {
+    return item.country_code;
+  }
+
+  if (typeof item.CountryCode === "string") {
+    return item.CountryCode;
+  }
+
+  if (
+    item.CountryCode &&
+    typeof item.CountryCode === "object" &&
+    item.CountryCode.Valid === true &&
+    typeof item.CountryCode.String === "string"
+  ) {
+    return item.CountryCode.String;
+  }
+
+  return undefined;
 }
 
 function toTimestamp(value?: string) {
@@ -103,11 +129,7 @@ async function listAllCountries(accessToken: string): Promise<CountryOption[]> {
                 ? item.CountryName
                 : null;
           const countryCode =
-            typeof item.country_code === "string"
-              ? item.country_code
-              : typeof item.CountryCode === "string"
-                ? item.CountryCode
-                : undefined;
+            normalizeCountryCode(item);
 
           if (countryId === null || countryName === null) {
             return null;
@@ -146,6 +168,7 @@ export default async function ProfilePage() {
   const session = await requireAuth();
   const accessToken = await getAccessTokenForRead(session);
   const countries = accessToken ? await listAllCountries(accessToken) : [];
+  console.log(countries)
 
   return <ProfileTabs session={session} countries={countries} />;
 }
