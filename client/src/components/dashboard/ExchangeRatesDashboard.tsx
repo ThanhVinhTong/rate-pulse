@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, RefreshCw, Star } from "lucide-react";
 
 import { useRealtimeRates } from "@/hooks/useRealtimeRates";
-import type { CurrencyPair, TimeRange } from "@/types";
-import { bankRates, supportedCurrencies } from "@/lib/mock-data";
+import { refreshExchangeRatesAction } from "@/app/actions";
+import type { BankRate, CurrencyPair, TimeRange } from "@/types";
 
 import { ExchangeRateFilters } from "./ExchangeRateFilters";
 import { CurrencyConverter } from "./CurrencyConverter";
@@ -13,13 +13,24 @@ import { ExchangeRateChart } from "./ExchangeRateChart";
 
 interface ExchangeRatesDashboardProps {
   initialPairs: CurrencyPair[];
+  initialBankRates: BankRate[];
+  supportedCurrencyOptions: Array<{
+    code: string;
+    name: string;
+    symbol: string;
+    continent: string;
+  }>;
   range: TimeRange;
 }
 
 export function ExchangeRatesDashboard({
   initialPairs,
+  initialBankRates,
+  supportedCurrencyOptions,
   range,
 }: ExchangeRatesDashboardProps) {
+  const [bankRates, setBankRates] = useState(initialBankRates);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const realtimePairs = useRealtimeRates(initialPairs);
   const defaultPair = realtimePairs[0]?.pair ?? "USD/JPY";
   const [initialBase, initialTarget] = defaultPair.split("/");
@@ -27,7 +38,38 @@ export function ExchangeRatesDashboard({
   const [selectedTargetCurrency, setSelectedTargetCurrency] = useState(initialTarget);
   const [selectedSource, setSelectedSource] = useState("All Sources");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const conversionUpdatedAt = "23:00 13/03/2026";
+
+  const handleRefreshRates = async () => {
+    setIsRefreshing(true);
+    try {
+      const result = await refreshExchangeRatesAction();
+      if (result.status === "success" && Array.isArray(result.data)) {
+        setBankRates(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to refresh rates:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const conversionUpdatedAt = useMemo(() => {
+    if (bankRates.length === 0) return "N/A";
+    const latestTimestamp = bankRates
+      .filter((rate) => rate.timestamp)
+      .map((rate) => new Date(rate.timestamp!))
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    
+    if (!latestTimestamp) return "N/A";
+    
+    const hours = String(latestTimestamp.getHours()).padStart(2, "0");
+    const minutes = String(latestTimestamp.getMinutes()).padStart(2, "0");
+    const day = String(latestTimestamp.getDate()).padStart(2, "0");
+    const month = String(latestTimestamp.getMonth() + 1).padStart(2, "0");
+    const year = latestTimestamp.getFullYear();
+    
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  }, [bankRates]);
 
   const availableCurrencies = useMemo(() => {
     const pairCurrencies = realtimePairs
@@ -37,14 +79,14 @@ export function ExchangeRatesDashboard({
     // Keep all supported currencies selectable (including VND),
     // then merge in any extra codes discovered from live pairs.
     const mergedCodes = Array.from(
-      new Set([...supportedCurrencies.map((currency) => currency.code), ...pairCurrencies]),
+      new Set([...supportedCurrencyOptions.map((currency) => currency.code), ...pairCurrencies]),
     );
 
     return mergedCodes.map((code) => {
-      const matched = supportedCurrencies.find((currency) => currency.code === code);
+      const matched = supportedCurrencyOptions.find((currency) => currency.code === code);
       return { code, name: matched?.name ?? code, continent: matched?.continent ?? "Other" };
     });
-  }, [realtimePairs]);
+  }, [realtimePairs, supportedCurrencyOptions]);
 
   const directPair = realtimePairs.find((pair) => pair.pair === `${selectedBaseCurrency}/${selectedTargetCurrency}`);
   const inversePair = realtimePairs.find((pair) => pair.pair === `${selectedTargetCurrency}/${selectedBaseCurrency}`);
@@ -61,7 +103,7 @@ export function ExchangeRatesDashboard({
         ),
       ),
     ],
-    [selectedBaseCurrency],
+    [bankRates, selectedBaseCurrency],
   );
 
   const effectiveSelectedSource = sourceOptions.includes(selectedSource)
@@ -81,33 +123,25 @@ export function ExchangeRatesDashboard({
     return matchPair && matchSource && matchFavorite;
   });
 
-  const cheapestWireRateFromTable = rates.length > 0
-    ? Math.min(...rates.map((rate) => Math.min(rate.wireBuy, rate.wireSell)))
+  // Keep only the latest rate from each source
+  const latestRatesBySource = useMemo(() => {
+    const sourceMap = new Map<string, BankRate>();
+    for (const rate of rates) {
+      const existing = sourceMap.get(rate.source);
+      if (!existing || (rate.timestamp && existing.timestamp && rate.timestamp > existing.timestamp)) {
+        sourceMap.set(rate.source, rate);
+      }
+    }
+    return Array.from(sourceMap.values());
+  }, [rates]);
+
+  const bestWireSellRateFromTable = latestRatesBySource.length > 0
+    ? Math.min(...latestRatesBySource.map((rate) => rate.wireSell))
     : null;
 
-  const normalizeRateDirection = (rawRate: number) => {
-    if (rawRate <= 0) return 1;
+  const conversionRate = bestWireSellRateFromTable ?? marketReferenceRate ?? 1;
 
-    const inverse = 1 / rawRate;
-    if (marketReferenceRate && marketReferenceRate > 0) {
-      const directDistance = Math.abs(Math.log(rawRate / marketReferenceRate));
-      const inverseDistance = Math.abs(Math.log(inverse / marketReferenceRate));
-      return inverseDistance < directDistance ? inverse : rawRate;
-    }
-
-    // Fallback for pairs that don't exist in realtime mock pairs (e.g. VND/USD in bank table).
-    if (rawRate >= 1000) {
-      return inverse;
-    }
-
-    return rawRate;
-  };
-
-  const conversionRate = cheapestWireRateFromTable !== null
-    ? normalizeRateDirection(cheapestWireRateFromTable)
-    : (marketReferenceRate ?? 1);
-
-  const groupedRates = rates.reduce<Record<string, typeof rates>>((groups, rate) => {
+  const groupedRates = latestRatesBySource.reduce<Record<string, typeof latestRatesBySource>>((groups, rate) => {
     if (!groups[rate.baseCurrency]) {
       groups[rate.baseCurrency] = [];
     }
@@ -131,11 +165,6 @@ export function ExchangeRatesDashboard({
     }
   };
 
-  const handleSwapCurrencies = () => {
-    setSelectedBaseCurrency(selectedTargetCurrency);
-    setSelectedTargetCurrency(selectedBaseCurrency);
-  };
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -144,10 +173,14 @@ export function ExchangeRatesDashboard({
           <h1 className="text-2xl lg:text-3xl font-semibold text-white">Exchange Rates</h1>
           <p className="text-sm text-text-muted mt-1">Real-time currency exchange rates from multiple sources</p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all font-medium">
-          <RefreshCw size={16} />
-          <span className="hidden sm:inline">Refresh Rates</span>
-          <span className="sm:hidden">Refresh</span>
+        <button
+          onClick={handleRefreshRates}
+          disabled={isRefreshing}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+        >
+          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+          <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh Rates"}</span>
+          <span className="sm:hidden">{isRefreshing ? "..." : "Refresh"}</span>
         </button>
       </div>
 
@@ -169,7 +202,8 @@ export function ExchangeRatesDashboard({
         baseCurrency={selectedBaseCurrency}
         targetCurrency={selectedTargetCurrency}
         conversionRate={conversionRate}
-        onSwapCurrencies={handleSwapCurrencies}
+        currencyOptions={supportedCurrencyOptions}
+        updatedAt={conversionUpdatedAt}
       />
 
       {/* Grouped Exchange Rates Tables */}
@@ -179,7 +213,7 @@ export function ExchangeRatesDashboard({
             {selectedBaseCurrency} → {selectedTargetCurrency}
           </h3>
           <p className="text-xs text-text-muted mt-1">
-            {rates.length} sources available
+            {latestRatesBySource.length} sources available
           </p>
         </div>
         {Object.entries(groupedRates).map(([baseCurrency, group]) => (
@@ -199,7 +233,7 @@ export function ExchangeRatesDashboard({
                     <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Wire Buy</th>
                     <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Cash Sell</th>
                     <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Wire Sell</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Change</th>
+                    {/* <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Change</th> */}
                     <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Country</th>
                   </tr>
                 </thead>
@@ -216,12 +250,12 @@ export function ExchangeRatesDashboard({
                       <td className="px-5 py-4 font-semibold text-white">{rate.wireBuy.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                       <td className="px-5 py-4 font-semibold text-white">{rate.cashSell.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                       <td className="px-5 py-4 font-semibold text-white">{rate.wireSell.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                      <td className="px-5 py-4">
+                      {/* <td className="px-5 py-4">
                         <div className={`flex items-center gap-1 font-semibold ${rate.change >= 0 ? "text-status-success" : "text-status-danger"}`}>
                           {rate.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                           {rate.change >= 0 ? "+" : ""}{rate.change}%
                         </div>
-                      </td>
+                      </td> */}
                       <td className="px-5 py-4 text-text-muted">{rate.country}</td>
                     </tr>
                   ))}
@@ -275,7 +309,7 @@ export function ExchangeRatesDashboard({
           </div>
         ))}
 
-        {rates.length === 0 && (
+        {latestRatesBySource.length === 0 && (
           <div className="px-6 py-8 text-center text-text-muted text-sm">
             No source data available for {selectedBaseCurrency}/{selectedTargetCurrency}.
           </div>
