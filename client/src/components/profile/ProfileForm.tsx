@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo } from "react";
 
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
@@ -21,10 +21,44 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}•••••@${domain.slice(0, 2)}•••••`;
 }
 
+function resolveCountryValue(value: string | undefined, countries: CountryOption[]): string {
+  const normalized = (value ?? "").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const byCode = countries.find(
+    (country) => (country.countryCode ?? "").toUpperCase() === normalized.toUpperCase(),
+  );
+  if (byCode) {
+    return byCode.countryCode ?? byCode.countryName;
+  }
+
+  const byName = countries.find(
+    (country) => country.countryName.toLowerCase() === normalized.toLowerCase(),
+  );
+  if (byName) {
+    return byName.countryCode ?? byName.countryName;
+  }
+
+  return normalized;
+}
+
 export function ProfileForm({ session, countries }: ProfileFormProps) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     updateProfileAction,
     initialActionState,
+  );
+
+  const residenceValue = useMemo(
+    () => resolveCountryValue(session.countryOfResidence, countries),
+    [session.countryOfResidence, countries],
+  );
+
+  const birthValue = useMemo(
+    () => resolveCountryValue(session.countryOfBirth, countries),
+    [session.countryOfBirth, countries],
   );
 
   return (
@@ -64,7 +98,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
 
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Country of Residence</span>
-        <Select name="countryOfResidence" defaultValue={session.countryOfResidence ?? ""}>
+        <Select name="countryOfResidence" defaultValue={residenceValue}>
           <option value="">Select country</option>
           {countries.map((country) => (
             <option
@@ -79,7 +113,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
 
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Country of Birth</span>
-        <Select name="countryOfBirth" defaultValue={session.countryOfBirth ?? ""}>
+        <Select name="countryOfBirth" defaultValue={birthValue}>
           <option value="">Select country</option>
           {countries.map((country) => (
             <option

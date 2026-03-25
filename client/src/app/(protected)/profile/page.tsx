@@ -168,7 +168,6 @@ export default async function ProfilePage() {
   const session = await requireAuth();
   const accessToken = await getAccessTokenForRead(session);
   const countries = accessToken ? await listAllCountries(accessToken) : [];
-  console.log(countries)
 
   return <ProfileTabs session={session} countries={countries} />;
 }
