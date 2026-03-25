@@ -196,8 +196,12 @@ export async function updateProfileAction(
 ): Promise<ActionState> {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
-  const countryOfResidence = String(formData.get("countryOfResidence") ?? "").trim();
-  const countryOfBirth = String(formData.get("countryOfBirth") ?? "").trim();
+  const countryOfResidence = String(formData.get("countryOfResidence") ?? "")
+    .trim()
+    .toLowerCase();
+  const countryOfBirth = String(formData.get("countryOfBirth") ?? "")
+    .trim()
+    .toLowerCase();
 
   if (!firstName || !lastName) {
     return {

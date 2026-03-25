@@ -32,14 +32,14 @@ function resolveCountryValue(value: string | undefined, countries: CountryOption
     (country) => (country.countryCode ?? "").toUpperCase() === normalized.toUpperCase(),
   );
   if (byCode) {
-    return byCode.countryCode ?? byCode.countryName;
+    return (byCode.countryCode ?? "").toLowerCase();
   }
 
   const byName = countries.find(
     (country) => country.countryName.toLowerCase() === normalized.toLowerCase(),
   );
   if (byName) {
-    return byName.countryCode ?? byName.countryName;
+    return (byName.countryCode ?? "").toLowerCase();
   }
 
   return normalized;
@@ -63,6 +63,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
 
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
+      {/*First Name*/}
       <label className="space-y-2">
         <span className="text-sm text-text-muted">First name</span>
         <input
@@ -72,6 +73,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         />
       </label>
 
+      {/*Last Name*/}
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Last name</span>
         <input
@@ -81,6 +83,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         />
       </label>
 
+      {/*Email Address*/}
       <label className="space-y-2 md:col-span-2">
         <span className="text-sm text-text-muted">Email address</span>
         <div className="relative">
@@ -96,6 +99,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         </div>
       </label>
 
+      {/*Country of Residence*/}
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Country of Residence</span>
         <Select name="countryOfResidence" defaultValue={residenceValue}>
@@ -103,7 +107,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
           {countries.map((country) => (
             <option
               key={`residence-${country.countryId}`}
-              value={country.countryCode ?? country.countryName}
+              value={(country.countryCode ?? "").toLowerCase()}
             >
               {country.countryName}
             </option>
@@ -111,6 +115,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         </Select>
       </label>
 
+      {/*Country of Birth*/}
       <label className="space-y-2">
         <span className="text-sm text-text-muted">Country of Birth</span>
         <Select name="countryOfBirth" defaultValue={birthValue}>
@@ -118,7 +123,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
           {countries.map((country) => (
             <option
               key={`birth-${country.countryId}`}
-              value={country.countryCode ?? country.countryName}
+              value={(country.countryCode ?? "").toLowerCase()}
             >
               {country.countryName}
             </option>
@@ -126,6 +131,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         </Select>
       </label>
 
+      {/*Note field*/}
       <label className="space-y-2 md:col-span-2">
         <span className="text-sm text-text-muted">Notes</span>
         <textarea
@@ -136,6 +142,7 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         />
       </label>
 
+      {/*Submit Area*/}
       <div className="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {state.status === "success" ? (
