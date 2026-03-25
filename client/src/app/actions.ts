@@ -113,7 +113,7 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
   const password = String(formData.get("password") ?? "").trim();
   const firstName = String(formData.get("first_name") ?? "").trim();
   const lastName = String(formData.get("last_name") ?? "").trim();
-  const username = email.includes("@") ? (email.split("@")[0] ?? "") : email;
+  const username = firstName + lastName;
   let redirectTo = "/profile";
 
   if (!firstName || !lastName || !email || !password) {
