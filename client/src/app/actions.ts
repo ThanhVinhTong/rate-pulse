@@ -9,6 +9,30 @@ import type { AuthSession } from "@/types";
 
 const API_BASE_URL = "https://api.rate-pulse.me";
 
+function normalizeUtcOffset(value: unknown): string {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "utc") {
+    return "utc+0";
+  }
+
+  const match = normalized.match(/^utc([+-])(\d{1,2})$/);
+  if (!match) {
+    return "utc+0";
+  }
+
+  const sign = match[1];
+  const offset = Number(match[2]);
+
+  if (!Number.isInteger(offset) || offset < 0 || offset > 14) {
+    return "utc+0";
+  }
+
+  return `utc${sign}${offset}`;
+}
+
 function toSessionRole(userType: string): AuthSession["role"] {
   switch (userType) {
     case "admin":
@@ -61,6 +85,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
       name: user.username,
       firstName: user.first_name,
       lastName: user.last_name,
+      timeZone: normalizeUtcOffset(user.time_zone),
       countryOfResidence: user.country_of_residence,
       countryOfBirth: user.country_of_birth,
       role: toSessionRole(userType),
@@ -148,6 +173,7 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
       name: loginUser.username,
       firstName: loginUser.first_name,
       lastName: loginUser.last_name,
+      timeZone: normalizeUtcOffset(loginUser.time_zone),
       countryOfResidence: loginUser.country_of_residence,
       countryOfBirth: loginUser.country_of_birth,
       role: toSessionRole(loginUserType),
@@ -196,6 +222,7 @@ export async function updateProfileAction(
 ): Promise<ActionState> {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
+  const timeZone = normalizeUtcOffset(formData.get("timeZone"));
   const countryOfResidence = String(formData.get("countryOfResidence") ?? "")
     .trim()
     .toLowerCase();
@@ -246,6 +273,7 @@ export async function updateProfileAction(
       body: JSON.stringify({
         first_name: firstName,
         last_name: lastName,
+        time_zone: timeZone,
         country_of_residence: countryOfResidence,
         country_of_birth: countryOfBirth,
       }),
@@ -265,6 +293,7 @@ export async function updateProfileAction(
       ...session,
       firstName: typeof data.first_name === "string" ? data.first_name : firstName,
       lastName: typeof data.last_name === "string" ? data.last_name : lastName,
+      timeZone: normalizeUtcOffset(data.time_zone ?? timeZone),
       countryOfResidence:
         typeof data.country_of_residence === "string"
           ? data.country_of_residence

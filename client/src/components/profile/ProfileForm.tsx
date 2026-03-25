@@ -45,6 +45,38 @@ function resolveCountryValue(value: string | undefined, countries: CountryOption
   return normalized;
 }
 
+function normalizeTimeZone(value: string | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase();
+
+  if (normalized === "utc") {
+    return "utc+0";
+  }
+
+  const match = normalized.match(/^utc([+-])(\d{1,2})$/);
+  if (!match) {
+    return "utc+0";
+  }
+
+  const sign = match[1];
+  const offset = Number(match[2]);
+
+  if (!Number.isInteger(offset) || offset < 0 || offset > 14) {
+    return "utc+0";
+  }
+
+  return `utc${sign}${offset}`;
+}
+
+const timeZoneOptions = Array.from({ length: 27 }, (_, index) => {
+  const offset = index - 12;
+  const sign = offset >= 0 ? "+" : "-";
+  const absolute = Math.abs(offset);
+  const value = `utc${sign}${absolute}`;
+  const label = `UTC${sign}${absolute}`;
+
+  return { value, label };
+});
+
 export function ProfileForm({ session, countries }: ProfileFormProps) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     updateProfileAction,
@@ -60,6 +92,8 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
     () => resolveCountryValue(session.countryOfBirth, countries),
     [session.countryOfBirth, countries],
   );
+
+  const timeZoneValue = useMemo(() => normalizeTimeZone(session.timeZone), [session.timeZone]);
 
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
@@ -131,15 +165,16 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
         </Select>
       </label>
 
-      {/*Note field*/}
+      {/*Time Zone*/}
       <label className="space-y-2 md:col-span-2">
-        <span className="text-sm text-text-muted">Notes</span>
-        <textarea
-          name="notes"
-          rows={4}
-          defaultValue="Prefers London and New York session summaries with risk reminders."
-          className="w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 py-3 text-white outline-none transition focus:border-primary"
-        />
+        <span className="text-sm text-text-muted">Time zone</span>
+        <Select name="timeZone" defaultValue={timeZoneValue}>
+          {timeZoneOptions.map((timeZone) => (
+            <option key={timeZone.value} value={timeZone.value}>
+              {timeZone.label}
+            </option>
+          ))}
+        </Select>
       </label>
 
       {/*Submit Area*/}
