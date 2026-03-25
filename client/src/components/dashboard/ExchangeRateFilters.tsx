@@ -6,7 +6,7 @@ import { ChevronDown, Filter, Search, Star } from "lucide-react";
 interface CurrencyOption {
   code: string;
   name: string;
-  continent: string;
+  symbol?: string;
 }
 
 interface ExchangeRateFiltersProps {
@@ -55,20 +55,9 @@ function CurrencyDropdown({ label, value, options, onSelect }: CurrencyDropdownP
     return options.filter(
       (option) =>
         option.code.toLowerCase().includes(keyword)
-        || option.name.toLowerCase().includes(keyword)
-        || option.continent.toLowerCase().includes(keyword),
+        || option.name.toLowerCase().includes(keyword),
     );
   }, [options, searchText]);
-
-  const groupedOptions = useMemo(() => {
-    return filteredOptions.reduce<Record<string, CurrencyOption[]>>((groups, option) => {
-      if (!groups[option.continent]) {
-        groups[option.continent] = [];
-      }
-      groups[option.continent].push(option);
-      return groups;
-    }, {});
-  }, [filteredOptions]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -95,28 +84,23 @@ function CurrencyDropdown({ label, value, options, onSelect }: CurrencyDropdownP
           </div>
 
           <div className="max-h-64 overflow-auto p-2">
-            {Object.entries(groupedOptions).map(([continent, continentOptions]) => (
-              <div key={continent} className="mb-2 last:mb-0">
-                <p className="px-2 py-1 text-[12px] font-bold uppercase tracking-wider text-primary/90">{continent}</p>
-                {continentOptions.map((option) => (
-                  <button
-                    key={option.code}
-                    type="button"
-                    onClick={() => {
-                      onSelect(option.code);
-                      setSearchText("");
-                      setIsOpen(false);
-                    }}
-                    className={`w-full rounded-lg px-2 py-2 text-left text-sm transition ${
-                      option.code === value
-                        ? "bg-primary text-white"
-                        : "text-text-primary hover:bg-white/10"
-                    }`}
-                  >
-                    {option.code} - {option.name}
-                  </button>
-                ))}
-              </div>
+            {filteredOptions.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                onClick={() => {
+                  onSelect(option.code);
+                  setSearchText("");
+                  setIsOpen(false);
+                }}
+                className={`w-full rounded-lg px-2 py-2 text-left text-sm transition ${
+                  option.code === value
+                    ? "bg-primary text-white"
+                    : "text-text-primary hover:bg-white/10"
+                }`}
+              >
+                {option.code} - {option.name}
+              </button>
             ))}
 
             {filteredOptions.length === 0 && (

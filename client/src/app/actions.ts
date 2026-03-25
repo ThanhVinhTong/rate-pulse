@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { clearSession, createSession, getSession } from "@/lib/auth";
+import { mapApiBankRates, type ApiCurrency, type ApiCountry, type ApiRateSource, type ApiExchangeRate } from "@/lib/exchange-rate-mapper";
 import type { ActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
 
@@ -225,4 +226,63 @@ export async function updateSettingsAction(
     status: "success",
     message: `${section} settings saved successfully.`,
   };
+}
+
+export async function refreshExchangeRatesAction(): Promise<ActionState & { data?: any }> {
+  try {
+    const token = await getSession().then((session) => session?.accessToken);
+    
+    if (!token) {
+      return {
+        status: "error",
+        message: "Authentication required to refresh rates.",
+      };
+    }
+
+    const PAGE_SIZE = 10;
+
+    async function fetchAllPages<T>(path: string): Promise<T[]> {
+      const items: T[] = [];
+      for (let page = 1; page <= 100; page += 1) {
+        const res = await fetch(`${API_BASE_URL}${path}?page_id=${page}&page_size=${PAGE_SIZE}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch ${path}: ${res.status}`);
+        }
+
+        const pageItems = (await res.json()) as T[];
+        items.push(...pageItems);
+
+        if (pageItems.length < PAGE_SIZE) {
+          break;
+        }
+      }
+      return items;
+    }
+
+    const [currencies, countries, sources, rates] = await Promise.all([
+      fetchAllPages<ApiCurrency>("/currencies"),
+      fetchAllPages<ApiCountry>("/countries"),
+      fetchAllPages<ApiRateSource>("/rate-sources"),
+      fetchAllPages<ApiExchangeRate>("/exchange-rates"),
+    ]);
+
+    const bankRates = mapApiBankRates(currencies, countries, sources, rates);
+
+    return {
+      status: "success",
+      message: "Exchange rates refreshed successfully.",
+      data: bankRates,
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Failed to refresh exchange rates.",
+    };
+  }
 }

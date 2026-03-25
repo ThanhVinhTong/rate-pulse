@@ -3,47 +3,59 @@
 import { ArrowRightLeft } from "lucide-react";
 import { useMemo, useState } from "react";
 
-const currencies: Record<string, { code: string; name: string; symbol: string }> = {
-  VND: { code: "VND", name: "Vietnamese Dong", symbol: "VND" },
-  USD: { code: "USD", name: "US Dollar", symbol: "$" },
-  EUR: { code: "EUR", name: "Euro", symbol: "€" },
-  GBP: { code: "GBP", name: "British Pound", symbol: "£" },
-  JPY: { code: "JPY", name: "Japanese Yen", symbol: "¥" },
-  AUD: { code: "AUD", name: "Australian Dollar", symbol: "A$" },
-  CAD: { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
-  CHF: { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
-  CNY: { code: "CNY", name: "Chinese Yuan", symbol: "CNY" },
-  SGD: { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-  THB: { code: "THB", name: "Thai Baht", symbol: "฿" },
-};
+interface CurrencyOption {
+  code: string;
+  name: string;
+  symbol: string;
+}
 
 interface CurrencyConverterProps {
   baseCurrency: string;
   targetCurrency: string;
   conversionRate: number;
-  onSwapCurrencies: () => void;
+  currencyOptions: CurrencyOption[];
+  updatedAt?: string;
 }
 
 export function CurrencyConverter({
   baseCurrency,
   targetCurrency,
   conversionRate,
-  onSwapCurrencies,
+  currencyOptions,
+  updatedAt = "N/A",
 }: CurrencyConverterProps) {
   const [amount, setAmount] = useState("1");
+  const [isSwapped, setIsSwapped] = useState(false);
 
   const rate = Number.isFinite(conversionRate) && conversionRate > 0 ? conversionRate : 1;
+  const displayRate = rate > 0 ? 1 / rate : 1;
+  const fromCurrency = isSwapped ? targetCurrency : baseCurrency;
+  const toCurrency = isSwapped ? baseCurrency : targetCurrency;
+  const activeRate = isSwapped ? rate : displayRate;
   const convertedAmount = useMemo(
     () =>
-      (Number(amount || 0) * rate).toLocaleString("en-US", {
+      (Number(amount || 0) * activeRate).toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 6,
       }),
-    [amount, rate],
+    [amount, activeRate],
   );
 
-  const fromDetails = currencies[baseCurrency] || { code: baseCurrency, name: baseCurrency, symbol: baseCurrency };
-  const toDetails = currencies[targetCurrency] || { code: targetCurrency, name: targetCurrency, symbol: targetCurrency };
+  const currencyByCode = useMemo(
+    () => new Map(currencyOptions.map((currency) => [currency.code, currency])),
+    [currencyOptions],
+  );
+
+  const fromDetails = currencyByCode.get(fromCurrency) || {
+    code: fromCurrency,
+    name: fromCurrency,
+    symbol: fromCurrency,
+  };
+  const toDetails = currencyByCode.get(toCurrency) || {
+    code: toCurrency,
+    name: toCurrency,
+    symbol: toCurrency,
+  };
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 mb-6">
@@ -55,9 +67,9 @@ export function CurrencyConverter({
           <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">FROM</label>
           <div className="rounded-xl border border-white/10 bg-[#0c1220] p-4 flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-white">{baseCurrency.substring(0, 2)}</span>
+              <span className="text-lg font-semibold text-white">{fromDetails.symbol}</span>
               <div>
-                <div className="font-bold text-white">{baseCurrency}</div>
+                <div className="font-bold text-white">{fromCurrency}</div>
                 <div className="text-xs text-text-muted">{fromDetails.name}</div>
               </div>
             </div>
@@ -74,7 +86,7 @@ export function CurrencyConverter({
         {/* Swap Button */}
         <div className="flex-shrink-0 mt-6 md:mt-0">
           <button 
-            onClick={onSwapCurrencies}
+            onClick={() => setIsSwapped((current) => !current)}
             className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             <ArrowRightLeft className="h-5 w-5" />
@@ -86,9 +98,9 @@ export function CurrencyConverter({
           <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">TO</label>
           <div className="rounded-xl border border-white/10 bg-[#0c1220] p-4 flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-white">{targetCurrency.substring(0, 2)}</span>
+              <span className="text-lg font-semibold text-white">{toDetails.symbol}</span>
               <div>
-                <div className="font-bold text-white">{targetCurrency}</div>
+                <div className="font-bold text-white">{toCurrency}</div>
                 <div className="text-xs text-text-muted">{toDetails.name}</div>
               </div>
             </div>
@@ -102,10 +114,10 @@ export function CurrencyConverter({
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-text-muted flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
-          Live rate: 1 {baseCurrency} = {rate.toLocaleString("en-US", { maximumFractionDigits: 6 })} {targetCurrency}
+          Live rate: 1 {fromCurrency} = {activeRate.toLocaleString("en-US", { maximumFractionDigits: 6 })} {toCurrency}
         </p>
         <p className="text-xs text-text-tertiary">
-          Mar 10, 9:13 PM GMT+8
+          {updatedAt}
         </p>
       </div>
     </div>

@@ -15,6 +15,7 @@ export interface BankRate {
   wireSell: number;
   change: number;
   country: string;
+  timestamp?: string;
 }
 
 export interface MarketTrendPoint {
