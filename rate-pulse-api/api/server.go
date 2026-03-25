@@ -82,6 +82,7 @@ func (server *Server) setupRouter() {
 
 	// add `countries` routes
 	authRoutes.GET("/countries/:id", server.getCountry)
+	authRoutes.GET("/countries/code/:country_code", server.getCountryByCode)
 	authRoutes.GET("/countries", server.listCountry)
 	adminRoutes.POST("/admin/countries", server.createCountry)
 	adminRoutes.PUT("/admin/countries/:id", server.updateCountry)
