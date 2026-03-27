@@ -1,5 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 
+import { Panel } from "@/components/ui/panel";
+import { Text } from "@/components/ui/typography";
+
+import { IconBox } from "./icon-box";
 import { Toggle, type ToggleProps } from "./Toggle";
 
 interface SettingToggleProps {
@@ -22,22 +26,20 @@ export function SettingToggle({
   toggleProps,
 }: SettingToggleProps) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-gray-50 p-4 transition-colors dark:bg-[#0c1220]/50">
+    <Panel variant="settingRow">
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <IconBox variant="setting">
           <Icon className="h-5 w-5" />
-        </div>
+        </IconBox>
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
-          <p className="text-sm text-gray-500 dark:text-text-muted">{description}</p>
+          <Text variant="muted" className="text-sm dark:text-text-muted">
+            {description}
+          </Text>
         </div>
       </div>
-      
-      <Toggle 
-        name={name || (id ? `${id}Notifications` : undefined)} 
-        defaultChecked={defaultChecked} 
-        {...toggleProps} 
-      />
-    </div>
+
+      <Toggle name={name || (id ? `${id}Notifications` : undefined)} defaultChecked={defaultChecked} {...toggleProps} />
+    </Panel>
   );
 }

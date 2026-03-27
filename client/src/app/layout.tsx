@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/common/ThemeProvider";
 import { Toast } from "@/components/common/Toast";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
+import { Container } from "@/components/ui/container";
 import { getUserFromCookie } from "@/lib/auth";
 
 import "./globals.css";
@@ -35,9 +36,13 @@ export default async function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${poppins.variable} bg-surface font-sans text-text-primary antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <div className="min-h-screen bg-hero-grid">
+          <div className="flex min-h-screen flex-col">
             <Navbar session={session} />
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+            <main className="flex flex-1 flex-col">
+              <Container className="flex flex-1 flex-col" verticalPadding="md">
+                {children}
+              </Container>
+            </main>
             <Footer />
           </div>
           <Toast />

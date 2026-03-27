@@ -9,6 +9,7 @@ import { initialActionState } from "@/lib/action-state";
 
 import { SettingToggle } from "@/components/ui/SettingToggle";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Text } from "@/components/ui/typography";
 
 const notifications = [
   {
@@ -68,10 +69,10 @@ export function Notification() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {state.status === "success" ? (
-            <p className="text-sm text-status-success">{state.message}</p>
+            <Text className="text-sm text-status-success">{state.message}</Text>
           ) : null}
           {state.status === "error" ? (
-            <p className="text-sm text-status-danger">{state.message}</p>
+            <Text className="text-sm text-status-danger">{state.message}</Text>
           ) : null}
         </div>
         <SubmitButton pendingLabel="Saving notifications...">Save notifications</SubmitButton>

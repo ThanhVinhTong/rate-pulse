@@ -1,14 +1,12 @@
+import { cva } from "class-variance-authority";
 import type { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
+export const cardVariants = cva("rounded-2xl border border-white/10 bg-white/5 shadow-panel");
+
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("rounded-2xl border border-white/10 bg-white/5 shadow-panel", className)}
-      {...props}
-    />
-  );
+  return <div className={cn(cardVariants(), className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

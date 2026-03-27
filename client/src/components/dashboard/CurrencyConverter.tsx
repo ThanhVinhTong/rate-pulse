@@ -3,6 +3,12 @@
 import { ArrowRightLeft } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/Button";
+import { FieldCaption } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
+import { Heading, Text } from "@/components/ui/typography";
+
 interface CurrencyOption {
   code: string;
   name: string;
@@ -58,68 +64,65 @@ export function CurrencyConverter({
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 mb-6">
-      <h2 className="text-lg font-semibold text-white mb-6">Currency Converter</h2>
-      
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        {/* FROM Box */}
+    <Panel variant="sheet" padding="md" className="mb-6">
+      <Heading level="section" className="mb-6 text-xl">
+        Currency Converter
+      </Heading>
+
+      <div className="flex flex-col items-center gap-4 md:flex-row">
         <div className="w-full flex-1">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">FROM</label>
-          <div className="rounded-xl border border-white/10 bg-[#0c1220] p-4 flex flex-col gap-2">
+          <FieldCaption variant="upper">FROM</FieldCaption>
+          <Panel variant="converterBox">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-white">{fromDetails.symbol}</span>
+              <span className="text-lg font-semibold text-oninset">{fromDetails.symbol}</span>
               <div>
-                <div className="font-bold text-white">{fromCurrency}</div>
-                <div className="text-xs text-text-muted">{fromDetails.name}</div>
+                <div className="font-bold text-oninset">{fromCurrency}</div>
+                <div className="text-xs text-oninset-muted">{fromDetails.name}</div>
               </div>
             </div>
-            <input 
-              type="number" 
+            <Input
+              type="number"
+              variant="ghostNumber"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-transparent text-2xl font-semibold text-white outline-none"
               placeholder="0"
             />
-          </div>
+          </Panel>
         </div>
 
-        {/* Swap Button */}
-        <div className="flex-shrink-0 mt-6 md:mt-0">
-          <button 
-            onClick={() => setIsSwapped((current) => !current)}
-            className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors"
-          >
+        <div className="mt-6 flex-shrink-0 md:mt-0">
+          <Button type="button" variant="iconSquare" onClick={() => setIsSwapped((current) => !current)}>
             <ArrowRightLeft className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
 
-        {/* TO Box */}
         <div className="w-full flex-1">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">TO</label>
-          <div className="rounded-xl border border-white/10 bg-[#0c1220] p-4 flex flex-col gap-2">
+          <FieldCaption variant="upper">TO</FieldCaption>
+          <Panel variant="converterBox">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-white">{toDetails.symbol}</span>
+              <span className="text-lg font-semibold text-oninset">{toDetails.symbol}</span>
               <div>
-                <div className="font-bold text-white">{toCurrency}</div>
-                <div className="text-xs text-text-muted">{toDetails.name}</div>
+                <div className="font-bold text-oninset">{toCurrency}</div>
+                <div className="text-xs text-oninset-muted">{toDetails.name}</div>
               </div>
             </div>
-            <div className="w-full bg-transparent text-2xl font-semibold text-primary outline-none truncate">
+            <div className="w-full truncate bg-transparent text-2xl font-semibold text-sky-300 outline-none dark:text-sky-200">
               {convertedAmount}
             </div>
-          </div>
+          </Panel>
         </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm text-text-muted flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
-          Live rate: 1 {fromCurrency} = {activeRate.toLocaleString("en-US", { maximumFractionDigits: 6 })} {toCurrency}
-        </p>
-        <p className="text-xs text-text-tertiary">
+        <Text variant="muted" className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+          Live rate: 1 {fromCurrency} = {activeRate.toLocaleString("en-US", { maximumFractionDigits: 6 })}{" "}
+          {toCurrency}
+        </Text>
+        <Text variant="caption" className="text-text-tertiary">
           {updatedAt}
-        </p>
+        </Text>
       </div>
-    </div>
+    </Panel>
   );
 }

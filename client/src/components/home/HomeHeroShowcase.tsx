@@ -2,19 +2,22 @@
 
 import { Activity } from "lucide-react";
 
+import { Panel } from "@/components/ui/panel";
+import { Text } from "@/components/ui/typography";
+
 /** Pairs only — no rate figures (avoids implying live or accurate quotes). */
 const TICKER_PAIRS = ["EUR/USD", "USD/JPY", "GBP/USD", "USD/VND", "XAU/USD", "EUR/GBP"];
 
 export function HomeHeroShowcase() {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-center text-[11px] font-medium uppercase tracking-wider text-text-tertiary">
+      <Text variant="labelUpper" className="text-center text-[11px]">
         Illustrative only — not live or executable prices
-      </p>
+      </Text>
 
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#242e44] py-3 shadow-panel">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#242e44] to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#242e44] to-transparent" />
+      <Panel variant="ticker">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-card to-transparent dark:from-[#242e44]" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-card to-transparent dark:from-[#242e44]" />
         <div className="flex w-max animate-marquee font-mono text-sm text-text-muted">
           <div className="flex shrink-0 gap-10 px-4">
             {TICKER_PAIRS.map((pair) => (
@@ -31,9 +34,9 @@ export function HomeHeroShowcase() {
             ))}
           </div>
         </div>
-      </div>
+      </Panel>
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#242e44] p-5 shadow-panel">
+      <Panel variant="chart">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
             <Activity className="h-4 w-4 text-accent" aria-hidden />
@@ -66,12 +69,12 @@ export function HomeHeroShowcase() {
             />
           </svg>
         </div>
-      </div>
+      </Panel>
 
-      <div className="rounded-2xl border border-dashed border-white/15 bg-[#242e44]/80 p-4 shadow-panel">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+      <Panel variant="dashed" padding="md">
+        <Text variant="labelUpper" className="mb-3">
           Anonymous placeholders
-        </p>
+        </Text>
         <div className="space-y-2">
           {["Row A", "Row B", "Row C"].map((label) => (
             <div
@@ -83,7 +86,7 @@ export function HomeHeroShowcase() {
             </div>
           ))}
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

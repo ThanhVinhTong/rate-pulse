@@ -1,10 +1,17 @@
+import { Container } from "@/components/ui/container";
+import { panelVariants } from "@/components/ui/panel";
+import { Text } from "@/components/ui/typography";
+import { cn } from "@/lib/utils";
+
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-[#0f1522]/80">
-      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-text-muted sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <p>Rate-pulse demo workspace for exchange rates, analytics, and protected account flows.</p>
-        <p>Built with Next.js App Router and reusable feature modules.</p>
-      </div>
+    <footer className={cn(panelVariants({ variant: "footer" }))}>
+      <Container className="flex max-w-7xl flex-col gap-2 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <Text variant="footer">
+          Rate-pulse demo workspace for exchange rates, analytics, and protected account flows.
+        </Text>
+        <Text variant="footer">Built with Next.js App Router and reusable feature modules.</Text>
+      </Container>
     </footer>
   );
 }

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
+
+import { Button } from "@/components/ui/Button";
+import { FieldCaption, FieldLabel } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
+import { Heading, Text } from "@/components/ui/typography";
 import type { AuthSession } from "@/types";
 
 interface SecurityFormProps {
   session: AuthSession;
 }
 
-export function SecurityForm({ session }: SecurityFormProps) {
+export function SecurityForm({ session: _session }: SecurityFormProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,7 +27,6 @@ export function SecurityForm({ session }: SecurityFormProps) {
     }
 
     setIsLoading(true);
-    // TODO: Implement password change logic with API
     console.log("Password change requested");
     setTimeout(() => {
       setIsLoading(false);
@@ -35,11 +40,10 @@ export function SecurityForm({ session }: SecurityFormProps) {
   const handleDeleteAccount = async () => {
     if (
       window.confirm(
-        "Are you sure you want to delete your account? This action cannot be undone."
+        "Are you sure you want to delete your account? This action cannot be undone.",
       )
     ) {
       setIsLoading(true);
-      // TODO: Implement account deletion logic with API
       console.log("Account deletion requested");
       setTimeout(() => {
         setIsLoading(false);
@@ -49,83 +53,83 @@ export function SecurityForm({ session }: SecurityFormProps) {
   };
 
   return (
-    <div className="mt-8 space-y-12 w-full rounded-2xl bg-white p-6 shadow-sm dark:bg-transparent dark:p-0 dark:shadow-none">
-      {/* Change Password Section */}
+    <Panel variant="securityShell">
       <div>
-        <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
+        <Heading level="h3" className="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
           Change Password
-        </h2>
+        </Heading>
         <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-text-muted">Current password</span>
-            <input
+          <FieldLabel>
+            <FieldCaption className="font-medium text-gray-700 dark:text-text-muted">
+              Current password
+            </FieldCaption>
+            <Input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-gray-900 outline-none transition focus:border-primary dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
+              className="border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
             />
-          </label>
+          </FieldLabel>
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-text-muted">New password</span>
-            <input
+          <FieldLabel>
+            <FieldCaption className="font-medium text-gray-700 dark:text-text-muted">
+              New password
+            </FieldCaption>
+            <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-gray-900 outline-none transition focus:border-primary dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
+              className="border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
             />
-          </label>
+          </FieldLabel>
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-text-muted">Confirm new password</span>
-            <input
+          <FieldLabel>
+            <FieldCaption className="font-medium text-gray-700 dark:text-text-muted">
+              Confirm new password
+            </FieldCaption>
+            <Input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-gray-900 outline-none transition focus:border-primary dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
+              className="border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
             />
-          </label>
+          </FieldLabel>
 
           <div className="pt-4">
-            <button
+            <Button
               type="submit"
+              variant="passwordSubmit"
               disabled={isLoading || !currentPassword || !newPassword || !confirmPassword}
-              className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {isLoading ? "Updating..." : "Update password"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
 
-      {/* Danger Zone Section */}
       <div className="pt-4">
-        <h2 className="mb-2 text-xl font-semibold text-red-600 dark:text-red-400">
+        <Heading level="h3" className="mb-2 text-xl font-semibold text-red-600 dark:text-red-400">
           Danger Zone
-        </h2>
-        <p className="mb-6 text-sm text-gray-500 dark:text-text-muted">
+        </Heading>
+        <Text variant="muted" className="mb-6 text-gray-500">
           Once you delete your account, there is no going back. Please be certain.
-        </p>
-        
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/20 dark:bg-[#0c1220]">
+        </Text>
+
+        <Panel variant="dangerZone">
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white">Delete Account</h4>
-            <p className="mt-1 text-sm text-gray-500 dark:text-text-muted">
+            <Text variant="muted" className="mt-1 text-gray-500">
               Permanently remove your account and all associated data.
-            </p>
+            </Text>
           </div>
-          <button
-            onClick={handleDeleteAccount}
-            disabled={isLoading}
-            className="whitespace-nowrap rounded-xl bg-red-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 dark:bg-red-900/80 dark:text-red-100 dark:hover:bg-red-900"
-          >
+          <Button type="button" variant="dangerSolid" onClick={handleDeleteAccount} disabled={isLoading}>
             {isLoading ? "Processing..." : "Delete Account"}
-          </button>
-        </div>
+          </Button>
+        </Panel>
       </div>
-    </div>
+    </Panel>
   );
 }

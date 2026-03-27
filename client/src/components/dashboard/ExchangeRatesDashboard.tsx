@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, Star } from "lucide-react";
 
-import { useRealtimeRates } from "@/hooks/useRealtimeRates";
 import { refreshExchangeRatesAction } from "@/app/actions";
+import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Panel } from "@/components/ui/panel";
+import { Text } from "@/components/ui/typography";
+import { useRealtimeRates } from "@/hooks/useRealtimeRates";
 import type { CurrencyPair, PairSnapshot, SourceSnapshot, TimeRange } from "@/types";
 
-import { ExchangeRateFilters } from "./ExchangeRateFilters";
 import { CurrencyConverter } from "./CurrencyConverter";
 import { ExchangeRateChart } from "./ExchangeRateChart";
+import { ExchangeRateFilters } from "./ExchangeRateFilters";
 
 function formatRateValue(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) {
@@ -269,22 +273,17 @@ export function ExchangeRatesDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-semibold text-white">Exchange Rates</h1>
-          <p className="text-sm text-text-muted mt-1">Real-time currency exchange rates from multiple sources</p>
-        </div>
-        <button
-          type="button"
-          onClick={handleRefreshRates}
-          disabled={isRefreshing}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh Rates"}</span>
-          <span className="sm:hidden">{isRefreshing ? "..." : "Refresh"}</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Exchange Rates"
+        description="Real-time currency exchange rates from multiple sources"
+        action={
+          <Button type="button" variant="compact" onClick={handleRefreshRates} disabled={isRefreshing}>
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh Rates"}</span>
+            <span className="sm:hidden">{isRefreshing ? "..." : "Refresh"}</span>
+          </Button>
+        }
+      />
 
       <ExchangeRateFilters
         baseCurrency={selectedBaseCurrency}
@@ -308,28 +307,32 @@ export function ExchangeRatesDashboard({
         updatedAt={conversionUpdatedAt}
       />
 
-      <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-panel">
-        <div className="bg-[#0c1220] px-4 md:px-6 py-4 border-b border-white/10">
-          <h3 className="text-base md:text-lg font-semibold text-primary">
+      <Panel variant="sheet" className="overflow-hidden">
+        <div className="border-b border-white/10 bg-[#0c1220] px-4 py-4 text-oninset md:px-6">
+          <h3 className="text-base font-semibold text-oninset md:text-lg">
             {selectedBaseCurrency} → {selectedTargetCurrency}
           </h3>
-          <p className="text-xs text-text-muted mt-1">
+          <Text variant="onInsetMuted" className="mt-1">
             {filteredSources.length} source{filteredSources.length === 1 ? "" : "s"} available
             {expandedTypeColumns.length > 0
               ? ` · ${expandedTypeColumns.length} rate type${expandedTypeColumns.length === 1 ? "" : "s"}`
               : ""}
-          </p>
+          </Text>
         </div>
 
         {!selectedSnapshot && (
-          <div className="px-6 py-8 text-center text-text-muted text-sm">
-            No rate data for {selectedBaseCurrency}/{selectedTargetCurrency}.
+          <div className="px-6 py-8 text-center">
+            <Text variant="muted">
+              No rate data for {selectedBaseCurrency}/{selectedTargetCurrency}.
+            </Text>
           </div>
         )}
 
         {selectedSnapshot && filteredSources.length === 0 && (
-          <div className="px-6 py-8 text-center text-text-muted text-sm">
-            No source data matches your filters for {selectedBaseCurrency}/{selectedTargetCurrency}.
+          <div className="px-6 py-8 text-center">
+            <Text variant="muted">
+              No source data matches your filters for {selectedBaseCurrency}/{selectedTargetCurrency}.
+            </Text>
           </div>
         )}
 
@@ -343,11 +346,11 @@ export function ExchangeRatesDashboard({
 
               return (
                 <div key={`${source.sourceId}-${source.sourceName}`} className="bg-[#0c1220]/40">
-                  <div className="px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-white/10 bg-[#0c1220]/60">
+                  <div className="flex flex-col gap-2 border-b border-white/10 bg-[#0c1220]/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-6">
                     <div className="flex items-center gap-3">
                       <div>
                         <div className="font-semibold text-white">{source.sourceName}</div>
-                        <div className="text-xs text-text-muted">
+                        <div className="text-xs text-slate-400">
                           {source.sourceCountry ?? "—"}
                           {source.updatedAt ? ` · Updated ${formatUpdatedAtLabel(source.updatedAt)} UTC` : ""}
                         </div>
@@ -363,21 +366,23 @@ export function ExchangeRatesDashboard({
 
                   <div className="p-4 md:p-5">
                     {visibleRateCells.length === 0 ? (
-                      <div className="text-sm text-text-muted">No meaningful rate values for this source.</div>
+                      <Text variant="muted">No meaningful rate values for this source.</Text>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                         {visibleRateCells.map((t) => (
-                          <div key={t.key} className="rounded-lg border border-white/10 bg-[#0c1220]/70 px-3 py-2">
-                            <div className="text-[11px] uppercase tracking-wide text-text-muted mb-1">{t.label}</div>
-                            <div className="font-semibold text-white">{formatRateValue(source.rates[t.typeId])}</div>
-                          </div>
+                          <Panel key={t.key} variant="rateCell">
+                            <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-oninset-muted">
+                              {t.label}
+                            </div>
+                            <div className="font-semibold text-oninset">{formatRateValue(source.rates[t.typeId])}</div>
+                          </Panel>
                         ))}
                       </div>
                     )}
                     {hiddenCount > 0 && (
-                      <div className="mt-3 text-xs text-text-muted">
+                      <Text variant="caption" className="mt-3 text-text-muted">
                         +{hiddenCount} more rate type{hiddenCount === 1 ? "" : "s"}
-                      </div>
+                      </Text>
                     )}
                   </div>
                 </div>
@@ -385,7 +390,7 @@ export function ExchangeRatesDashboard({
             })}
           </div>
         )}
-      </div>
+      </Panel>
 
       <ExchangeRateChart
         baseCurrency={selectedBaseCurrency}

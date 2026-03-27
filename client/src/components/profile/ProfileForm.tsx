@@ -5,10 +5,13 @@ import { useActionState } from "react";
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import type { AuthSession } from "@/types";
-
-import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FieldCaption, FieldLabel } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/Select";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Textarea } from "@/components/ui/textarea";
+import { Text } from "@/components/ui/typography";
+import type { AuthSession } from "@/types";
 
 interface ProfileFormProps {
   session: AuthSession;
@@ -28,76 +31,67 @@ export function ProfileForm({ session }: ProfileFormProps) {
 
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">First name</span>
-        <input
-          name="firstName"
-          defaultValue={session.firstName}
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        />
-      </label>
+      <FieldLabel>
+        <FieldCaption>First name</FieldCaption>
+        <Input name="firstName" defaultValue={session.firstName} />
+      </FieldLabel>
 
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">Last name</span>
-        <input
-          name="lastName"
-          defaultValue={session.lastName}
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        />
-      </label>
+      <FieldLabel>
+        <FieldCaption>Last name</FieldCaption>
+        <Input name="lastName" defaultValue={session.lastName} />
+      </FieldLabel>
 
-      <label className="space-y-2 md:col-span-2">
-        <span className="text-sm text-text-muted">Email address</span>
+      <FieldLabel className="md:col-span-2">
+        <FieldCaption>Email address</FieldCaption>
         <div className="relative">
-          <input
+          <Input
             value={maskEmail(session.email)}
             readOnly
             disabled
-            className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-text-muted outline-none cursor-not-allowed select-none"
+            variant="ghostReadonly"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-text-muted/60">
             protected
           </span>
         </div>
-      </label>
+      </FieldLabel>
 
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">Base currency</span>
+      <FieldLabel>
+        <FieldCaption>Base currency</FieldCaption>
         <Select name="currency" defaultValue="USD">
           <option>USD</option>
           <option>EUR</option>
           <option>GBP</option>
           <option>JPY</option>
         </Select>
-      </label>
+      </FieldLabel>
 
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">Risk profile</span>
+      <FieldLabel>
+        <FieldCaption>Risk profile</FieldCaption>
         <Select name="riskProfile" defaultValue="Balanced">
           <option>Conservative</option>
           <option>Balanced</option>
           <option>Growth</option>
           <option>Aggressive</option>
         </Select>
-      </label>
+      </FieldLabel>
 
-      <label className="space-y-2 md:col-span-2">
-        <span className="text-sm text-text-muted">Notes</span>
-        <textarea
+      <FieldLabel className="md:col-span-2">
+        <FieldCaption>Notes</FieldCaption>
+        <Textarea
           name="notes"
           rows={4}
           defaultValue="Prefers London and New York session summaries with risk reminders."
-          className="w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 py-3 text-white outline-none transition focus:border-primary"
         />
-      </label>
+      </FieldLabel>
 
-      <div className="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:col-span-2">
         <div>
           {state.status === "success" ? (
-            <p className="text-sm text-status-success">{state.message}</p>
+            <Text className="text-sm text-status-success">{state.message}</Text>
           ) : null}
           {state.status === "error" ? (
-            <p className="text-sm text-status-danger">{state.message}</p>
+            <Text className="text-sm text-status-danger">{state.message}</Text>
           ) : null}
         </div>
         <SubmitButton pendingLabel="Updating profile...">Save changes</SubmitButton>

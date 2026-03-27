@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { SettingsAccordion } from "@/components/profile/SettingsAccordion";
-// import { settingsSections } from "@/lib/mock-data";
 const settingsSections = [
   {
     id: "security",

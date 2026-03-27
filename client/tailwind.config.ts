@@ -14,11 +14,16 @@ const config: Config = {
       },
       colors: {
         surface: "var(--color-surface)",
+        "surface-elevated": "var(--color-surface-elevated)",
         card: "var(--color-card)",
         panel: "var(--color-panel)",
         border: "var(--color-border)",
         primary: "var(--color-primary)",
+        "primary-muted": "var(--color-primary-muted)",
         accent: "var(--color-accent)",
+        "accent-muted": "var(--color-accent-muted)",
+        oninset: "var(--color-on-inset)",
+        "oninset-muted": "var(--color-on-inset-muted)",
         text: {
           primary: "var(--color-text-primary)",
           muted: "var(--color-text-muted)",
@@ -35,8 +40,7 @@ const config: Config = {
         sans: ["var(--font-poppins)", "sans-serif"],
       },
       backgroundImage: {
-        "hero-grid":
-          "radial-gradient(circle at top left, rgba(0, 211, 229, 0.2), transparent 28%), radial-gradient(circle at top right, rgba(0, 105, 254, 0.28), transparent 24%)",
+        "hero-grid": "none",
       },
       keyframes: {
         marquee: {
