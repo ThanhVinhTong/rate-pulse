@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { clearSession, createSession, getSession } from "@/lib/auth";
-import { mapApiBankRates, type ApiCurrency, type ApiCountry, type ApiRateSource, type ApiExchangeRate } from "@/lib/exchange-rate-mapper";
+import type { ApiCurrency, ApiCountry, ApiRateSource } from "@/lib/exchange-rate-mapper";
+import { buildPairSnapshots, type ExchangeRateRowInput } from "@/lib/pair-snapshot";
+import { fetchAllExchangeRates, fetchAllPages, fetchExchangeRateTypes } from "@/lib/server/exchange-rates";
+import type { PairSnapshot } from "@/types";
 import type { ActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
 
@@ -228,10 +231,10 @@ export async function updateSettingsAction(
   };
 }
 
-export async function refreshExchangeRatesAction(): Promise<ActionState & { data?: any }> {
+export async function refreshExchangeRatesAction(): Promise<ActionState & { data?: PairSnapshot[] }> {
   try {
     const token = await getSession().then((session) => session?.accessToken);
-    
+
     if (!token) {
       return {
         status: "error",
@@ -239,45 +242,30 @@ export async function refreshExchangeRatesAction(): Promise<ActionState & { data
       };
     }
 
-    const PAGE_SIZE = 10;
-
-    async function fetchAllPages<T>(path: string): Promise<T[]> {
-      const items: T[] = [];
-      for (let page = 1; page <= 100; page += 1) {
-        const res = await fetch(`${API_BASE_URL}${path}?page_id=${page}&page_size=${PAGE_SIZE}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch ${path}: ${res.status}`);
-        }
-
-        const pageItems = (await res.json()) as T[];
-        items.push(...pageItems);
-
-        if (pageItems.length < PAGE_SIZE) {
-          break;
-        }
-      }
-      return items;
-    }
-
-    const [currencies, countries, sources, rates] = await Promise.all([
+    const [currencies, countries, sources, ratesRaw, typesFromApi] = await Promise.all([
       fetchAllPages<ApiCurrency>("/currencies"),
       fetchAllPages<ApiCountry>("/countries"),
       fetchAllPages<ApiRateSource>("/rate-sources"),
-      fetchAllPages<ApiExchangeRate>("/exchange-rates"),
+      fetchAllExchangeRates(),
+      fetchExchangeRateTypes(),
     ]);
 
-    const bankRates = mapApiBankRates(currencies, countries, sources, rates);
+    const rates: ExchangeRateRowInput[] = ratesRaw.map((rate) => ({
+      rate_id: rate.rate_id,
+      rate_value: rate.rate_value,
+      source_currency_id: rate.source_currency_id,
+      destination_currency_id: rate.destination_currency_id,
+      source_id: rate.source_id,
+      type_id: rate.type_id,
+      valid_from_date: rate.valid_from_date,
+    }));
+
+    const pairSnapshots = buildPairSnapshots(currencies, countries, sources, rates, typesFromApi);
 
     return {
       status: "success",
       message: "Exchange rates refreshed successfully.",
-      data: bankRates,
+      data: pairSnapshots,
     };
   } catch (error) {
     return {

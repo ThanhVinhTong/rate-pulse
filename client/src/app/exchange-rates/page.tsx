@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 
 import { ExchangeRatesDashboard } from "@/components/dashboard/ExchangeRatesDashboard";
-import { getValidAccessToken } from "@/lib/auth";
-import { mapApiBankRates, type ApiCurrency, type ApiCountry, type ApiRateSource, type ApiExchangeRate } from "@/lib/exchange-rate-mapper";
-import { bankRates, exchangeRates, supportedCurrencies, timeRanges } from "@/lib/mock-data";
-import type { BankRate, CurrencyPair, TimeRange } from "@/types";
-
-const API_BASE_URL = "https://api.rate-pulse.me";
-const PAGE_SIZE = 10;
+import {
+  fetchAllExchangeRates,
+  fetchAllPages,
+  fetchExchangeRateTypes,
+} from "@/lib/server/exchange-rates";
+import type { ApiCurrency, ApiCountry, ApiRateSource } from "@/lib/exchange-rate-mapper";
+import { buildPairSnapshots, type ExchangeRateRowInput } from "@/lib/pair-snapshot";
+import type { CurrencyPair, ExchangeRateType, PairSnapshot, TimeRange } from "@/types";
+import { TIME_RANGES } from "@/lib/constants";
 
 interface CurrencyOption {
   code: string;
@@ -18,7 +20,7 @@ interface CurrencyOption {
 
 interface DashboardPayload {
   pairs: CurrencyPair[];
-  rates: BankRate[];
+  pairSnapshots: PairSnapshot[];
   currencyOptions: CurrencyOption[];
 }
 
@@ -28,40 +30,15 @@ export const metadata: Metadata = {
 };
 
 function normalizeRange(range?: string): TimeRange {
-  return timeRanges.includes(range as TimeRange) ? (range as TimeRange) : timeRanges[0];
-}
-
-async function fetchAllPages<T>(path: string, token: string): Promise<T[]> {
-  const items: T[] = [];
-
-  for (let page = 1; page <= 100; page += 1) {
-    const res = await fetch(`${API_BASE_URL}${path}?page_id=${page}&page_size=${PAGE_SIZE}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch ${path}: ${res.status}`);
-    }
-
-    const pageItems = (await res.json()) as T[];
-    items.push(...pageItems);
-
-    if (pageItems.length < PAGE_SIZE) {
-      break;
-    }
-  }
-
-  return items;
+  return TIME_RANGES.includes(range as TimeRange) ? (range as TimeRange) : TIME_RANGES[0];
 }
 
 function mapApiToDashboard(
   currencies: ApiCurrency[],
   countries: ApiCountry[],
   sources: ApiRateSource[],
-  rates: ApiExchangeRate[],
+  rates: ExchangeRateRowInput[],
+  typesFromApi: ExchangeRateType[],
 ): DashboardPayload {
   const currencyById = new Map(currencies.map((item) => [item.CurrencyID, item]));
   const countryByCurrencyId = new Map<number, string>();
@@ -71,26 +48,28 @@ function mapApiToDashboard(
     }
   }
 
-  const latestByPair = new Map<string, ApiExchangeRate>();
+  const latestByPair = new Map<string, ExchangeRateRowInput>();
   for (const rate of rates) {
-    const sourceCurrency = currencyById.get(rate.SourceCurrencyID);
-    const destinationCurrency = currencyById.get(rate.DestinationCurrencyID);
+    const sourceCurrency = currencyById.get(rate.source_currency_id);
+    const destinationCurrency = currencyById.get(rate.destination_currency_id);
     if (!sourceCurrency || !destinationCurrency) {
       continue;
     }
 
     const pair = `${sourceCurrency.CurrencyCode}/${destinationCurrency.CurrencyCode}`;
     const existing = latestByPair.get(pair);
-    if (!existing || new Date(rate.ValidFromDate) > new Date(existing.ValidFromDate)) {
+    const nextT = rate.valid_from_date ? new Date(rate.valid_from_date).getTime() : 0;
+    const prevT = existing?.valid_from_date ? new Date(existing.valid_from_date).getTime() : 0;
+    if (!existing || nextT > prevT) {
       latestByPair.set(pair, rate);
     }
   }
 
   const pairs: CurrencyPair[] = Array.from(latestByPair.entries())
     .map(([pair, rate]) => {
-      const sourceCurrency = currencyById.get(rate.SourceCurrencyID);
-      const destinationCurrency = currencyById.get(rate.DestinationCurrencyID);
-      const numericRate = Number(rate.RateValue);
+      const sourceCurrency = currencyById.get(rate.source_currency_id);
+      const destinationCurrency = currencyById.get(rate.destination_currency_id);
+      const numericRate = Number(rate.rate_value);
       const safeRate = Number.isFinite(numericRate) && numericRate > 0 ? numericRate : 1;
 
       return {
@@ -107,7 +86,7 @@ function mapApiToDashboard(
     })
     .sort((a, b) => a.pair.localeCompare(b.pair));
 
-  const bankRateRows = mapApiBankRates(currencies, countries, sources, rates);
+  const pairSnapshots = buildPairSnapshots(currencies, countries, sources, rates, typesFromApi);
 
   const currencyOptions: CurrencyOption[] = currencies.map((item) => ({
     code: item.CurrencyCode,
@@ -118,42 +97,41 @@ function mapApiToDashboard(
 
   return {
     pairs,
-    rates: bankRateRows,
+    pairSnapshots,
     currencyOptions,
   };
 }
 
 async function getDashboardPayload(): Promise<DashboardPayload> {
-  const token = await getValidAccessToken();
-
-  if (!token) {
-    return {
-      pairs: exchangeRates[timeRanges[0]],
-      rates: bankRates,
-      currencyOptions: supportedCurrencies,
-    };
-  }
-
   try {
-    const [currencies, countries, sources, rates] = await Promise.all([
-      fetchAllPages<ApiCurrency>("/currencies", token),
-      fetchAllPages<ApiCountry>("/countries", token),
-      fetchAllPages<ApiRateSource>("/rate-sources", token),
-      fetchAllPages<ApiExchangeRate>("/exchange-rates", token),
+    const [currencies, ratesRaw, typesFromApi] = await Promise.all([
+      fetchAllPages<ApiCurrency>("/currencies"),
+      fetchAllExchangeRates(),
+      fetchExchangeRateTypes(),
     ]);
+    const [countriesResult, sourcesResult] = await Promise.allSettled([
+      fetchAllPages<ApiCountry>("/countries", 10, 100, { cache: "force-cache", revalidateSeconds: 300 }),
+      fetchAllPages<ApiRateSource>("/rate-sources", 10, 100, { cache: "force-cache", revalidateSeconds: 300 }),
+    ]);
+    const countries = countriesResult.status === "fulfilled" ? countriesResult.value : [];
+    const sources = sourcesResult.status === "fulfilled" ? sourcesResult.value : [];
+    const rates: ExchangeRateRowInput[] = ratesRaw.map((rate) => ({
+      rate_id: rate.rate_id,
+      rate_value: rate.rate_value,
+      source_currency_id: rate.source_currency_id,
+      destination_currency_id: rate.destination_currency_id,
+      source_id: rate.source_id,
+      type_id: rate.type_id,
+      valid_from_date: rate.valid_from_date,
+    }));
 
-    const payload = mapApiToDashboard(currencies, countries, sources, rates);
-
-    if (payload.pairs.length === 0 || payload.rates.length === 0) {
-      throw new Error("No data returned from API");
-    }
-
-    return payload;
+    return mapApiToDashboard(currencies, countries, sources, rates, typesFromApi);
   } catch (error) {
+    console.error("Dashboard payload fetch failed:", error);
     return {
-      pairs: exchangeRates[timeRanges[0]],
-      rates: bankRates,
-      currencyOptions: supportedCurrencies,
+      pairs: [],
+      pairSnapshots: [],
+      currencyOptions: [],
     };
   }
 }
@@ -169,8 +147,8 @@ export default async function ExchangeRatesPage({
 
   return (
     <ExchangeRatesDashboard
-      initialPairs={payload.pairs.length > 0 ? payload.pairs : exchangeRates[range]}
-      initialBankRates={payload.rates}
+      initialPairs={payload.pairs.length > 0 ? payload.pairs : []}
+      initialPairSnapshots={payload.pairSnapshots}
       supportedCurrencyOptions={payload.currencyOptions}
       range={range}
     />
