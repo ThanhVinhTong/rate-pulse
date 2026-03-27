@@ -4,3 +4,6 @@ def parse_rate(rate_str: str):
     if not rate_str or rate_str == '-' or rate_str == '0':
         return None
     return float(rate_str.replace(',', ''))
+
+def clean_symbol(symbol: str):
+    return symbol.replace('#', '').replace('&', '').strip()

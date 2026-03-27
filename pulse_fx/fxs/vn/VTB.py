@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 
 from fxs.FX import FX
 from constants import get_bank_constant
-from utils.numeric_cleaner import parse_rate
+from utils.numeric_cleaner import parse_rate, clean_symbol
 from utils.checkers import check_currency_data
 
 class VTB(FX):
@@ -38,46 +38,58 @@ class VTB(FX):
             updated_at = datetime.now(timezone(timedelta(hours=7), 'UTC+7')) # fallback to now
 
         # Scrape fx from first found table
-        table = self.driver.find_element(By.TAG_NAME, "table")
+        table = self.driver.find_elements(By.CLASS_NAME, "table-pin-rows")[0]
         body = table.find_element(By.TAG_NAME, 'tbody')
         rows = body.find_elements(By.TAG_NAME, "tr")
         
         currency_code = ""
+        cnt = 0
         for row in rows:
-            cells = row.find_elements(By.TAG_NAME, "div")[1:]
+            cells = row.find_elements(By.TAG_NAME, "td")
 
             # Check if cells exist in this div. Non-row divs will return an empty list and cause an IndexError.
             if not cells:
                 continue
-
-            currency_code = cells[0].find_element(By.TAG_NAME, "h4").text.strip()
-            if currency_code == "USD (50,100)":
-                currency_code = "USD"
-
-            if not currency_code or not check_currency_data(currency_code):
-                continue
-
-            buy_cash = cells[1].find_element(By.TAG_NAME, "span").text.strip()
-            buy_transfer = cells[2].find_element(By.TAG_NAME, "span").text.strip()
-            sell_cash = cells[3].find_element(By.TAG_NAME, "span").text.strip()
-            sell_transfer = cells[4].find_element(By.TAG_NAME, "span").text.strip()
-
-            rates_to_save = {
-                info["buy_cash"]: parse_rate(buy_cash),
-                info["buy_transfer"]: parse_rate(buy_transfer),
-                info["sell_cash"]: parse_rate(sell_cash),
-                info["sell_transfer"]: parse_rate(sell_transfer),
-            }
-
-            # Map them into individual rows
-            for type_name, rate_val in rates_to_save.items():
+            
+            if len(cells) == 3:
+                # This sub-row provides the "buy_cheque" rate for the current currency
+                buy_cheque_val = cells[1].text.strip().replace('.', '').replace(',', '.')
+                rate_val = parse_rate(clean_symbol(buy_cheque_val))
                 if rate_val is not None:
                     fx_list.append({
-                        "source_code": "VTB", # Identifies the source
+                        "source_code": "VTB",
                         "source_currency": info["source_currency"],
                         "destination_currency": currency_code,
-                        "type_id": translate_column[type_name], 
+                        "type_id": translate_column["buy_cheque"], 
                         "rate_value": rate_val,
                         "valid_from_date": updated_at
                     })
+            else:
+                cnt += 1
+                currency_code = cells[0].text.strip()
+                if not currency_code or not check_currency_data(currency_code):
+                    continue
+
+                buy_cash = cells[1].text.strip().replace('.', '').replace(',', '.')
+                buy_transfer = cells[2].text.strip().replace('.', '').replace(',', '.')
+                sell_cash_transfer = cells[3].text.strip().replace('.', '').replace(',', '.')
+
+                # For main currency rows, the "buy_cheque" is usually not in this row
+                # We initialize rates to save for this main row only
+                temp_rates = {
+                    "buy_cash": parse_rate(clean_symbol(buy_cash)),
+                    "buy_transfer": parse_rate(clean_symbol(buy_transfer)),
+                    "sell": parse_rate(clean_symbol(sell_cash_transfer)),
+                }
+
+                for type_name, rate_val in temp_rates.items():
+                    if rate_val is not None:
+                        fx_list.append({
+                            "source_code": "VTB",
+                            "source_currency": info["source_currency"],
+                            "destination_currency": currency_code,
+                            "type_id": translate_column[type_name], 
+                            "rate_value": rate_val,
+                            "valid_from_date": updated_at
+                        })
         self.save_to_db(fx_list)
