@@ -1,6 +1,7 @@
 package util
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/viper"
@@ -19,6 +20,7 @@ type Config struct {
 // LoadConfig loads the configuration from the environment variables
 func LoadConfig(path string) (config Config, err error) {
 	viper.AddConfigPath(path)
+	viper.AddConfigPath(filepath.Join(path, ".."))
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
 
