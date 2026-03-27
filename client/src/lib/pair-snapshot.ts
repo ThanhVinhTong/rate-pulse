@@ -152,7 +152,7 @@ export function buildPairSnapshots(
         sourceCountry: countryName,
         updatedAt: sourceRows
           .map((r) => r.valid_from_date)
-          .filter(Boolean)
+          .filter((d): d is string => typeof d === "string" && d.length > 0)
           .sort()
           .at(-1),
         rates: ratesByType,
