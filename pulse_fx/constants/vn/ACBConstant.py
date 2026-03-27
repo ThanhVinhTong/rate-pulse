@@ -1,6 +1,6 @@
 from constants.Constant import Constant
 
-class ACBBank(Constant):
+class ACBConstant(Constant):
     def __init__(self):
         self.website = "https://acb.com.vn/ty-gia-hoi-doai"
         self.info = {

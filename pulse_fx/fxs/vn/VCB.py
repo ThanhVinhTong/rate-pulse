@@ -55,5 +55,4 @@ class VCB(FX):
                         "rate_value": rate_val,
                         "valid_from_date": updated_at
                     })
-        
         self.save_to_db(fx_list)

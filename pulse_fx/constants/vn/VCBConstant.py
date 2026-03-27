@@ -1,6 +1,6 @@
 from constants.Constant import Constant
 
-class VCBBank(Constant):
+class VCBConstant(Constant):
     def __init__(self):
         self.website = "https://www.vietcombank.com.vn/vi-VN/khcn/Cong-cu-Tien-ich/Ty-gia"
         self.info = {

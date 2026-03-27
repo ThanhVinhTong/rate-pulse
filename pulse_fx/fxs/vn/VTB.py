@@ -43,7 +43,6 @@ class VTB(FX):
         rows = body.find_elements(By.TAG_NAME, "tr")
         
         currency_code = ""
-        cnt = 0
         for row in rows:
             cells = row.find_elements(By.TAG_NAME, "td")
 
@@ -65,7 +64,6 @@ class VTB(FX):
                         "valid_from_date": updated_at
                     })
             else:
-                cnt += 1
                 currency_code = cells[0].text.strip()
                 if not currency_code or not check_currency_data(currency_code):
                     continue

@@ -1,15 +1,16 @@
 # In pulse_fx/constants/__init__.py or a registry file
-from .vn.VCBBank import VCBBank
-from .vn.BIDVBank import BIDVBank
-from .vn.VietinBank import VietinBank
-from .vn.ACBBank import ACBBank
+from .vn.VCBConstant import VCBConstant
+from .vn.BIDVConstant import BIDVConstant
+from .vn.VTBConstant import VTBConstant
+from .vn.ACBConstant import ACBConstant
+from .vn.MBBConstant import MBBConstant
 
 BANK_CONSTANTS = {
-    "vcb": VCBBank,
-    "bidv": BIDVBank,
-    "vtb": VietinBank,
-    "acb": ACBBank,
-    # "mb": MBBank,
+    "vcb": VCBConstant,
+    "bidv": BIDVConstant,
+    "vtb": VTBConstant,
+    "acb": ACBConstant,
+    "mbb": MBBConstant,
 }
 
 def get_bank_constants() -> dict:
