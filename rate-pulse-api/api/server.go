@@ -47,6 +47,20 @@ func (server *Server) setupRouter() {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
 
+	// Public read-only market & reference data (no auth) — browse exchange-rates & analytics UIs while logged out.
+	// Register specific paths before /:id routes.
+	router.GET("/currencies", server.listCurrency)
+	router.GET("/currencies/:id", server.getCurrency)
+	router.GET("/exchange-rates/type", server.listExchangeRateByType)
+	router.GET("/exchange-rates/:id", server.getExchangeRate)
+	router.GET("/exchange-rates", server.listExchangeRate)
+	router.GET("/exchange-rate-types", server.listExchangeRateTypes)
+	router.GET("/rate-sources", server.listRateSource)
+	router.GET("/rate-sources/:id", server.getRateSource)
+	router.GET("/countries/code/:country_code", server.getCountryByCode)
+	router.GET("/countries/:id", server.getCountry)
+	router.GET("/countries", server.listCountry)
+
 	// Protected routes (authentication required)
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	adminRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker), adminMiddleware())
@@ -58,33 +72,22 @@ func (server *Server) setupRouter() {
 	adminRoutes.PUT("/admin/users/:id", server.adminUpdateUser)
 	adminRoutes.DELETE("/admin/users/:id", server.deleteUser)
 
-	// add `currencies` routes
-	authRoutes.GET("/currencies/:id", server.getCurrency)
-	authRoutes.GET("/currencies", server.listCurrency)
+	// add `currencies` routes (mutations only; reads are public above)
 	adminRoutes.POST("/admin/currencies", server.createCurrency)
 	adminRoutes.PUT("/admin/currencies/:id", server.updateCurrency)
 	adminRoutes.DELETE("/admin/currencies/:id", server.deleteCurrency)
 
-	// add `exchange-rates` routes
-	authRoutes.GET("/exchange-rates/:id", server.getExchangeRate)
-	authRoutes.GET("/exchange-rates", server.listExchangeRate)
-	authRoutes.GET("/exchange-rates/type", server.listExchangeRateByType)
-	authRoutes.GET("/exchange-rate-types", server.listExchangeRateTypes)
+	// add `exchange-rates` routes (mutations only; reads are public above)
 	adminRoutes.POST("/admin/exchange-rates", server.createExchangeRate)
 	adminRoutes.PUT("/admin/exchange-rates/:id", server.updateExchangeRate)
 	adminRoutes.DELETE("/admin/exchange-rates/:id", server.deleteExchangeRate)
 
-	// add `rate-sources` routes
-	authRoutes.GET("/rate-sources/:id", server.getRateSource)
-	authRoutes.GET("/rate-sources", server.listRateSource)
+	// add `rate-sources` routes (mutations only; reads are public above)
 	adminRoutes.POST("/admin/rate-sources", server.createRateSource)
 	adminRoutes.PUT("/admin/rate-sources/:id", server.updateRateSource)
 	adminRoutes.DELETE("/admin/rate-sources/:id", server.deleteRateSource)
 
-	// add `countries` routes
-	authRoutes.GET("/countries/:id", server.getCountry)
-	authRoutes.GET("/countries/code/:country_code", server.getCountryByCode)
-	authRoutes.GET("/countries", server.listCountry)
+	// add `countries` routes (mutations only; reads are public above)
 	adminRoutes.POST("/admin/countries", server.createCountry)
 	adminRoutes.PUT("/admin/countries/:id", server.updateCountry)
 	adminRoutes.DELETE("/admin/countries/:id", server.deleteCountry)

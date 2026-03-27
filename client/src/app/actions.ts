@@ -233,15 +233,6 @@ export async function updateSettingsAction(
 
 export async function refreshExchangeRatesAction(): Promise<ActionState & { data?: PairSnapshot[] }> {
   try {
-    const token = await getSession().then((session) => session?.accessToken);
-
-    if (!token) {
-      return {
-        status: "error",
-        message: "Authentication required to refresh rates.",
-      };
-    }
-
     const [currencies, countries, sources, ratesRaw, typesFromApi] = await Promise.all([
       fetchAllPages<ApiCurrency>("/currencies"),
       fetchAllPages<ApiCountry>("/countries"),

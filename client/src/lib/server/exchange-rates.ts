@@ -42,20 +42,19 @@ type ApiExchangeRateWire = Partial<ApiExchangeRateRow> & {
   CreatedAt?: string | null;
 };
 
-// Build auth headers from the current session.
-async function getAuthHeaders() {
+// Optional Bearer token so public API routes work while logged out; still sends token when present.
+async function getOptionalAuthHeaders(): Promise<HeadersInit> {
   const token = await getValidAccessToken();
-  if (!token) {
-    throw new Error("Missing access token");
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 }
 
-// Execute authenticated GET requests.
+// GET with optional auth (public read endpoints + authenticated reads).
 async function apiGet<T>(
   path: string,
   options?: {
@@ -63,7 +62,7 @@ async function apiGet<T>(
     revalidateSeconds?: number;
   },
 ): Promise<T> {
-  const headers = await getAuthHeaders();
+  const headers = await getOptionalAuthHeaders();
   const { cache = "no-store", revalidateSeconds } = options ?? {};
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "GET",
@@ -90,7 +89,7 @@ export async function fetchAllPages<T>(
     revalidateSeconds?: number;
   },
 ): Promise<T[]> {
-  const headers = await getAuthHeaders();
+  const headers = await getOptionalAuthHeaders();
   const { cache = "no-store", revalidateSeconds } = options ?? {};
   const items: T[] = [];
 
