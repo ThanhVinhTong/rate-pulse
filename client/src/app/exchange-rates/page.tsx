@@ -107,7 +107,9 @@ async function getDashboardPayload(): Promise<DashboardPayload> {
     // Run all API calls in parallel. The dominant cost is usually `fetchAllExchangeRates()` (many
     // cursor batches to the remote API); overlapping countries/sources/metadata avoids stacking
     // their latency after the first wave.
-    const META_PAGE = 100;
+    // Go API validates page_size to min=5 max=10 (see listCurrency, listCountry, listRateSource).
+    // Using 100 caused 400 responses and empty dropdowns; only fallbacks (e.g. USD/JPY) appeared.
+    const META_PAGE_SIZE = 10;
     const META_CACHE = { cache: "force-cache" as const, revalidateSeconds: 300 };
     const [
       currenciesResult,
@@ -116,11 +118,11 @@ async function getDashboardPayload(): Promise<DashboardPayload> {
       countriesResult,
       sourcesResult,
     ] = await Promise.allSettled([
-      fetchAllPages<ApiCurrency>("/currencies", META_PAGE, 100, META_CACHE),
+      fetchAllPages<ApiCurrency>("/currencies", META_PAGE_SIZE, 100, META_CACHE),
       fetchAllExchangeRates(),
       fetchExchangeRateTypes(),
-      fetchAllPages<ApiCountry>("/countries", META_PAGE, 100, META_CACHE),
-      fetchAllPages<ApiRateSource>("/rate-sources", META_PAGE, 100, META_CACHE),
+      fetchAllPages<ApiCountry>("/countries", META_PAGE_SIZE, 100, META_CACHE),
+      fetchAllPages<ApiRateSource>("/rate-sources", META_PAGE_SIZE, 100, META_CACHE),
     ]);
 
     const currencies =

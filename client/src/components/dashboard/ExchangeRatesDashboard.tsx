@@ -18,6 +18,24 @@ function formatRateValue(value: number | null | undefined): string {
   return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 }
 
+/** Stable across SSR and browser (avoids hydration mismatch from default toLocaleString()). */
+function formatUpdatedAtLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(d);
+}
+
 interface ExpandedTypeColumn {
   key: string;
   label: string;
@@ -175,15 +193,29 @@ export function ExchangeRatesDashboard({
       .flatMap((pair) => pair.pair.split("/"))
       .filter(Boolean);
 
+    const snapshotPairCodes = pairSnapshots.flatMap((p) => [p.baseCurrency, p.targetCurrency]);
+
     const mergedCodes = Array.from(
-      new Set([...supportedCurrencyOptions.map((currency) => currency.code), ...pairCurrencies]),
-    );
+      new Set([
+        ...supportedCurrencyOptions.map((currency) => currency.code),
+        ...pairCurrencies,
+        ...snapshotPairCodes,
+        selectedBaseCurrency,
+        selectedTargetCurrency,
+      ]),
+    ).sort((a, b) => a.localeCompare(b));
 
     return mergedCodes.map((code) => {
       const matched = supportedCurrencyOptions.find((currency) => currency.code === code);
       return { code, name: matched?.name ?? code, continent: matched?.continent ?? "Other" };
     });
-  }, [realtimePairs, supportedCurrencyOptions]);
+  }, [
+    realtimePairs,
+    supportedCurrencyOptions,
+    pairSnapshots,
+    selectedBaseCurrency,
+    selectedTargetCurrency,
+  ]);
 
   const directPair = realtimePairs.find((pair) => pair.pair === `${selectedBaseCurrency}/${selectedTargetCurrency}`);
   const inversePair = realtimePairs.find((pair) => pair.pair === `${selectedTargetCurrency}/${selectedBaseCurrency}`);
@@ -317,7 +349,7 @@ export function ExchangeRatesDashboard({
                         <div className="font-semibold text-white">{source.sourceName}</div>
                         <div className="text-xs text-text-muted">
                           {source.sourceCountry ?? "—"}
-                          {source.updatedAt ? ` · Updated ${new Date(source.updatedAt).toLocaleString()}` : ""}
+                          {source.updatedAt ? ` · Updated ${formatUpdatedAtLabel(source.updatedAt)} UTC` : ""}
                         </div>
                       </div>
                     </div>
