@@ -14,16 +14,18 @@ exchange_rate_types_data = {
     # "1": "Buy Cash",
     # "2": "Sell Cash",
 
-    # "3": "Buy Transfer/IMT",
-    # "4": "Sell Transfer/IMT",
+    # "3": "Buy Transfer",
+    # "4": "Sell Transfer",
 
     # "5": "Buy Cheque",
     # "6": "Sell Cheque",
 
     # "7": "Load currency to TMC",
-    # "8": "Unload currency from TMC"
-    # "9": "Sell Cash/Transfer"
-    # "10": "Buy Cash/Cheque"
+    # "8": "Unload currency from TMC",
+    # "9": "Sell Cash/Transfer",
+    # "10": "Buy Cash/Cheque",
+    # "11": "Send IMT",
+    # "12": "Receive IMT",
 }
 
 currency_data = {
