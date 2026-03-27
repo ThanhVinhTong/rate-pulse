@@ -69,6 +69,7 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/exchange-rates/:id", server.getExchangeRate)
 	authRoutes.GET("/exchange-rates", server.listExchangeRate)
 	authRoutes.GET("/exchange-rates/type", server.listExchangeRateByType)
+	authRoutes.GET("/exchange-rate-types", server.listExchangeRateTypes)
 	adminRoutes.POST("/admin/exchange-rates", server.createExchangeRate)
 	adminRoutes.PUT("/admin/exchange-rates/:id", server.updateExchangeRate)
 	adminRoutes.DELETE("/admin/exchange-rates/:id", server.deleteExchangeRate)
