@@ -2,8 +2,6 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, ShieldCheck, Smartphone } from "lucide-react";
 import { CurrencyPair } from "@/types";
 
-// import { exchangeRates, featureCards, landingStats } from "@/lib/mock-data";
-
 export const metadata = {
   title: "Trading Platform",
 };

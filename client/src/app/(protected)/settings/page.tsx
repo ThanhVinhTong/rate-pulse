@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 
 import { SettingsAccordion } from "@/components/profile/SettingsAccordion";
-import { settingsSections } from "@/lib/mock-data";
+// import { settingsSections } from "@/lib/mock-data";
+const settingsSections = [
+  {
+    id: "security",
+    title: "Security",
+    description: "Security settings",
+  },
+];
 
 export const metadata: Metadata = {
   title: "Settings",

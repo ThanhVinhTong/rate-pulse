@@ -104,15 +104,29 @@ function mapApiToDashboard(
 
 async function getDashboardPayload(): Promise<DashboardPayload> {
   try {
-    const [currencies, ratesRaw, typesFromApi] = await Promise.all([
-      fetchAllPages<ApiCurrency>("/currencies"),
+    // Run all API calls in parallel. The dominant cost is usually `fetchAllExchangeRates()` (many
+    // cursor batches to the remote API); overlapping countries/sources/metadata avoids stacking
+    // their latency after the first wave.
+    const META_PAGE = 100;
+    const META_CACHE = { cache: "force-cache" as const, revalidateSeconds: 300 };
+    const [
+      currenciesResult,
+      ratesResult,
+      typesResult,
+      countriesResult,
+      sourcesResult,
+    ] = await Promise.allSettled([
+      fetchAllPages<ApiCurrency>("/currencies", META_PAGE, 100, META_CACHE),
       fetchAllExchangeRates(),
       fetchExchangeRateTypes(),
+      fetchAllPages<ApiCountry>("/countries", META_PAGE, 100, META_CACHE),
+      fetchAllPages<ApiRateSource>("/rate-sources", META_PAGE, 100, META_CACHE),
     ]);
-    const [countriesResult, sourcesResult] = await Promise.allSettled([
-      fetchAllPages<ApiCountry>("/countries", 10, 100, { cache: "force-cache", revalidateSeconds: 300 }),
-      fetchAllPages<ApiRateSource>("/rate-sources", 10, 100, { cache: "force-cache", revalidateSeconds: 300 }),
-    ]);
+
+    const currencies =
+      currenciesResult.status === "fulfilled" ? currenciesResult.value : [];
+    const ratesRaw = ratesResult.status === "fulfilled" ? ratesResult.value : [];
+    const typesFromApi = typesResult.status === "fulfilled" ? typesResult.value : [];
     const countries = countriesResult.status === "fulfilled" ? countriesResult.value : [];
     const sources = sourcesResult.status === "fulfilled" ? sourcesResult.value : [];
     const rates: ExchangeRateRowInput[] = ratesRaw.map((rate) => ({
