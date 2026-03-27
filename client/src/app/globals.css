@@ -72,3 +72,30 @@ body {
     @apply outline-none;
   }
 }
+
+@layer utilities {
+  .gradient-text-animated {
+    background-image: linear-gradient(
+      90deg,
+      #0069fe 0%,
+      #00d3e5 35%,
+      #0069fe 70%,
+      #00d3e5 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-text-shift 6s ease infinite;
+  }
+
+  @keyframes gradient-text-shift {
+    0%,
+    100% {
+      background-position: 0% center;
+    }
+    50% {
+      background-position: 100% center;
+    }
+  }
+}

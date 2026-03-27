@@ -38,6 +38,20 @@ const config: Config = {
         "hero-grid":
           "radial-gradient(circle at top left, rgba(0, 211, 229, 0.2), transparent 28%), radial-gradient(circle at top right, rgba(0, 105, 254, 0.28), transparent 24%)",
       },
+      keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "chart-pulse": {
+          "0%, 100%": { opacity: "0.85" },
+          "50%": { opacity: "1" },
+        },
+      },
+      animation: {
+        marquee: "marquee 32s linear infinite",
+        "chart-pulse": "chart-pulse 3s ease-in-out infinite",
+      },
     },
   },
   plugins: [],
