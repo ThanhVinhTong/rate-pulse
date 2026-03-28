@@ -1,9 +1,16 @@
+import logging
+
 from sqlalchemy import create_engine
-from fxs.vn.VCB import VCB
-from fxs.vn.BIDV import BIDV
+from sqlalchemy.exc import SQLAlchemyError
+
 from fxs.vn.ACB import ACB
-from fxs.vn.VTB import VTB
+from fxs.vn.BIDV import BIDV
 from fxs.vn.MBB import MBB
+from fxs.vn.VCB import VCB
+from fxs.vn.VTB import VTB
+
+logger = logging.getLogger(__name__)
+
 
 class Script:
     def __init__(self, driver, db_uri: str) -> None:
@@ -11,19 +18,41 @@ class Script:
         self.db_uri = db_uri
 
     def get_fx(self) -> None:
-        connection_engine = create_engine(self.db_uri)
-        connection = connection_engine.connect()
-        
-        # List of all banks
-        banks = [
-            VCB(self.driver, connection),
-            BIDV(self.driver, connection),
-            ACB(self.driver, connection),
-            VTB(self.driver, connection),
-            MBB(self.driver, connection),
-        ]
-        
-        for bank in banks:
-            bank.get_fx()  # each one checks its own time, scrapes, and inserts!
-            
-        connection.close()
+        if not self.db_uri or not str(self.db_uri).strip():
+            logger.error("SUPABASE_URI / db_uri is missing or empty; aborting.")
+            return
+
+        try:
+            engine = create_engine(self.db_uri)
+        except SQLAlchemyError:
+            logger.exception("Could not create SQLAlchemy engine (check SUPABASE_URI).")
+            return
+        except Exception:
+            logger.exception("Unexpected error creating database engine.")
+            return
+
+        bank_classes = [VCB, BIDV, ACB, VTB, MBB]
+
+        for cls in bank_classes:
+            conn = engine.connect()
+            label = cls.__name__
+            try:
+                logger.info("--- Starting %s ---", label)
+                bank = cls(self.driver, conn)
+                bank.get_fx()
+            except Exception:
+                logger.exception("%s: unhandled error; rolling back and continuing with next bank", label)
+                try:
+                    conn.rollback()
+                except SQLAlchemyError:
+                    logger.warning("%s: rollback after failure also failed", label)
+            finally:
+                try:
+                    conn.close()
+                except SQLAlchemyError as e:
+                    logger.warning("%s: error closing DB connection: %s", label, e)
+
+        try:
+            engine.dispose()
+        except SQLAlchemyError as e:
+            logger.warning("Engine dispose: %s", e)

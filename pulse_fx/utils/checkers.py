@@ -18,4 +18,6 @@ currency_data = set([
 ])
 
 def check_currency_data(currency_code: str) -> bool:
-    return currency_code in currency_data 
+    if not currency_code or not isinstance(currency_code, str):
+        return False
+    return currency_code.strip() in currency_data 

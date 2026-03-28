@@ -20,3 +20,11 @@ def get_bank_constant(bank_name: str):
     if bank_name not in BANK_CONSTANTS:
         return None
     return BANK_CONSTANTS[bank_name]()
+
+
+def require_bank_constant(bank_name: str):
+    """Return bank constant instance or raise KeyError with a clear message."""
+    key = bank_name.lower() if isinstance(bank_name, str) else bank_name
+    if key not in BANK_CONSTANTS:
+        raise KeyError(f"Unknown bank constant: {bank_name!r}")
+    return BANK_CONSTANTS[key]()

@@ -1,5 +1,11 @@
+import logging
 from abc import ABC, abstractmethod
+
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+
+logger = logging.getLogger(__name__)
+
 
 class FX(ABC):
     def __init__(self, driver, connection):
@@ -10,17 +16,15 @@ class FX(ABC):
     def get_fx(self) -> None:
         pass
 
-    def save_to_db(self, fx_list: list[dict]):
+    def save_to_db(self, fx_list: list[dict]) -> None:
         if not fx_list:
+            logger.info("%s: no rows to persist (empty scrape or all rates missing)", self.__class__.__name__)
             return
-            
+
         inserted_count = 0
         for fx in fx_list:
             try:
-                # Create a savepoint for this specific row.
-                # If an error happens inside this block, it ONLY rolls back this single row!
                 with self.connection.begin_nested():
-                    # Check for duplicate before insertion
                     check_query = text("""
                         SELECT 1 FROM exchange_rates 
                         WHERE source_id = (SELECT source_id FROM rate_sources WHERE source_code = :source_code)
@@ -31,32 +35,64 @@ class FX(ABC):
                         ORDER BY valid_from_date DESC
                         LIMIT 1
                     """)
-                    
+
                     result = self.connection.execute(check_query, fx).fetchone()
                     if result:
-                        print(
-                            f"Skipping duplicate: {fx['source_code']} | {fx['source_currency']} <-> {fx['destination_currency']} | {fx['rate_value']} | {fx['valid_from_date']} | {fx['type_id']}"
+                        logger.debug(
+                            "Skipping duplicate: %s | %s <-> %s | %s | %s | type %s",
+                            fx.get("source_code"),
+                            fx.get("source_currency"),
+                            fx.get("destination_currency"),
+                            fx.get("rate_value"),
+                            fx.get("valid_from_date"),
+                            fx.get("type_id"),
                         )
                         continue
 
-                    self.connection.execute(text(\
-                        "INSERT INTO exchange_rates (\
-                            source_id, \
-                            source_currency_id, \
-                            destination_currency_id, \
-                        type_id, \
-                        rate_value, \
-                        valid_from_date) \
-                    VALUES (\
-                        (SELECT source_id FROM rate_sources WHERE source_code = :source_code), \
-                        (SELECT currency_id FROM currencies WHERE currency_code = :source_currency), \
-                        (SELECT currency_id FROM currencies WHERE currency_code = :destination_currency), \
-                        :type_id, \
-                        :rate_value, \
-                        :valid_from_date \
-                    )"), fx)
+                    self.connection.execute(
+                        text(
+                            "INSERT INTO exchange_rates ("
+                            "source_id, "
+                            "source_currency_id, "
+                            "destination_currency_id, "
+                            "type_id, "
+                            "rate_value, "
+                            "valid_from_date) "
+                            "VALUES ("
+                            "(SELECT source_id FROM rate_sources WHERE source_code = :source_code), "
+                            "(SELECT currency_id FROM currencies WHERE currency_code = :source_currency), "
+                            "(SELECT currency_id FROM currencies WHERE currency_code = :destination_currency), "
+                            ":type_id, "
+                            ":rate_value, "
+                            ":valid_from_date "
+                            ")"
+                        ),
+                        fx,
+                    )
                     inserted_count += 1
+            except SQLAlchemyError as e:
+                logger.warning(
+                    "DB error for row %s (%s): %s",
+                    fx.get("source_code"),
+                    fx.get("destination_currency"),
+                    e,
+                )
             except Exception as e:
-                print(f"Error inserting {fx}: {e}")
-        self.connection.commit()
-        print(f"Inserted {inserted_count}/{len(fx_list)} records cleanly via FX base.")
+                logger.warning("Unexpected error inserting row %s: %s", fx, e)
+
+        try:
+            self.connection.commit()
+        except SQLAlchemyError as e:
+            logger.exception("Commit failed after FX inserts: %s", e)
+            try:
+                self.connection.rollback()
+            except SQLAlchemyError as rb_err:
+                logger.error("Rollback failed: %s", rb_err)
+            return
+
+        logger.info(
+            "%s: inserted %s/%s row(s)",
+            self.__class__.__name__,
+            inserted_count,
+            len(fx_list),
+        )
