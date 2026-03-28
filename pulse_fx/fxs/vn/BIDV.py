@@ -66,3 +66,4 @@ class BIDV(FX):
                         "valid_from_date": updated_at
                     })
         self.save_to_db(fx_list)
+        print(f"Scraped {len(fx_list)} fx from BIDV")

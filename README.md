@@ -1,44 +1,36 @@
 # Rate Pulse
 
-## Live Demo
+## Live at
 https://www.rate-pulse.me/
 
 ## Overview and Purpose
 
-Rate Pulse is designed to help users move from fragmented market signals to faster, data-driven FX decisions. Instead of checking rates, market headlines, and sector movement across multiple tools, the platform centralizes these inputs into one workflow:
+Rate Pulse is a platform for faster, data-driven FX work. It pulls exchange rates, market context, and headlines into one place instead of scattering them across tabs and tools.
 
-- Real-time exchange-rate monitoring and conversion
-- Curated analytics views (AI insights, news hub, and sector heatmap)
-- User personalization for preferred currencies and rate sources
-- Automated market/news ingestion from multiple web sources (`news-scapper`)
+The **web app and API** (`client/`, `rate-pulse-api/`) cover live-style rates, conversion, charts, analytics (insights, news hub, sector heatmap), and account flows.
 
-The long-term goal is to provide a cloud-native intelligence layer that combines transactional FX data with contextual market signals, making analysis more actionable for traders, analysts, and finance-focused teams.
+Alongside that, two Python projects extend what you can collect:
 
-## What Is New
+- **`pulse-intel`** — automated news and market scraping (e.g. Selenium-driven pipelines) to feed intel-style content into your stack.
+- **`pulse_fx`** — focused FX gathering from banks and financial sites so institution-specific quotes and tables can be captured in a repeatable way.
 
-The project has evolved from an API-only service into a broader platform:
+Together, the goal is a cloud-friendly setup where transactional FX data, **`pulse-intel`** signals, and **`pulse_fx`** rate sources can converge for traders, analysts, and finance teams.
 
-- Added a modern `client/` web app (Next.js, React, Tailwind)
-- Added analytics UI features (AI insight cards, news feed, sector heatmap)
-- Added deployment automation via GitHub Actions + Docker Hub + Kubernetes manifests (`digitalocean/`)
-- Started a separate scraping pipeline (`pulse-intel`) to feed market/news intelligence data
-- Added an FX information gathering tool (`pulse_fx`) to acquire specific exchange rate data
-
-## Architecture
+## Repository layout
 
 ```text
 rate-pulse/
-├── rate-pulse-api/         # Go HTTP API, DB schema, and token logic
-├── client/                 # Next.js frontend dashboard
-├── pulse-intel/            # Python automated news/market ingestion pipeline
-├── pulse_fx/               # Python FX information gathering tool
-├── digitalocean/           # Kubernetes manifests (deployment/service/ingress/issuer)
-├── .github/workflows/      # CI/CD pipelines (API, Client, Pulse-Intel)
-├── docker-compose.yaml     # Local API + Postgres runtime
+├── rate-pulse-api/         # Go HTTP API, Postgres, migrations, auth tokens
+├── client/                 # Next.js App Router frontend (dashboard + marketing home)
+├── pulse-intel/            # Python Selenium pipeline for news / market scraping
+├── pulse_fx/               # Python tool for FX data gathering from institutions
+├── digitalocean/           # Kubernetes manifests (service, ingress, issuer, etc.)
+├── .github/workflows/      # CI/CD (API, client, pulse-intel)
+├── docker-compose.yaml     # Local API + Postgres
 └── README.md
 ```
 
-## Tech Stack
+## Tech stack
 
 ### Backend
 
@@ -49,56 +41,55 @@ rate-pulse/
 - golang-migrate
 - Paseto / JWT
 
-### Frontend
+### Frontend (`client/`)
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- Recharts
+- **Next.js 16** (App Router)
+- **React 19**, TypeScript
+- **Tailwind CSS** with shared **CSS variables** for light/dark themes (`src/app/globals.css`)
+- **class-variance-authority**, **clsx**, **tailwind-merge** for component variants and `cn()`
+- **Recharts** for charts, **lucide-react** for icons, **next-themes** for theme switching, **Sonner** for toasts
+
+UI is built from reusable primitives under `client/src/components/ui/` (panels, typography, buttons, forms, etc.) so feature code stays consistent and accessible across themes.
 
 ### DevOps
 
 - Docker / Docker Compose
 - GitHub Actions
-- Kubernetes manifests (DigitalOcean-style deployment setup)
+- Kubernetes-style manifests under `digitalocean/`
 
-### Data Collection (WIP)
+### Data collection (WIP)
 
-- Python
-- Selenium + Microsoft Edge WebDriver
-- Cronjob
+- Python, Selenium, Microsoft Edge WebDriver, cron-friendly jobs
 
-## Core Features
+## Core features
 
-### API and Data Model
+### API and data model
 
 - User registration and login
 - Token-protected routes
 - Currency, country, and rate-source management
 - Exchange-rate tracking and filtering by type
-- User currency/source preference management
+- User currency and rate-source preferences
 
-### Frontend Dashboard
+### Web app
 
-- Exchange rate dashboard and converter UI
-- Analytics page with:
-  - AI Insights cards
-  - News Hub (region/category filters + search)
-  - Sector heatmap tiles
-- Auth and protected route layouts for profile/settings/admin pages
+- Public home, exchange rates, and analytics
+- Exchange rates dashboard: filters, per-source breakdown, converter, chart, refresh action
+- Analytics: AI insight cards, news feed with region/category/search, sector heatmap
+- Auth flows (login/signup), protected profile/settings/admin layouts
+- Sticky footer layout and theme-aware contrast for light and dark modes
 
-## Getting Started
+## Getting started
 
-## 1) Backend API
+### 1. Backend API
 
-### Prerequisites
+**Prerequisites**
 
 - [Go](https://go.dev/dl/) 1.25+
 - [Docker](https://www.docker.com/products/docker-desktop)
-- [Make](https://www.gnu.org/software/make/) (optional but recommended)
+- [Make](https://www.gnu.org/software/make/) (optional)
 
-### Environment setup
+**Environment**
 
 Create `app.env` in the project root:
 
@@ -110,15 +101,15 @@ TOKEN_SYMMETRIC_KEY=12345678901234567890123456789012
 ACCESS_TOKEN_DURATION=15m
 ```
 
-### Run with Docker Compose (recommended)
+**Run with Docker Compose (recommended)**
 
 ```bash
 docker-compose up --build
 ```
 
-API: `http://localhost:8080`
+API: http://localhost:8080
 
-### Run locally with Make
+**Run locally with Make**
 
 ```bash
 make postgres
@@ -127,11 +118,9 @@ make migrateup
 make server
 ```
 
-`make migrateup` currently uses the migration database URL configured in `Makefile`. Update it first if you want migrations to run against your local Postgres instance.
+Adjust the migration database URL in the `Makefile` if your Postgres URL differs.
 
-## 2) Frontend App
-
-In a new terminal:
+### 2. Frontend app
 
 ```bash
 cd client
@@ -139,53 +128,54 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:3000`
+App: http://localhost:3000
 
-## API Overview
+Other useful commands:
+
+```bash
+npm run build   # production build
+npm run lint    # ESLint
+```
+
+## API overview
 
 ### Public
 
 - `POST /users`
 - `POST /users/login`
 
-### Protected resources
+### Protected
 
 - Users: `GET/PUT/DELETE /users/:id`, `GET /users`
 - Currencies: `POST /currencies`, `GET /currencies/:id`, `GET /currencies`
 - Countries: `POST /countries`, `GET /countries/:id`, `GET /countries`
-- Rate Sources: `POST /rate-sources`, `GET /rate-sources/:id`, `GET /rate-sources`
-- Exchange Rates: `POST /exchange-rates`, `GET /exchange-rates/:id`, `GET /exchange-rates`, `GET /exchange-rates/type`
-- Currency Preferences: `POST /currency-preference`, `GET /currency-preferences`, `PUT/DELETE /currency-preference/:currency_id`
-- Rate Source Preferences: `POST /rate-source-preferences`, `GET /rate-source-preferences`, `PUT/DELETE /rate-source-preferences/:source_id`
+- Rate sources: `POST /rate-sources`, `GET /rate-sources/:id`, `GET /rate-sources`
+- Exchange rates: `POST /exchange-rates`, `GET /exchange-rates/:id`, `GET /exchange-rates`, `GET /exchange-rates/type`
+- Currency preferences: `POST /currency-preference`, `GET /currency-preferences`, `PUT/DELETE /currency-preference/:currency_id`
+- Rate source preferences: `POST /rate-source-preferences`, `GET /rate-source-preferences`, `PUT/DELETE /rate-source-preferences/:source_id`
 
-## CI/CD and Deployment
+## CI/CD and deployment
 
-Current workflows (e.g., `deploy-api.yml`, `deploy-client.yml`, `deploy-pulse-intel.yml`) are triggered upon pushing to the `main` branch. They include:
-
-- Building and pushing images to Docker Hub (`vinhtongthanh57/rate-pulse-api`, `vinhtongthanh57/client`, etc.)
-- Tag strategy typically uses the Commit SHA (`${{ github.sha }}`) and `latest`
-- Deployments to target droplets/clusters (often applying Kubernetes manifests from `digitalocean/`)
+Workflows such as `deploy-api.yml`, `deploy-client.yml`, and `deploy-pulse-intel.yml` typically run on pushes to `main`. They build and push images to Docker Hub (for example `vinhtongthanh57/rate-pulse-api`, `vinhtongthanh57/client`), tag with the commit SHA and `latest`, and apply manifests from `digitalocean/` where configured.
 
 ## `pulse-intel` (WIP)
 
-A Selenium-based multi-source news and market scraper project that is being built alongside Rate Pulse.
+Selenium-based multi-source news and market scraping, developed alongside Rate Pulse.
 
-### Scope
-
-Implemented / current sources:
+### Implemented / current sources
 
 - World Monitor
 - Yahoo Finance
-- Gold/Oil price website
+- Gold/Oil price site
 
-Collected data includes:
+### Collected data includes
 
-- AI Insights
-- Intel Feed
-- Regional news sections
-- Topic-based sections (energy, government, think tanks)
+- AI insights
+- Intel feed
+- Regional news
+- Topic sections (energy, government, think tanks, etc.)
 
-### Planned scraper structure
+### Planned layout
 
 ```text
 pulse-intel/
@@ -203,58 +193,21 @@ pulse-intel/
     └── sessions.py
 ```
 
-### World Monitor sections currently implemented
+### World Monitor sections (examples)
 
-- `ai_insights`
-- `intel_feed`
-- `world_news`
-- `united_states`
-- `europe`
-- `middle_east`
-- `africa`
-- `latin_america`
-- `asia_pacific`
-- `energy_and_resources`
-- `government`
-- `think_tanks`
+- `ai_insights`, `intel_feed`, `world_news`, `united_states`, `europe`, `middle_east`, `africa`, `latin_america`, `asia_pacific`, `energy_and_resources`, `government`, `think_tanks`
 
-Additional section IDs already exist for expansion:
+Additional IDs exist for expansion (economic indicators, trade, supply chain, financial, technology, crypto, AI/ML, etc.).
 
-- `economic_indicators`
-- `trade_policy`
-- `supply_chain`
-- `financial`
-- `technology`
-- `crypto`
-- `ai_ml`
-
-### Scraper flow
-
-1. Read config from `utils/constants.py`
-2. Create output folder for current day
-3. Start Microsoft Edge Selenium session
-4. Open World Monitor
-5. Scrape selected sections
-6. Return nested Python dictionary output
-
-### Scraper requirements
-
-- Python 3.10+
-- Microsoft Edge
-- Matching Edge WebDriver
-- `selenium`
-
-Install:
+### Run
 
 ```bash
+cd pulse-intel
 pip install -r requirements.txt
-```
-
-Run:
-
-```bash
 python main.py
 ```
+
+Requires Python 3.10+, Microsoft Edge, and a matching Edge WebDriver.
 
 ### Example output shape
 
@@ -274,21 +227,16 @@ python main.py
 }
 ```
 
-## Notes and Roadmap
+### Roadmap notes
 
-- The scraper currently uses Edge headless mode
-- Browser log noise is reduced in scraper session setup
-- CSV/SQLite export is in progress
-- Near-term goals:
-  - Normalize output schema
-  - Add CSV export
-  - Add SQLite local storage and CRUD
-  - Expand market and economic coverage
+- Edge headless mode; reduced browser log noise in session setup
+- CSV/SQLite export in progress
+- Goals: normalize schema, CSV export, local SQLite storage, broader coverage
 
 ## `pulse_fx` (WIP)
 
-A newly added Python tool explicitly designed for broader FX (Foreign Exchange) information gathering. Like `pulse-intel`, it relies on Selenium Edge scraping but targets specific local or global banking and financial institutions to collect up-to-date exchange-rate metrics directly.
+Python tooling for FX information gathering from banking and financial sites using Selenium and Edge, similar in spirit to `pulse-intel` but focused on rate tables and institution-specific pages.
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

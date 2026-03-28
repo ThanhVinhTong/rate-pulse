@@ -24,7 +24,6 @@ class Script:
         ]
         
         for bank in banks:
-            print(f"Testing scraping fx from {bank.bank_constants.get_name()} ...")
-            # bank.get_fx()  # each one checks its own time, scrapes, and inserts!
+            bank.get_fx()  # each one checks its own time, scrapes, and inserts!
             
         connection.close()
