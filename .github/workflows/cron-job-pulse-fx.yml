@@ -25,8 +25,6 @@ jobs:
     env:
       DB_SOURCE: ${{ secrets.DB_SOURCE }}
       PULSE_FX_LOG_FILE: logs/pulse_fx_run.log
-      GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-      GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON }}
       GMAIL_SMTP_USER: ${{ secrets.GMAIL_SMTP_USER }}
       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       GMAIL_NOTIFY_TO: ${{ secrets.GMAIL_NOTIFY_TO }}
