@@ -19,13 +19,13 @@ class Script:
 
     def get_fx(self) -> None:
         if not self.db_uri or not str(self.db_uri).strip():
-            logger.error("SUPABASE_URI / db_uri is missing or empty; aborting.")
+            logger.error("DB_SOURCE / db_uri is missing or empty; aborting.")
             return
 
         try:
             engine = create_engine(self.db_uri)
         except SQLAlchemyError:
-            logger.exception("Could not create SQLAlchemy engine (check SUPABASE_URI).")
+            logger.exception("Could not create SQLAlchemy engine (check DB_SOURCE).")
             return
         except Exception:
             logger.exception("Unexpected error creating database engine.")

@@ -433,7 +433,7 @@ rate_source_data = {
 def connect_supabase():
     load_dotenv()
 
-    DATABASE_URI = os.environ.get("SUPABASE_URI")
+    DATABASE_URI = os.environ.get("DB_SOURCE")
     
     return create_engine(DATABASE_URI)
 
