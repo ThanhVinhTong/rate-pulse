@@ -2,8 +2,9 @@ import logging
 import time
 from datetime import datetime, timedelta, timezone
 
-from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 
 from constants import require_bank_constant
 from fxs.FX import FX
@@ -53,6 +54,39 @@ class VCB(FX):
         except NoSuchElementException as e:
             logger.warning("%s: rate table not found: %s", name, e)
             return
+
+        # Expand the table until all rows are visible ("Xem thêm" -> "Thu gọn").
+        # VCB renders the "see more" control as an <input id="load-more-label" value="Xem thêm">.
+        try:
+            wait = WebDriverWait(self.driver, 12)
+            max_clicks = 20
+            for _ in range(max_clicks):
+                # If collapse button is visible, we're fully expanded.
+                collapse_btns = self.driver.find_elements(By.XPATH, "//button[contains(., 'Thu gọn')]")
+                if collapse_btns and collapse_btns[0].is_displayed():
+                    break
+
+                before = len(tbody.find_elements(By.TAG_NAME, "tr"))
+
+                see_more_btns = self.driver.find_elements(By.ID, "load-more-label")
+                if not see_more_btns:
+                    break
+                btn = see_more_btns[0]
+                if (not btn.is_displayed()) or (not btn.is_enabled()):
+                    break
+
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+                self.driver.execute_script("arguments[0].click();", btn)
+
+                # Stop if no new rows appear (prevents infinite loops).
+                try:
+                    wait.until(lambda d: len(tbody.find_elements(By.TAG_NAME, "tr")) > before)
+                except TimeoutException:
+                    break
+
+                time.sleep(0.3)
+        except WebDriverException as e:
+            logger.warning("%s: stopped expanding table (may be partial list): %s", name, e)
 
         rows = tbody.find_elements(By.TAG_NAME, "tr")
         for row in rows:
