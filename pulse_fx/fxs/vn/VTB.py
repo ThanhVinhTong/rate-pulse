@@ -35,16 +35,10 @@ class VTB(FX):
             return
 
         try:
-            date_input = self.driver.find_element(
-                By.XPATH,
-                "//p[contains(text(), 'Ngày cập nhật')]/following-sibling::div//input",
-            )
+            date_input = self.driver.find_elements(By.TAG_NAME, "input")[0]
             date_str = (date_input.get_attribute("value") or "").strip()
 
-            time_div = self.driver.find_element(
-                By.XPATH,
-                "//p[contains(text(), 'Thời điểm cập nhật')]/following-sibling::div//div[contains(@class, 'single-value')]",
-            )
+            time_div = self.driver.find_elements(By.CLASS_NAME, "react-select__single-value")[0]
             time_str = time_div.text.strip()
 
             date_time_str = f"{date_str} {time_str}"
@@ -58,12 +52,7 @@ class VTB(FX):
             )
 
         try:
-            tables = self.driver.find_elements(By.CLASS_NAME, "table-pin-rows")
-            if not tables:
-                logger.warning("%s: no .table-pin-rows table on page", name)
-                return
-            table = tables[0]
-            body = table.find_element(By.TAG_NAME, "tbody")
+            body = self.driver.find_elements(By.TAG_NAME, "tbody")[0]
         except NoSuchElementException as e:
             logger.warning("%s: rate table not found: %s", name, e)
             return

@@ -24,7 +24,7 @@ def start_driver(webdriver_path):
         options.add_argument('--disable-gpu')
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_argument('--window-size=1280,900')
-        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
+        # options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
         
         # In Docker, we usually don't need to specify executable_path if it's in /usr/bin/
         # but Render/Docker setup will place it where we define it.
@@ -53,7 +53,7 @@ def start_driver(webdriver_path):
         options.add_argument('--log-level=3')
         options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])
         options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
-
+        
         service = EdgeService(executable_path=webdriver_path)
         try:
             driver = webdriver.Edge(service=service, options=options)
