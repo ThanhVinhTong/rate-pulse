@@ -41,12 +41,17 @@ class VCB(FX):
             date_time_str = f"{date_block[-1]} {date_block[-3]}"
             updated_at = datetime.strptime(date_time_str, "%d/%m/%Y %H:%M").replace(tzinfo=tz_utc_plus_7)
         except (NoSuchElementException, ValueError, IndexError) as e:
-            logger.warning(
-                "%s: could not read listing timestamp (no FX row for today, layout change, or downtime): %s",
-                name,
-                e,
-            )
-            return
+            try:
+                date_block = self.driver.find_element(By.CLASS_NAME, "currency__description-bottom").text.split()
+                date_time_str = f"{date_block[-1]} {date_block[-3]}"
+                updated_at = datetime.strptime(date_time_str, "%d/%m/%Y %H:%M").replace(tzinfo=tz_utc_plus_7)
+            except (NoSuchElementException, ValueError, IndexError) as e:
+                logger.warning(
+                    "%s: could not read listing timestamp (no FX row for today, layout change, or downtime): %s",
+                    name,
+                    e,
+                )
+                return
 
         try:
             table = self.driver.find_element(By.CLASS_NAME, "table-responsive")
