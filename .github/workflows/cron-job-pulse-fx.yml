@@ -23,6 +23,8 @@ jobs:
         working-directory: pulse_fx
 
     env:
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: "utf-8"
       DB_SOURCE: ${{ secrets.DB_SOURCE }}
       PULSE_FX_LOG_FILE: logs/pulse_fx_run.log
       GMAIL_SMTP_USER: ${{ secrets.GMAIL_SMTP_USER }}
