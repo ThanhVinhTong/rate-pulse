@@ -29,6 +29,8 @@ class VCB(FX):
         try:
             self.driver.get(website)
             logger.info("Scraping FX from %s", website)
+            body_outer = self.driver.execute_script("return document.body.outerHTML;")
+            logger.warning("%s: body.outerHTML (first 20000 chars):\n%s", name, body_outer[:20000])
             time.sleep(5)
         except WebDriverException as e:
             logger.error("%s: navigation failed: %s", name, e)
