@@ -36,15 +36,24 @@ class VTB(FX):
 
         try:
             body_outer = self.driver.execute_script("return document.body.outerHTML;")
-            logger.warning("%s: body.outerHTML (first 20000 chars):\n%s", name, body_outer[:20000])
-            date_input = self.driver.find_elements(By.TAG_NAME, "input")[0]
-            date_str = (date_input.get_attribute("value") or "").strip()
+            # Detect AWS WAF CAPTCHA page and skip
+            if any(s in body_outer for s in ("captcha-container", "AwsWafIntegration", "ChallengeScript", "renderCaptcha")):
+                logger.error("%s: blocked by AWS WAF CAPTCHA; skipping", name)
+                return
+                
+            # Avoid IndexError from find_elements()[0]
+            inputs = self.driver.find_elements(By.TAG_NAME, "input")
+            if not inputs:
+                logger.warning("%s: no <input> elements found; DOM changed or blocked; skipping", name)
+                return
+            date_str = (inputs[0].get_attribute("value") or "").strip()
 
-            time_div = self.driver.find_elements(By.CLASS_NAME, "react-select__single-value")[0]
-            time_str = time_div.text.strip()
-
-            date_time_str = f"{date_str} {time_str}"
-            updated_at = datetime.strptime(date_time_str, "%d/%m/%Y %H:%M:%S").replace(tzinfo=tz_utc_plus_7)
+            time_nodes = self.driver.find_elements(By.CLASS_NAME, "react-select__single-value")
+            time_str = time_nodes[0].text.strip() if time_nodes else ""
+            if date_str and time_str:
+                updated_at = datetime.strptime(f"{date_str} {time_str}", "%d/%m/%Y %H:%M:%S").replace(tzinfo=tz_utc_plus_7)
+            else:
+                updated_at = datetime.now(tz_utc_plus_7)
         except (NoSuchElementException, ValueError) as e:
             updated_at = datetime.now(tz_utc_plus_7)
             logger.warning(
