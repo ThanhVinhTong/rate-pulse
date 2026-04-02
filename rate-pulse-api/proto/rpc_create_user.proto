@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pb;
+
+import "user.proto";
+
+option go_package = "github.com/ThanhVinhTong/rate-pulse/pb";
+
+message CreateUserRequest {
+    string username = 1;
+    string email = 2;
+    string password = 3;
+    string time_zone = 4;
+    string language_preference = 5;
+    string country_of_residence = 6;
+    string country_of_birth = 7;
+    string first_name = 8;
+    string last_name = 9;
+}
+
+message CreateUserResponse {
+    User user = 1;
+}

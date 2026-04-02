@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ThanhVinhTong/rate-pulse/pb";
+
+message User {
+    string username = 1;
+    string email = 2;
+    string user_type = 3;
+    bool email_verified = 4;
+    string time_zone = 5;
+    string language_preference = 6;
+    string country_of_residence = 7;
+    string country_of_birth = 8;
+    bool is_active = 9;
+    string first_name = 10;
+    string last_name = 11;
+    google.protobuf.Timestamp created_at = 12;
+    google.protobuf.Timestamp updated_at = 13;
+}
