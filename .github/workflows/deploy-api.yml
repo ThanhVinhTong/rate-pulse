@@ -67,7 +67,7 @@ jobs:
             kubectl create secret generic rate-pulse-secrets \
               --from-literal=DB_SOURCE='${{ secrets.DB_SOURCE }}' \
               --from-literal=DB_DRIVER='${{ secrets.DB_DRIVER }}' \
-              --from-literal=SERVER_ADDRESS='${{ secrets.SERVER_ADDRESS }}' \
+              --from-literal=HTTP_SERVER_ADDRESS='${{ secrets.HTTP_SERVER_ADDRESS }}' \
               --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
               --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
               --from-literal=REFRESH_TOKEN_DURATION='${{ secrets.REFRESH_TOKEN_DURATION }}' \

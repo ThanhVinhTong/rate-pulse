@@ -6,8 +6,12 @@ import (
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/gapi"
+	"github.com/ThanhVinhTong/rate-pulse/pb"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -32,8 +36,19 @@ func runGinServer(config util.Config, store *db.Store) {
 		log.Fatal("Cannot create server: ", err)
 	}
 
-	err = server.Start(config.ServerAddress)
+	err = server.Start(config.HTTPServerAddress)
 	if err != nil {
 		log.Fatal("Cannot start server: ", err)
 	}
+}
+
+func runGrpcServer(config util.Config, store *db.Store) {
+	server, err := gapi.NewServer(config, store)
+	if err != nil {
+		log.Fatal("Cannot create server: ", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterRatePulseServiceServer(grpcServer, server)
+	reflection.Register(grpcServer) // Freely explore what RPC methods are available
 }
