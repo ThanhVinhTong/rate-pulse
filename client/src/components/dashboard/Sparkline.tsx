@@ -9,7 +9,7 @@ interface SparklineProps {
 
 export function Sparkline({ data, rising }: SparklineProps) {
   return (
-    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+    <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={96}>
       <LineChart
         data={data.map((value, index) => ({ index, value }))}
         margin={{ top: 10, right: 0, left: -20, bottom: 0 }}

@@ -1,20 +1,20 @@
 from constants.Constant import Constant
 
-class VCBBank(Constant):
+class VCBConstant(Constant):
     def __init__(self):
         self.website = "https://www.vietcombank.com.vn/vi-VN/khcn/Cong-cu-Tien-ich/Ty-gia"
         self.info = {
             "source_currency": "VND",
             "destination_currency": "currency_code",
-            "buy_cash": "buy-cash",
-            "buy_transfer": "buy-transfer",
+            "buy_cash": "buy_cash",
+            "buy_transfer": "buy_transfer",
             "sell_cash_transfer": "sell",
             "time_zone": "UTC+7",
             "updated_at": "updated_at"
         }
         self.translate_column = {
-            "buy-cash": 1,
-            "buy-transfer": 3,
+            "buy_cash": 1,
+            "buy_transfer": 3,
             "sell": 9
         }
 

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { signupAction } from "@/app/actions";
 import { AuthForm } from "@/components/common/AuthForm";
+import { Panel } from "@/components/ui/panel";
+import { Heading, Text } from "@/components/ui/typography";
 
 export const metadata: Metadata = {
   title: "Sign Up",
@@ -13,16 +15,16 @@ export default function SignupPage() {
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.9fr_1fr] lg:items-center">
       <AuthForm mode="signup" action={signupAction} />
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-panel sm:p-8">
-        <p className="text-sm uppercase tracking-[0.24em] text-accent">Fast onboarding</p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">
+      <Panel variant="glass" padding="lg">
+        <Text variant="overlineAccent">Fast onboarding</Text>
+        <Heading level="h1" className="mt-3">
           Create your Rate-pulse workspace in minutes
-        </h1>
-        <p className="mt-4 text-sm leading-7 text-text-muted">
-          This demo uses mock data and server actions so the full flow feels like a
-          production-ready fintech application while staying easy to extend later.
-        </p>
-      </section>
+        </Heading>
+        <Text variant="body" className="mt-4 leading-7">
+          This demo uses mock data and server actions so the full flow feels like a production-ready fintech
+          application while staying easy to extend later.
+        </Text>
+      </Panel>
     </div>
   );
 }

@@ -29,18 +29,26 @@ export async function createSession(session: AuthSession) {
   const cookieStore = await cookies();
   const value = await createSessionCookieValue(session);
 
-  cookieStore.set(AUTH_COOKIE, value, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_MAX_AGE,
-  });
+  try {
+    cookieStore.set(AUTH_COOKIE, value, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: SESSION_MAX_AGE,
+    });
+  } catch (error) {
+    // Cannot set cookies in a Server Component render, just ignore.
+  }
 }
 
 export async function clearSession() {
   const cookieStore = await cookies();
-  cookieStore.delete(AUTH_COOKIE);
+  try {
+    cookieStore.delete(AUTH_COOKIE);
+  } catch (error) {
+    // Cannot set cookies in a Server Component render, just ignore.
+  }
 }
 
 export async function requireAuth() {

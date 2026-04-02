@@ -2,12 +2,14 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 // createExchangeRateRequest represents the request body for creating a new exchange rate.
@@ -53,6 +55,17 @@ func (server *Server) createExchangeRate(ctx *gin.Context) {
 
 	exchangeRate, err := server.store.CreateExchangeRate(ctx, arg)
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case "23505":
+				ctx.JSON(http.StatusConflict, gin.H{"error": "duplicate exchange rate"})
+				return
+			case "23503":
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid reference id"})
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -88,6 +101,10 @@ func (server *Server) getExchangeRate(ctx *gin.Context) {
 
 	exchangeRate, err := server.store.GetExchangeRateByID(ctx, req.ID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "exchange rate not found"})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -98,18 +115,18 @@ func (server *Server) getExchangeRate(ctx *gin.Context) {
 // listExchangeRateRequest represents the query parameters for listing exchange rates with pagination.
 // PageID starts from 1 and PageSize must be between 5 and 10.
 type listExchangeRateRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+	LastRateID int32 `form:"last_rate_id,default=0" binding:"min=0"`
+	Limit      int32 `form:"limit,default=20" binding:"min=1,max=100"`
 }
 
 // listExchangeRate retrieves a paginated list of exchange rates.
-// Pagination is controlled via query parameters page_id and page_size.
+// Pagination is controlled via query parameters last_rate_id and limit.
 //
-// GET /exchange-rates?page_id=1&page_size=10
+// GET /exchange-rates?last_rate_id=1&limit=10
 //
 // Query parameters:
-//   - page_id: The page number to retrieve (required, must be >= 1)
-//   - page_size: The number of exchange rates per page (required, must be between 5 and 10)
+//   - last_rate_id: The last seen rate ID (required, must be >= 0)
+//   - limit: The number of exchange rates per page (required, must be between 1 and 100)
 //
 // Response: Array of ExchangeRate objects on success, error message on failure
 // Status codes:
@@ -123,12 +140,12 @@ func (server *Server) listExchangeRate(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.GetAllExchangeRatesParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
+	arg := db.GetAllExchangeRatesAfterIDParams{
+		RateID: req.LastRateID,
+		Limit:  req.Limit,
 	}
 
-	exchangeRates, err := server.store.GetAllExchangeRates(ctx, arg)
+	exchangeRates, err := server.store.GetAllExchangeRatesAfterID(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -140,19 +157,19 @@ func (server *Server) listExchangeRate(ctx *gin.Context) {
 // listExchangeRateByTypeRequest represents the query parameters for listing exchange rates by type.
 // Type values: 0 = both, 1 = cash, 2 = card
 type listExchangeRateByTypeRequest struct {
-	TypeID   int32 `form:"type_id" binding:"min=1"`
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+	TypeID     int32 `form:"type_id" binding:"required,min=1"`
+	LastRateID int32 `form:"last_rate_id,default=0" binding:"min=0"`
+	Limit      int32 `form:"limit,default=20" binding:"min=1,max=100"`
 }
 
 // listExchangeRateByType retrieves exchange rates filtered by type with pagination.
 //
-// GET /exchange-rates/type?type=1&page_id=1&page_size=10
+// GET /exchange-rates/type?type=1&last_rate_id=1&limit=10
 //
 // Query parameters:
 //   - type: The exchange rate type (0 = both, 1 = cash, 2 = card)
-//   - page_id: The page number to retrieve (required, must be >= 1)
-//   - page_size: The number of exchange rates per page (required, must be between 5 and 10)
+//   - last_rate_id: The last seen rate ID (required, must be >= 0)
+//   - limit: The number of exchange rates per page (required, must be between 1 and 100)
 //
 // Response: Array of ExchangeRate objects on success, error message on failure
 // Status codes:
@@ -166,13 +183,13 @@ func (server *Server) listExchangeRateByType(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.GetExchangeRatesByTypeParams{
+	arg := db.GetExchangeRatesByTypeAfterIDParams{
 		TypeID: sql.NullInt32{Int32: req.TypeID, Valid: req.TypeID > 0},
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
+		RateID: req.LastRateID,
+		Limit:  req.Limit,
 	}
 
-	exchangeRates, err := server.store.GetExchangeRatesByType(ctx, arg)
+	exchangeRates, err := server.store.GetExchangeRatesByTypeAfterID(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

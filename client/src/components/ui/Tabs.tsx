@@ -1,4 +1,25 @@
+import { cva, type VariantProps } from "class-variance-authority";
+
 import { cn } from "@/lib/utils";
+
+export const tabsListVariants = cva("inline-flex rounded-xl border border-white/10 bg-white/5 p-1", {
+  variants: {},
+});
+
+export const tabsTriggerVariants = cva(
+  "min-h-11 rounded-lg px-4 text-sm font-medium transition",
+  {
+    variants: {
+      active: {
+        true: "bg-primary text-white shadow-sm",
+        false: "text-text-muted hover:text-white",
+      },
+    },
+    defaultVariants: {
+      active: false,
+    },
+  },
+);
 
 interface TabsProps<T extends string> {
   items: ReadonlyArray<{
@@ -17,16 +38,13 @@ export function Tabs<T extends string>({
   className,
 }: TabsProps<T>) {
   return (
-    <div className={cn("inline-flex rounded-xl border border-white/10 bg-white/5 p-1", className)}>
+    <div className={cn(tabsListVariants(), className)}>
       {items.map((item) => (
         <button
           key={item.id}
           type="button"
           onClick={() => onChange(item.id)}
-          className={cn(
-            "min-h-11 rounded-lg px-4 text-sm font-medium transition",
-            item.id === value ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-white",
-          )}
+          className={cn(tabsTriggerVariants({ active: item.id === value }))}
         >
           {item.label}
         </button>
@@ -34,3 +52,5 @@ export function Tabs<T extends string>({
     </div>
   );
 }
+
+export type TabsTriggerVariantProps = VariantProps<typeof tabsTriggerVariants>;

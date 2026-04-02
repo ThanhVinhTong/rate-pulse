@@ -1,143 +1,170 @@
-import Link from "next/link";
-import { ArrowRight, BarChart3, ShieldCheck, Smartphone } from "lucide-react";
+import type { Metadata } from "next";
+import { ArrowRight, BarChart3, Globe2, Newspaper, ShieldCheck } from "lucide-react";
 
-import { exchangeRates, featureCards, landingStats } from "@/lib/mock-data";
+import { NewsArticleCard } from "@/components/dashboard/NewsArticleCard";
+import { HeroGradientBackdrop } from "@/components/ui/hero";
+import { HomeHeroShowcase } from "@/components/home/HomeHeroShowcase";
+import { Panel } from "@/components/ui/panel";
+import { Heading, Text } from "@/components/ui/typography";
+import { TextLink } from "@/components/ui/text-link";
+import { NEWS_ARTICLES } from "@/data/newsData";
 
-export const metadata = {
-  title: "Trading Platform",
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "Rate-pulse — monitor FX quotes from multiple sources and read macro news that helps explain moves.",
 };
 
+const valueProps = [
+  {
+    title: "Multi-source rates",
+    body: "Compare bank and channel quotes in one place—by pair and source.",
+    icon: Globe2,
+  },
+  {
+    title: "News in context",
+    body: "Headlines tagged by region and impact, alongside the rates view and analytics.",
+    icon: Newspaper,
+  },
+  {
+    title: "Signed-in data",
+    body: "Live figures come from your authenticated session to the API—not the hero preview.",
+    icon: ShieldCheck,
+  },
+] as const;
+
+const previewPairs = [
+  { pair: "USD / JPY", tag: "Cash & transfer" },
+  { pair: "EUR / VND", tag: "Per bank & type" },
+  { pair: "GBP / USD", tag: "Converter & chart" },
+] as const;
+
+const homeNews = NEWS_ARTICLES.slice(0, 3);
+
 export default function Home() {
-  const highlightPairs = exchangeRates["48h"].slice(0, 3);
-
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d1322]/90 px-5 py-10 shadow-panel sm:px-8 lg:px-12 lg:py-16">
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+    <div className="space-y-0 pb-6">
+      <Panel variant="hero" className="relative" id="introduction" aria-labelledby="hero-heading">
+        <HeroGradientBackdrop />
+        <div className="relative grid gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-12 lg:px-12 lg:py-16">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-accent">
-              Mobile-first trading experience
-            </p>
-            <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight text-white sm:text-5xl">
-              Professional fintech dashboards for modern traders.
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-text-muted sm:text-lg">
-              Rate-pulse brings together exchange rates, portfolio analytics, account
-              controls, and admin visibility in one responsive trading platform.
-            </p>
+            <Text variant="overline">FX &amp; macro monitor</Text>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/signup"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white transition hover:bg-[#1b78ff]"
-              >
-                Start trading
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/analytics"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 px-5 text-sm font-medium text-text-primary transition hover:border-accent hover:text-white"
-              >
-                Explore analytics
-              </Link>
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {landingStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-text-tertiary">
-                    {stat.label}
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-white">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-primary/20 to-transparent p-5">
-              <BarChart3 className="h-8 w-8 text-accent" />
-              <h2 className="mt-5 text-xl font-semibold text-white">Analytics at a glance</h2>
-              <p className="mt-3 text-sm leading-6 text-text-muted">
-                Interactive charts surface performance, volume, and market trends
-                with clear visual hierarchy.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-accent/20 to-transparent p-5">
-              <Smartphone className="h-8 w-8 text-primary" />
-              <h2 className="mt-5 text-xl font-semibold text-white">Built for every screen</h2>
-              <p className="mt-3 text-sm leading-6 text-text-muted">
-                Touch-friendly controls, adaptive layouts, and fast navigation
-                keep the mobile experience smooth.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-transparent p-5 sm:col-span-2">
-              <ShieldCheck className="h-8 w-8 text-status-success" />
-              <h2 className="mt-5 text-xl font-semibold text-white">Protected workspaces</h2>
-              <p className="mt-3 text-sm leading-6 text-text-muted">
-                Middleware-backed guards and role-based access keep profile and
-                admin routes separated for safer operations.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        {featureCards.map((feature) => (
-          <article
-            key={feature.title}
-            className="rounded-2xl border border-white/10 bg-white/5 p-6"
-          >
-            <p className="text-sm uppercase tracking-[0.2em] text-accent">{feature.title}</p>
-            <p className="mt-4 text-sm leading-7 text-text-muted">{feature.description}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="rounded-2xl border border-white/10 bg-[#0d1322] p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-accent">Exchange highlights</p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">Major pairs on today&apos;s radar</h2>
-          </div>
-          <Link
-            href="/exchange-rates"
-            className="text-sm font-medium text-primary transition hover:text-accent"
-          >
-            View full dashboard
-          </Link>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {highlightPairs.map((pair) => (
-            <article
-              key={pair.pair}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            <h1
+              id="hero-heading"
+              className="mt-6 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-7xl"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-semibold text-white">{pair.pair}</h3>
-                  <p className="mt-1 text-sm text-text-muted">
-                    {pair.base} / {pair.quote}
-                  </p>
-                </div>
-                <p
-                  className={`text-sm font-medium ${
-                    pair.change >= 0 ? "text-status-success" : "text-status-danger"
-                  }`}
-                >
-                  {pair.change >= 0 ? "+" : ""}
-                  {pair.change}%
-                </p>
-              </div>
-              <p className="mt-6 text-3xl font-semibold text-white">{pair.rate}</p>
-              <p className="mt-2 text-sm text-text-muted">Volume {pair.volume}</p>
-            </article>
+              <span className="gradient-text-animated">Rates, news, and why they move.</span>
+            </h1>
+            <Text variant="bodyLg" className="mt-4 max-w-md">
+              Watch quotes from multiple sources and scan stories that sit next to your FX workflow—no execution, no
+              implied performance.
+            </Text>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <TextLink href="/exchange-rates" variant="cta">
+                View exchange rates
+              </TextLink>
+              <TextLink href="/login" variant="subtle">
+                Sign in for live data
+              </TextLink>
+            </div>
+          </div>
+
+          <HomeHeroShowcase />
+        </div>
+      </Panel>
+
+      <section className="mt-14 scroll-mt-24 sm:mt-20" aria-labelledby="value-props-heading">
+        <h2 id="value-props-heading" className="sr-only">
+          Overview
+        </h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {valueProps.map((item) => (
+            <Panel key={item.title} variant="heroCard" padding="md">
+              <item.icon className="h-8 w-8 text-[#00d3e5]" aria-hidden />
+              <Heading level="h3" className="mt-4">
+                {item.title}
+              </Heading>
+              <Text variant="muted" className="mt-2 leading-relaxed">
+                {item.body}
+              </Text>
+            </Panel>
           ))}
+        </div>
+      </section>
+
+      <section
+        id="exchange-rates"
+        aria-labelledby="fx-heading"
+        className="scroll-mt-24 border-t border-border pt-14 sm:pt-20"
+      >
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <Text variant="overlineBrand">Markets</Text>
+            <Heading level="h2" className="mt-2">
+              FX board
+            </Heading>
+            <Text variant="muted" className="mt-2 max-w-lg">
+              Filters, per-source tables, and a converter once you open the dashboard.
+            </Text>
+          </div>
+          <TextLink href="/exchange-rates" variant="inline">
+            Open rates
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </TextLink>
+        </div>
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {previewPairs.map((item) => (
+            <Panel key={item.pair} variant="preview" padding="md">
+              <Text variant="labelUpper" className="font-semibold tracking-wider">
+                {item.tag}
+              </Text>
+              <Heading level="h3" className="mt-3 text-xl font-bold">
+                {item.pair}
+              </Heading>
+              <Text variant="caption" className="mt-6">
+                Shown in-app when data is available
+              </Text>
+            </Panel>
+          ))}
+        </div>
+      </section>
+
+      <section
+        id="news"
+        aria-labelledby="news-heading"
+        className="scroll-mt-24 border-t border-white/10 pt-14 sm:pb-8 sm:pt-20"
+      >
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <Text variant="overlineBrand">Macro</Text>
+            <Heading level="h2" className="mt-2">
+              Headlines
+            </Heading>
+            <Text variant="muted" className="mt-2 max-w-lg">
+              Stories you can cross-check with moves on the board and in Analytics.
+            </Text>
+          </div>
+          <TextLink href="/analytics" variant="inline">
+            News &amp; charts in Analytics
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </TextLink>
+        </div>
+        <div className="mt-10 grid gap-4 lg:grid-cols-3">
+          {homeNews.map((article) => (
+            <NewsArticleCard key={article.id} article={article} />
+          ))}
+        </div>
+
+        <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-border pt-8">
+          <TextLink href="/analytics" variant="pill">
+            <BarChart3 className="h-4 w-4 text-[#00d3e5]" aria-hidden />
+            Analytics
+          </TextLink>
+          <TextLink href="/signup" variant="inlineMuted">
+            Need an account? Sign up
+          </TextLink>
         </div>
       </section>
     </div>

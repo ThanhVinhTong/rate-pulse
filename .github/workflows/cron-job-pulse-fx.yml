@@ -1,0 +1,50 @@
+# Scheduled FX rate gathering (pulse_fx) on GitHub-hosted runners.
+
+name: pulse_fx scheduled FX gathering
+
+on:
+  schedule:
+    # Four times daily UTC (cron is always UTC).
+    - cron: "0 0,6,12,18 * * *"
+  workflow_dispatch:
+
+# Avoid overlapping runs if a job is still going when the next cron fires.
+concurrency:
+  group: pulse-fx-gather
+  cancel-in-progress: false
+
+jobs:
+  gather_fx_info:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    defaults:
+      run:
+        working-directory: pulse_fx
+
+    env:
+      DB_SOURCE: ${{ secrets.DB_SOURCE }}
+      PULSE_FX_LOG_FILE: logs/pulse_fx_run.log
+      GMAIL_SMTP_USER: ${{ secrets.GMAIL_SMTP_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      GMAIL_NOTIFY_TO: ${{ secrets.GMAIL_NOTIFY_TO }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          install-dependencies: true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pulse_fx
+        run: python main.py

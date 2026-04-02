@@ -4,6 +4,13 @@ import { memo } from "react";
 import { Clock, Minus, TrendingDown, TrendingUp } from "lucide-react";
 
 import {
+  categoryPillVariants,
+  NewsArticleLink,
+  regionPillVariants,
+  tagPillVariants,
+} from "@/components/ui/article-card";
+import { Heading, Text } from "@/components/ui/typography";
+import {
   formatTimestamp,
   getImpactBadge,
   getSentimentBg,
@@ -47,38 +54,30 @@ function SentimentIndicator({ sentiment }: Pick<NewsArticle, "sentiment">) {
 
 export const NewsArticleCard = memo(function NewsArticleCard({ article }: NewsArticleCardProps) {
   return (
-    <a
+    <NewsArticleLink
       href={article.url}
       target="_blank"
       rel="noreferrer"
-      className="block rounded-xl border border-border bg-panel p-6 transition-all hover:border-primary/50 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       aria-label={`Open article: ${article.title}`}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "rounded-md px-2 py-1 text-xs font-medium uppercase tracking-wide",
-              getImpactBadge(article.impact),
-            )}
-          >
+          <span className={cn(tagPillVariants(), getImpactBadge(article.impact))}>
             {article.impact} impact
           </span>
-          <span className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-xs font-medium text-accent">
-            {article.category}
-          </span>
-          {article.region ? (
-            <span className="rounded-md border border-border px-2 py-1 text-xs font-medium text-text-muted">
-              {article.region}
-            </span>
-          ) : null}
+          <span className={categoryPillVariants()}>{article.category}</span>
+          {article.region ? <span className={regionPillVariants()}>{article.region}</span> : null}
         </div>
 
         <SentimentIndicator sentiment={article.sentiment} />
       </div>
 
-      <h2 className="mt-4 text-lg font-semibold text-text-primary">{article.title}</h2>
-      <p className="mt-2 text-sm leading-relaxed text-text-muted">{article.summary}</p>
+      <Heading level="mutedTitle" className="mt-4">
+        {article.title}
+      </Heading>
+      <Text variant="muted" className="mt-2 leading-relaxed">
+        {article.summary}
+      </Text>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-text-muted">
         <span>{article.source}</span>
@@ -90,6 +89,6 @@ export const NewsArticleCard = memo(function NewsArticleCard({ article }: NewsAr
         <span aria-hidden="true">•</span>
         <span>{article.readTime}</span>
       </div>
-    </a>
+    </NewsArticleLink>
   );
 });

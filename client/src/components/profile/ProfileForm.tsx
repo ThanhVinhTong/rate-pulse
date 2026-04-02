@@ -5,10 +5,12 @@ import { useActionState, useMemo } from "react";
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import type { AuthSession, CountryOption } from "@/types";
-
-import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FieldCaption, FieldLabel } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/Select";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Text } from "@/components/ui/typography";
+import type { AuthSession, CountryOption } from "@/types";
 
 interface ProfileFormProps {
   session: AuthSession;
@@ -98,44 +100,36 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
       {/*First Name*/}
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">First name</span>
-        <input
-          name="firstName"
-          defaultValue={session.firstName}
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        />
-      </label>
+      <FieldLabel>
+        <FieldCaption>First name</FieldCaption>
+        <Input name="firstName" defaultValue={session.firstName} />
+      </FieldLabel>
 
       {/*Last Name*/}
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">Last name</span>
-        <input
-          name="lastName"
-          defaultValue={session.lastName}
-          className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
-        />
-      </label>
+      <FieldLabel>
+        <FieldCaption>Last name</FieldCaption>
+        <Input name="lastName" defaultValue={session.lastName} />
+      </FieldLabel>
 
       {/*Email Address*/}
-      <label className="space-y-2 md:col-span-2">
-        <span className="text-sm text-text-muted">Email address</span>
+      <FieldLabel className="md:col-span-2">
+        <FieldCaption>Email address</FieldCaption>
         <div className="relative">
-          <input
+          <Input
             value={maskEmail(session.email)}
             readOnly
             disabled
-            className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-text-muted outline-none cursor-not-allowed select-none"
+            variant="ghostReadonly"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-text-muted/60">
             protected
           </span>
         </div>
-      </label>
+      </FieldLabel>
 
       {/*Country of Residence*/}
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">Country of Residence</span>
+      <FieldLabel>
+        <FieldCaption>Country of Residence</FieldCaption>
         <Select name="countryOfResidence" defaultValue={residenceValue}>
           <option value="">Select country</option>
           {countries.map((country) => (
@@ -147,11 +141,11 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
             </option>
           ))}
         </Select>
-      </label>
+      </FieldLabel>
 
       {/*Country of Birth*/}
-      <label className="space-y-2">
-        <span className="text-sm text-text-muted">Country of Birth</span>
+      <FieldLabel>
+        <FieldCaption>Country of Birth</FieldCaption>
         <Select name="countryOfBirth" defaultValue={birthValue}>
           <option value="">Select country</option>
           {countries.map((country) => (
@@ -163,11 +157,11 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
             </option>
           ))}
         </Select>
-      </label>
+      </FieldLabel>
 
       {/*Time Zone*/}
-      <label className="space-y-2 md:col-span-2">
-        <span className="text-sm text-text-muted">Time zone</span>
+      <FieldLabel>
+        <FieldCaption>Time zone</FieldCaption>
         <Select name="timeZone" defaultValue={timeZoneValue}>
           {timeZoneOptions.map((timeZone) => (
             <option key={timeZone.value} value={timeZone.value}>
@@ -175,16 +169,16 @@ export function ProfileForm({ session, countries }: ProfileFormProps) {
             </option>
           ))}
         </Select>
-      </label>
+      </FieldLabel>
 
       {/*Submit Area*/}
-      <div className="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:col-span-2">
         <div>
           {state.status === "success" ? (
-            <p className="text-sm text-status-success">{state.message}</p>
+            <Text className="text-sm text-status-success">{state.message}</Text>
           ) : null}
           {state.status === "error" ? (
-            <p className="text-sm text-status-danger">{state.message}</p>
+            <Text className="text-sm text-status-danger">{state.message}</Text>
           ) : null}
         </div>
         <SubmitButton pendingLabel="Updating profile...">Save changes</SubmitButton>

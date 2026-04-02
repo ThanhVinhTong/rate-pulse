@@ -1,25 +1,146 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, RefreshCw, Star } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { RefreshCw, Star } from "lucide-react";
 
+import { refreshExchangeRatesAction } from "@/app/actions";
+import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Panel } from "@/components/ui/panel";
+import { Text } from "@/components/ui/typography";
 import { useRealtimeRates } from "@/hooks/useRealtimeRates";
-import type { CurrencyPair, TimeRange } from "@/types";
-import { bankRates, supportedCurrencies } from "@/lib/mock-data";
+import type { CurrencyPair, PairSnapshot, SourceSnapshot, TimeRange } from "@/types";
 
-import { ExchangeRateFilters } from "./ExchangeRateFilters";
 import { CurrencyConverter } from "./CurrencyConverter";
 import { ExchangeRateChart } from "./ExchangeRateChart";
+import { ExchangeRateFilters } from "./ExchangeRateFilters";
+
+function formatRateValue(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return "—";
+  }
+  return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+}
+
+/** Stable across SSR and browser (avoids hydration mismatch from default toLocaleString()). */
+function formatUpdatedAtLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(d);
+}
+
+interface ExpandedTypeColumn {
+  key: string;
+  label: string;
+  typeId: number;
+}
+
+function getPrimaryOrder(label: string): number {
+  const lower = label.toLowerCase();
+  if (lower.startsWith("buy ")) return 0;
+  if (lower.startsWith("sell ")) return 1;
+  return 2;
+}
+
+function getSecondaryOrder(label: string): number {
+  const lower = label.toLowerCase();
+  if (lower.includes("cash")) return 0;
+  if (lower.includes("transfer")) return 1;
+  if (lower.includes("wire")) return 2;
+  if (lower.includes("cheque") || lower.includes("check")) return 3;
+  if (lower.includes("card")) return 4;
+  return 5;
+}
+
+function orderExpandedColumns(columns: ExpandedTypeColumn[]): ExpandedTypeColumn[] {
+  return [...columns].sort((a, b) => {
+    const primary = getPrimaryOrder(a.label) - getPrimaryOrder(b.label);
+    if (primary !== 0) return primary;
+
+    const secondary = getSecondaryOrder(a.label) - getSecondaryOrder(b.label);
+    if (secondary !== 0) return secondary;
+
+    return a.label.localeCompare(b.label);
+  });
+}
+
+function expandTypeColumns(
+  columns: Array<{ typeId: number; typeName: string }>,
+): ExpandedTypeColumn[] {
+  const expanded = columns.flatMap((column) => {
+    const parts = column.typeName
+      .split("/")
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length <= 1) {
+      return [{ key: String(column.typeId), label: column.typeName, typeId: column.typeId }];
+    }
+
+    const prefix = parts[0]?.split(" ").filter(Boolean)[0] ?? "";
+    return parts.map((part, index) => ({
+      key: `${column.typeId}-${index}`,
+      label:
+        index === 0 || !prefix || part.toLowerCase().startsWith(`${prefix.toLowerCase()} `)
+          ? part
+          : `${prefix} ${part}`,
+      typeId: column.typeId,
+    }));
+  });
+
+  return orderExpandedColumns(expanded);
+}
+
+function collectNumericRates(snapshot: PairSnapshot | undefined): number[] {
+  if (!snapshot) {
+    return [];
+  }
+  const out: number[] = [];
+  for (const src of snapshot.sources) {
+    for (const v of Object.values(src.rates)) {
+      if (v != null && Number.isFinite(v)) {
+        out.push(v);
+      }
+    }
+  }
+  return out;
+}
 
 interface ExchangeRatesDashboardProps {
   initialPairs: CurrencyPair[];
+  initialPairSnapshots: PairSnapshot[];
+  supportedCurrencyOptions: Array<{
+    code: string;
+    name: string;
+    symbol: string;
+    continent: string;
+  }>;
   range: TimeRange;
 }
 
 export function ExchangeRatesDashboard({
   initialPairs,
+  initialPairSnapshots,
+  supportedCurrencyOptions,
   range,
 }: ExchangeRatesDashboardProps) {
+  const [pairSnapshots, setPairSnapshots] = useState(initialPairSnapshots);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    setPairSnapshots(initialPairSnapshots);
+  }, [initialPairSnapshots]);
   const realtimePairs = useRealtimeRates(initialPairs);
   const defaultPair = realtimePairs[0]?.pair ?? "USD/JPY";
   const [initialBase, initialTarget] = defaultPair.split("/");
@@ -27,42 +148,87 @@ export function ExchangeRatesDashboard({
   const [selectedTargetCurrency, setSelectedTargetCurrency] = useState(initialTarget);
   const [selectedSource, setSelectedSource] = useState("All Sources");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const conversionUpdatedAt = "23:00 13/03/2026";
+
+  const handleRefreshRates = async () => {
+    setIsRefreshing(true);
+    try {
+      const result = await refreshExchangeRatesAction();
+      if (result.status === "success" && Array.isArray(result.data)) {
+        setPairSnapshots(result.data as PairSnapshot[]);
+      }
+    } catch (error) {
+      console.error("Failed to refresh rates:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const selectedSnapshot = useMemo(
+    () =>
+      pairSnapshots.find(
+        (p) =>
+          p.baseCurrency === selectedBaseCurrency && p.targetCurrency === selectedTargetCurrency,
+      ),
+    [pairSnapshots, selectedBaseCurrency, selectedTargetCurrency],
+  );
+
+  const conversionUpdatedAt = useMemo(() => {
+    const times = (selectedSnapshot?.sources ?? [])
+      .map((s) => s.updatedAt)
+      .filter(Boolean) as string[];
+    if (times.length === 0) {
+      return "N/A";
+    }
+    const latest = times.sort().at(-1);
+    if (!latest) {
+      return "N/A";
+    }
+    const latestTimestamp = new Date(latest);
+    const hours = String(latestTimestamp.getHours()).padStart(2, "0");
+    const minutes = String(latestTimestamp.getMinutes()).padStart(2, "0");
+    const day = String(latestTimestamp.getDate()).padStart(2, "0");
+    const month = String(latestTimestamp.getMonth() + 1).padStart(2, "0");
+    const year = latestTimestamp.getFullYear();
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  }, [selectedSnapshot]);
 
   const availableCurrencies = useMemo(() => {
     const pairCurrencies = realtimePairs
       .flatMap((pair) => pair.pair.split("/"))
       .filter(Boolean);
 
-    // Keep all supported currencies selectable (including VND),
-    // then merge in any extra codes discovered from live pairs.
+    const snapshotPairCodes = pairSnapshots.flatMap((p) => [p.baseCurrency, p.targetCurrency]);
+
     const mergedCodes = Array.from(
-      new Set([...supportedCurrencies.map((currency) => currency.code), ...pairCurrencies]),
-    );
+      new Set([
+        ...supportedCurrencyOptions.map((currency) => currency.code),
+        ...pairCurrencies,
+        ...snapshotPairCodes,
+        selectedBaseCurrency,
+        selectedTargetCurrency,
+      ]),
+    ).sort((a, b) => a.localeCompare(b));
 
     return mergedCodes.map((code) => {
-      const matched = supportedCurrencies.find((currency) => currency.code === code);
+      const matched = supportedCurrencyOptions.find((currency) => currency.code === code);
       return { code, name: matched?.name ?? code, continent: matched?.continent ?? "Other" };
     });
-  }, [realtimePairs]);
+  }, [
+    realtimePairs,
+    supportedCurrencyOptions,
+    pairSnapshots,
+    selectedBaseCurrency,
+    selectedTargetCurrency,
+  ]);
 
   const directPair = realtimePairs.find((pair) => pair.pair === `${selectedBaseCurrency}/${selectedTargetCurrency}`);
   const inversePair = realtimePairs.find((pair) => pair.pair === `${selectedTargetCurrency}/${selectedBaseCurrency}`);
   const marketReferenceRate = directPair?.rate ?? (inversePair ? Number((1 / inversePair.rate).toFixed(6)) : null);
 
-  const sourceOptions = useMemo(
-    () => [
-      "All Sources",
-      ...Array.from(
-        new Set(
-          bankRates
-            .filter((rate) => rate.baseCurrency === selectedBaseCurrency)
-            .map((rate) => rate.source),
-        ),
-      ),
-    ],
-    [selectedBaseCurrency],
-  );
+  const sourceOptions = useMemo(() => {
+    const names = (selectedSnapshot?.sources ?? []).map((s) => s.sourceName);
+    return ["All Sources", ...Array.from(new Set(names)).sort((a, b) => a.localeCompare(b))];
+  }, [selectedSnapshot]);
 
   const effectiveSelectedSource = sourceOptions.includes(selectedSource)
     ? selectedSource
@@ -73,47 +239,18 @@ export function ExchangeRatesDashboard({
     rate: directPair ? Number(rate.toFixed(4)) : Number((1 / rate).toFixed(6)),
   }));
 
-  const rates = bankRates.filter((rate) => {
-    const matchPair =
-      rate.baseCurrency === selectedBaseCurrency && rate.targetCurrency === selectedTargetCurrency;
-    const matchSource = effectiveSelectedSource === "All Sources" || rate.source === effectiveSelectedSource;
-    const matchFavorite = !favoritesOnly || rate.favorite;
-    return matchPair && matchSource && matchFavorite;
-  });
-
-  const cheapestWireRateFromTable = rates.length > 0
-    ? Math.min(...rates.map((rate) => Math.min(rate.wireBuy, rate.wireSell)))
-    : null;
-
-  const normalizeRateDirection = (rawRate: number) => {
-    if (rawRate <= 0) return 1;
-
-    const inverse = 1 / rawRate;
-    if (marketReferenceRate && marketReferenceRate > 0) {
-      const directDistance = Math.abs(Math.log(rawRate / marketReferenceRate));
-      const inverseDistance = Math.abs(Math.log(inverse / marketReferenceRate));
-      return inverseDistance < directDistance ? inverse : rawRate;
+  const filteredSources: SourceSnapshot[] = useMemo(() => {
+    const list = selectedSnapshot?.sources ?? [];
+    if (effectiveSelectedSource === "All Sources") {
+      return list;
     }
+    return list.filter((s) => s.sourceName === effectiveSelectedSource);
+  }, [selectedSnapshot, effectiveSelectedSource]);
 
-    // Fallback for pairs that don't exist in realtime mock pairs (e.g. VND/USD in bank table).
-    if (rawRate >= 1000) {
-      return inverse;
-    }
-
-    return rawRate;
-  };
-
-  const conversionRate = cheapestWireRateFromTable !== null
-    ? normalizeRateDirection(cheapestWireRateFromTable)
-    : (marketReferenceRate ?? 1);
-
-  const groupedRates = rates.reduce<Record<string, typeof rates>>((groups, rate) => {
-    if (!groups[rate.baseCurrency]) {
-      groups[rate.baseCurrency] = [];
-    }
-    groups[rate.baseCurrency].push(rate);
-    return groups;
-  }, {});
+  const numericForConversion = collectNumericRates(selectedSnapshot);
+  const bestWireSellRateFromTable =
+    numericForConversion.length > 0 ? Math.min(...numericForConversion) : null;
+  const conversionRate = bestWireSellRateFromTable ?? marketReferenceRate ?? 1;
 
   const handleBaseCurrencyChange = (currency: string) => {
     setSelectedBaseCurrency(currency);
@@ -131,25 +268,22 @@ export function ExchangeRatesDashboard({
     }
   };
 
-  const handleSwapCurrencies = () => {
-    setSelectedBaseCurrency(selectedTargetCurrency);
-    setSelectedTargetCurrency(selectedBaseCurrency);
-  };
+  const typeColumns = selectedSnapshot?.types ?? [];
+  const expandedTypeColumns = useMemo(() => expandTypeColumns(typeColumns), [typeColumns]);
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-semibold text-white">Exchange Rates</h1>
-          <p className="text-sm text-text-muted mt-1">Real-time currency exchange rates from multiple sources</p>
-        </div>
-        <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all font-medium">
-          <RefreshCw size={16} />
-          <span className="hidden sm:inline">Refresh Rates</span>
-          <span className="sm:hidden">Refresh</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Exchange Rates"
+        description="Real-time currency exchange rates from multiple sources"
+        action={
+          <Button type="button" variant="compact" onClick={handleRefreshRates} disabled={isRefreshing}>
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh Rates"}</span>
+            <span className="sm:hidden">{isRefreshing ? "..." : "Refresh"}</span>
+          </Button>
+        }
+      />
 
       <ExchangeRateFilters
         baseCurrency={selectedBaseCurrency}
@@ -169,118 +303,94 @@ export function ExchangeRatesDashboard({
         baseCurrency={selectedBaseCurrency}
         targetCurrency={selectedTargetCurrency}
         conversionRate={conversionRate}
-        onSwapCurrencies={handleSwapCurrencies}
+        currencyOptions={supportedCurrencyOptions}
+        updatedAt={conversionUpdatedAt}
       />
 
-      {/* Grouped Exchange Rates Tables */}
-      <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-panel">
-        <div className="bg-[#0c1220] px-4 md:px-6 py-4 border-b border-white/10">
-          <h3 className="text-base md:text-lg font-semibold text-primary">
+      <Panel variant="sheet" className="overflow-hidden">
+        <div className="border-b border-white/10 bg-[#0c1220] px-4 py-4 text-oninset md:px-6">
+          <h3 className="text-base font-semibold text-oninset md:text-lg">
             {selectedBaseCurrency} → {selectedTargetCurrency}
           </h3>
-          <p className="text-xs text-text-muted mt-1">
-            {rates.length} sources available
-          </p>
+          <Text variant="onInsetMuted" className="mt-1">
+            {filteredSources.length} source{filteredSources.length === 1 ? "" : "s"} available
+            {expandedTypeColumns.length > 0
+              ? ` · ${expandedTypeColumns.length} rate type${expandedTypeColumns.length === 1 ? "" : "s"}`
+              : ""}
+          </Text>
         </div>
-        {Object.entries(groupedRates).map(([baseCurrency, group]) => (
-          <div key={baseCurrency} className="border-t border-white/10 first:border-t-0">
-            <div className="px-4 md:px-6 py-3 bg-[#0c1220]/60 text-xs uppercase tracking-wider text-text-muted">
-              Base Currency: <span className="text-primary font-semibold">{baseCurrency}</span>
-            </div>
 
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-[#0c1220]/50 text-text-tertiary">
-                  <tr>
-                    <th className="px-5 py-4 font-medium"><Star size={14} /></th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Source</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Cash Buy</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Wire Buy</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Cash Sell</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Wire Sell</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Change</th>
-                    <th className="px-5 py-4 font-medium uppercase text-xs tracking-wider">Country</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.map((rate, idx) => (
-                    <tr key={rate.id} className="border-t border-white/10 text-text-primary hover:bg-white/5 transition-colors">
-                      <td className="px-5 py-4">
-                        <button className={idx === 0 ? "text-warning" : "text-text-muted hover:text-warning"}>
-                          <Star size={16} fill={idx === 0 ? "currentColor" : "none"} />
-                        </button>
-                      </td>
-                      <td className="px-5 py-4 font-medium text-white">{rate.source}</td>
-                      <td className="px-5 py-4 font-semibold text-white">{rate.cashBuy.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                      <td className="px-5 py-4 font-semibold text-white">{rate.wireBuy.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                      <td className="px-5 py-4 font-semibold text-white">{rate.cashSell.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                      <td className="px-5 py-4 font-semibold text-white">{rate.wireSell.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                      <td className="px-5 py-4">
-                        <div className={`flex items-center gap-1 font-semibold ${rate.change >= 0 ? "text-status-success" : "text-status-danger"}`}>
-                          {rate.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                          {rate.change >= 0 ? "+" : ""}{rate.change}%
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-text-muted">{rate.country}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {!selectedSnapshot && (
+          <div className="px-6 py-8 text-center">
+            <Text variant="muted">
+              No rate data for {selectedBaseCurrency}/{selectedTargetCurrency}.
+            </Text>
+          </div>
+        )}
 
-            {/* Mobile View */}
-            <div className="md:hidden divide-y divide-white/10">
-              {group.map((rate, idx) => (
-                <div key={rate.id} className="p-4 bg-transparent">
-                  <div className="flex items-center justify-between mb-4">
+        {selectedSnapshot && filteredSources.length === 0 && (
+          <div className="px-6 py-8 text-center">
+            <Text variant="muted">
+              No source data matches your filters for {selectedBaseCurrency}/{selectedTargetCurrency}.
+            </Text>
+          </div>
+        )}
+
+        {selectedSnapshot && filteredSources.length > 0 && (
+          <div className="divide-y divide-white/10">
+            {filteredSources.map((source, idx) => {
+              const sourceTypeColumns = typeColumns.filter((t) => source.rates[t.typeId] != null);
+              const sourceExpandedTypeColumns = expandTypeColumns(sourceTypeColumns);
+              const visibleRateCells = sourceExpandedTypeColumns.slice(0, 8);
+              const hiddenCount = Math.max(0, sourceExpandedTypeColumns.length - visibleRateCells.length);
+
+              return (
+                <div key={`${source.sourceId}-${source.sourceName}`} className="bg-[#0c1220]/40">
+                  <div className="flex flex-col gap-2 border-b border-white/10 bg-[#0c1220]/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-white/10">
-                        <span className="font-semibold text-primary">{selectedTargetCurrency}</span>
-                      </div>
                       <div>
-                        <div className="font-semibold text-white">{rate.source}</div>
-                        <div className="text-xs text-text-muted">{rate.country}</div>
+                        <div className="font-semibold text-white">{source.sourceName}</div>
+                        <div className="text-xs text-slate-400">
+                          {source.sourceCountry ?? "—"}
+                          {source.updatedAt ? ` · Updated ${formatUpdatedAtLabel(source.updatedAt)} UTC` : ""}
+                        </div>
                       </div>
                     </div>
-                    <button className={idx === 0 ? "text-warning" : "text-text-muted hover:text-warning"}>
+                    <button
+                      type="button"
+                      className={idx === 0 ? "text-warning" : "text-text-muted hover:text-warning"}
+                    >
                       <Star size={18} fill={idx === 0 ? "currentColor" : "none"} />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <div className="text-xs text-text-muted mb-1">Cash Buy</div>
-                      <div className="font-semibold text-white">{rate.cashBuy.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-text-muted mb-1">Wire Buy</div>
-                      <div className="font-semibold text-white">{rate.wireBuy.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-white/10">
-                    <div>
-                      <div className="text-xs text-text-muted mb-1">Cash Sell</div>
-                      <div className="font-semibold text-white">{rate.cashSell.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-text-muted mb-1">Wire Sell</div>
-                      <div className="font-semibold text-white">{rate.wireSell.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                    </div>
+                  <div className="p-4 md:p-5">
+                    {visibleRateCells.length === 0 ? (
+                      <Text variant="muted">No meaningful rate values for this source.</Text>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                        {visibleRateCells.map((t) => (
+                          <Panel key={t.key} variant="rateCell">
+                            <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-oninset-muted">
+                              {t.label}
+                            </div>
+                            <div className="font-semibold text-oninset">{formatRateValue(source.rates[t.typeId])}</div>
+                          </Panel>
+                        ))}
+                      </div>
+                    )}
+                    {hiddenCount > 0 && (
+                      <Text variant="caption" className="mt-3 text-text-muted">
+                        +{hiddenCount} more rate type{hiddenCount === 1 ? "" : "s"}
+                      </Text>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {rates.length === 0 && (
-          <div className="px-6 py-8 text-center text-text-muted text-sm">
-            No source data available for {selectedBaseCurrency}/{selectedTargetCurrency}.
+              );
+            })}
           </div>
         )}
-      </div>
+      </Panel>
 
       <ExchangeRateChart
         baseCurrency={selectedBaseCurrency}

@@ -3,20 +3,23 @@
 import { MoonStar, SunMedium } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { Button } from "@/components/ui/Button";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
   return (
-    <Button
-      aria-label="Toggle theme"
-      variant="secondary"
-      className="min-w-11 px-0"
+    <ThemeToggleButton
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={isDark ? "Light mode" : "Dark mode"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
-      {isDark ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
-    </Button>
+      {isDark ? (
+        <SunMedium className="h-[18px] w-[18px] stroke-[2.35]" stroke="currentColor" aria-hidden />
+      ) : (
+        <MoonStar className="h-[18px] w-[18px] stroke-[2.35]" stroke="currentColor" aria-hidden />
+      )}
+    </ThemeToggleButton>
   );
 }

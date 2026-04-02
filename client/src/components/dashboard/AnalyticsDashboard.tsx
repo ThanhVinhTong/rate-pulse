@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { BarChart3, Filter, Newspaper, Search, Sparkles } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FilterChip } from "@/components/ui/filter-chip";
+import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
+import { PageHeaderSimple } from "@/components/ui/page-header";
+import { Text } from "@/components/ui/typography";
+import { UnderlineTabs } from "@/components/ui/underline-tabs";
 import type { AIInsight, AnalyticsTab, NewsArticle, NewsCategory, NewsRegion, SectorData } from "@/types";
 
 import { AIInsightCard } from "./AIInsightCard";
@@ -42,44 +48,6 @@ const tabItems: TabItem[] = [
   { id: "heatmap", label: "Sector Heatmap", icon: BarChart3 },
 ];
 
-function AnalyticsTabButton({
-  item,
-  activeTab,
-  onSelect,
-}: {
-  item: TabItem;
-  activeTab: AnalyticsTab;
-  onSelect: (tab: AnalyticsTab) => void;
-}) {
-  const Icon = item.icon;
-  const isActive = activeTab === item.id;
-
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={isActive}
-      aria-controls={`${item.id}-panel`}
-      id={`${item.id}-tab`}
-      onClick={() => onSelect(item.id)}
-      className={cn(
-        "relative inline-flex min-h-11 items-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-medium transition-all",
-        isActive ? "text-primary" : "text-text-muted hover:text-text-primary",
-      )}
-    >
-      <Icon size={18} aria-hidden="true" />
-      <span>{item.label}</span>
-      <span
-        className={cn(
-          "absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-primary transition-all",
-          isActive ? "opacity-100" : "opacity-0",
-        )}
-        aria-hidden="true"
-      />
-    </button>
-  );
-}
-
 function FilterGroup<T extends string>({
   label,
   allLabel,
@@ -95,57 +63,26 @@ function FilterGroup<T extends string>({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => onChange("All")}
-          aria-pressed={value === "All"}
-          className={cn(
-            "rounded-lg px-4 py-2 text-sm font-medium transition-all",
-            value === "All"
-              ? "bg-primary text-white"
-              : "border border-border bg-transparent text-text-primary hover:border-primary/50 hover:bg-primary/10 hover:text-primary",
-          )}
-        >
+        <FilterChip active={value === "All"} onClick={() => onChange("All")} aria-pressed={value === "All"}>
           {allLabel}
-        </button>
+        </FilterChip>
 
         {items.map((item) => {
           const isActive = value === item;
 
           return (
-            <button
+            <FilterChip
               key={item}
-              type="button"
+              active={isActive}
               onClick={() => onChange(item)}
               aria-pressed={isActive}
-              className={cn(
-                "rounded-lg px-4 py-2 text-sm font-medium transition-all",
-                isActive
-                  ? "bg-primary text-white"
-                  : "border border-border bg-transparent text-text-primary hover:border-primary/50 hover:bg-primary/10 hover:text-primary",
-              )}
             >
               {item}
-            </button>
+            </FilterChip>
           );
         })}
       </div>
     </section>
-  );
-}
-
-function EmptyState({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-panel px-6 py-10 text-center">
-      <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
-      <p className="mt-2 text-sm text-text-muted">{description}</p>
-    </div>
   );
 }
 
@@ -186,25 +123,12 @@ export function AnalyticsDashboard({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-text-primary lg:text-3xl">News &amp; Analytics</h1>
-        <p className="text-sm text-text-muted lg:text-base">
-          Real-time market news and AI-powered insights
-        </p>
-      </header>
+      <PageHeaderSimple
+        title="News & Analytics"
+        description="Real-time market news and AI-powered insights"
+      />
 
-      <div className="overflow-x-auto border-b border-border">
-        <div className="flex min-w-max items-center" role="tablist" aria-label="Analytics sections">
-          {tabItems.map((item) => (
-            <AnalyticsTabButton
-              key={item.id}
-              item={item}
-              activeTab={activeTab}
-              onSelect={setActiveTab}
-            />
-          ))}
-        </div>
-      </div>
+      <UnderlineTabs items={tabItems} value={activeTab} onChange={setActiveTab} />
 
       {activeTab === "ai-insights" ? (
         <section
@@ -226,22 +150,22 @@ export function AnalyticsDashboard({
 
       {activeTab === "news" ? (
         <section id="news-panel" role="tabpanel" aria-labelledby="news-tab" className="space-y-6">
-          <div className="rounded-xl border border-border bg-panel p-4">
+          <Panel variant="searchBar">
             <label htmlFor="news-search" className="sr-only">
               Search news
             </label>
             <div className="flex items-center gap-3">
               <Search className="h-5 w-5 text-text-muted" aria-hidden="true" />
-              <input
+              <Input
                 id="news-search"
                 type="search"
+                variant="searchTransparent"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search news..."
-                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
               />
             </div>
-          </div>
+          </Panel>
 
           <FilterGroup
             label="Regions"
@@ -260,9 +184,9 @@ export function AnalyticsDashboard({
           />
 
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-text-tertiary">
+            <Text variant="overline" className="text-text-tertiary">
               {filteredArticles.length} {filteredArticles.length === 1 ? "story" : "stories"} matched
-            </p>
+            </Text>
           </div>
 
           <div className="space-y-4">
@@ -287,14 +211,14 @@ export function AnalyticsDashboard({
           aria-labelledby="heatmap-tab"
           className="space-y-4"
         >
-          <div className="rounded-xl border border-border bg-panel p-6">
+          <Panel variant="heatmap">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-text-primary lg:text-xl">
                 Market Sector Performance
               </h2>
-              <p className="mt-2 text-sm text-text-muted">
+              <Text variant="muted" className="mt-2">
                 Relative 24-hour moves across sectors, sized by intensity for faster scanning.
-              </p>
+              </Text>
             </div>
 
             {sectors.length > 0 ? (
@@ -309,9 +233,9 @@ export function AnalyticsDashboard({
                 description="Sector performance tiles will appear here when data is available."
               />
             )}
-          </div>
+          </Panel>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 rounded-xl border border-border bg-panel p-4 text-sm">
+          <Panel variant="legend">
             <div className="flex items-center gap-2 text-text-muted">
               <span className="h-4 w-4 rounded bg-[#00af30]" aria-hidden="true" />
               Positive Performance
@@ -324,7 +248,7 @@ export function AnalyticsDashboard({
               <span className="h-4 w-4 rounded bg-[#5c5769]" aria-hidden="true" />
               Neutral
             </div>
-          </div>
+          </Panel>
         </section>
       ) : null}
     </div>

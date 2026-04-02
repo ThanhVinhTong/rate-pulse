@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { Text } from "./typography";
+
 interface ModalProps {
   open: boolean;
   title: string;
@@ -20,7 +22,11 @@ export function Modal({ open, title, description, children, footer }: ModalProps
       <div className={cn("w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d1322] p-6 shadow-panel")}>
         <div>
           <h2 className="text-xl font-semibold text-white">{title}</h2>
-          {description ? <p className="mt-2 text-sm text-text-muted">{description}</p> : null}
+          {description ? (
+            <Text variant="muted" className="mt-2">
+              {description}
+            </Text>
+          ) : null}
         </div>
         <div className="mt-6">{children}</div>
         {footer ? <div className="mt-6">{footer}</div> : null}

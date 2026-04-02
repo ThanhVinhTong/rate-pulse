@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 import { TrendingUp } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { IconBox } from "@/components/ui/icon-box";
+import { Panel } from "@/components/ui/panel";
+import { SegmentedControl, SegmentedItem } from "@/components/ui/segmented-control";
+import { Heading, Text } from "@/components/ui/typography";
 import { TIME_RANGES } from "@/lib/constants";
 import type { TimeRange } from "@/types";
 
@@ -114,10 +119,20 @@ const buildRangeSeries = (seedData: ExchangeRatePoint[], range: TimeRange): Exch
 
 export function ExchangeRateChart({ baseCurrency, targetCurrency, data, initialRange }: ExchangeRateChartProps) {
   const [selectedRange, setSelectedRange] = useState<TimeRange>(initialRange);
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setSelectedRange(initialRange);
   }, [initialRange]);
+
+  const isLight = mounted && resolvedTheme === "light";
+  const axisTickColor = isLight ? "#475569" : "#94a3b8";
+  const gridStroke = isLight ? "#e2e8f0" : "rgba(255,255,255,0.08)";
 
   const chartData = useMemo(
     () => buildRangeSeries(data, selectedRange),
@@ -129,32 +144,30 @@ export function ExchangeRateChart({ baseCurrency, targetCurrency, data, initialR
   );
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 mb-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+    <Panel variant="sheet" padding="md" className="mb-6">
+      <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div className="flex items-start gap-3">
-          <div className="mt-1 p-2 rounded-lg bg-primary/10 text-primary">
+          <IconBox variant="brandSm">
             <TrendingUp className="h-5 w-5" />
-          </div>
+          </IconBox>
           <div>
-            <h2 className="text-lg font-semibold text-white">Market Trends</h2>
-            <p className="text-sm text-text-muted">Historical {baseCurrency} to {targetCurrency} exchange rate</p>
+            <Heading level="h3">Market Trends</Heading>
+            <Text variant="muted">
+              Historical {baseCurrency} to {targetCurrency} exchange rate
+            </Text>
           </div>
         </div>
-        <div className="inline-flex max-w-full overflow-x-auto gap-1 rounded-xl border border-white/10 bg-[#0c1220] p-1">
+        <SegmentedControl className="max-w-full">
           {TIME_RANGES.map((range) => (
-            <button
+            <SegmentedItem
               key={range}
+              active={selectedRange === range}
               onClick={() => setSelectedRange(range)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-                selectedRange === range
-                  ? "bg-primary text-white"
-                  : "text-text-muted hover:text-white hover:bg-white/5"
-              }`}
             >
               {range}
-            </button>
+            </SegmentedItem>
           ))}
-        </div>
+        </SegmentedControl>
       </div>
 
       <div className="w-full mt-8 overflow-x-auto">
@@ -167,19 +180,19 @@ export function ExchangeRateChart({ baseCurrency, targetCurrency, data, initialR
                   <stop offset="95%" stopColor="#0069fe" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
               <XAxis
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#bcc3d3", fontSize: 12 }}
+                tick={{ fill: axisTickColor, fontSize: 12 }}
                 dy={10}
               />
               <YAxis
                 domain={["auto", "auto"]}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#bcc3d3", fontSize: 12 }}
+                tick={{ fill: axisTickColor, fontSize: 12 }}
                 width={60}
               />
               <Tooltip
@@ -218,6 +231,6 @@ export function ExchangeRateChart({ baseCurrency, targetCurrency, data, initialR
           </ResponsiveContainer>
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

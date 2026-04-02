@@ -6,8 +6,13 @@ import { Menu, ShieldCheck, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { logoutAction } from "@/app/actions";
+import { Button } from "@/components/ui/Button";
+import { IconBox } from "@/components/ui/icon-box";
+import { NavLink } from "@/components/ui/nav-link";
+import { Panel } from "@/components/ui/panel";
+import { Text } from "@/components/ui/typography";
+import { TextLink } from "@/components/ui/text-link";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
 import type { AuthSession } from "@/types";
 
 import { ThemeToggle } from "./ThemeToggle";
@@ -34,19 +39,9 @@ function NavLinks({
   return (
     <>
       {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={onNavigate}
-          className={cn(
-            "rounded-lg px-3 py-2 text-sm font-medium transition",
-            pathname === item.href
-              ? "bg-white/10 text-white"
-              : "text-text-muted hover:bg-white/5 hover:text-white",
-          )}
-        >
+        <NavLink key={item.href} href={item.href} onClick={onNavigate} active={pathname === item.href}>
           {item.label}
-        </Link>
+        </NavLink>
       ))}
     </>
   );
@@ -72,15 +67,17 @@ export function Navbar({ session }: NavbarProps) {
   }, [auth.isAdmin, auth.isAuthenticated]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#121826]/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/95 text-text-primary shadow-sm backdrop-blur dark:bg-[#121826]/95 dark:text-text-primary dark:shadow-none">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <IconBox variant="brand">
             <ShieldCheck className="h-5 w-5" />
-          </div>
+          </IconBox>
           <div>
-            <p className="text-lg font-semibold tracking-wide text-white">Rate-pulse</p>
-            <p className="text-xs text-text-tertiary">Institutional-grade trading UI</p>
+            <p className="text-lg font-semibold tracking-wide text-text-primary">Rate-pulse</p>
+            <Text variant="caption" className="text-text-tertiary">
+              Institutional-grade trading UI
+            </Text>
           </div>
         </Link>
 
@@ -92,85 +89,74 @@ export function Navbar({ session }: NavbarProps) {
           <ThemeToggle />
           {auth.isAuthenticated ? (
             <>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-right">
-                <p className="text-sm font-medium text-white">{auth.session?.name}</p>
-                <p className="text-xs uppercase tracking-wide text-text-tertiary">
-                  {auth.session?.role}
-                </p>
-              </div>
+              <Panel variant="session">
+                <p className="text-sm font-medium text-text-primary">{auth.session?.name}</p>
+                <p className="text-xs uppercase tracking-wide text-text-tertiary">{auth.session?.role}</p>
+              </Panel>
               <form action={logoutAction}>
-                <button
-                  type="submit"
-                  className="min-h-11 rounded-xl border border-white/10 px-4 text-sm font-medium text-text-primary transition hover:border-primary/60 hover:text-white"
-                >
+                <Button type="submit" variant="outline">
                   Log out
-                </button>
+                </Button>
               </form>
             </>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-medium text-text-primary transition hover:text-white"
-              >
+              <TextLink href="/login" variant="nav">
                 Log in
-              </Link>
-              <Link
-                href="/signup"
-                className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-[#1b78ff]"
-              >
+              </TextLink>
+              <TextLink href="/signup" variant="navCta">
                 Sign up
-              </Link>
+              </TextLink>
             </>
           )}
         </div>
 
-        <button
+        <Button
           type="button"
           aria-label="Open navigation"
+          variant="icon"
+          className="lg:hidden"
           onClick={() => setMobileOpen((current) => !current)}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white lg:hidden"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        </Button>
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-white/10 bg-[#0f1522] px-4 py-4 lg:hidden">
+        <Panel variant="mobileNav">
           <div className="flex flex-col gap-2">
             <NavLinks items={navItems} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             <div className="mt-2 flex items-center gap-3">
               <ThemeToggle />
               {auth.isAuthenticated ? (
                 <form action={logoutAction} className="flex-1">
-                  <button
-                    type="submit"
-                    className="min-h-11 w-full rounded-xl border border-white/10 px-4 text-sm font-medium text-text-primary"
-                  >
+                  <Button type="submit" variant="outlineMobile">
                     Log out
-                  </button>
+                  </Button>
                 </form>
               ) : (
                 <>
-                  <Link
+                  <TextLink
                     href="/login"
+                    variant="navOutline"
                     onClick={() => setMobileOpen(false)}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/10 px-4 text-sm font-medium text-text-primary"
+                    className="flex-1"
                   >
                     Log in
-                  </Link>
-                  <Link
+                  </TextLink>
+                  <TextLink
                     href="/signup"
+                    variant="navCta"
                     onClick={() => setMobileOpen(false)}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white"
+                    className="flex-1 text-center"
                   >
                     Sign up
-                  </Link>
+                  </TextLink>
                 </>
               )}
             </div>
           </div>
-        </div>
+        </Panel>
       ) : null}
     </header>
   );

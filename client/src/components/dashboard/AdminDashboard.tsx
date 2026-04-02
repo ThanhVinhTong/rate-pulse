@@ -1,4 +1,6 @@
+import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Panel } from "@/components/ui/panel";
 import {
   Table,
   TableBody,
@@ -7,6 +9,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from "@/components/ui/Table";
+import { Text } from "@/components/ui/typography";
 import { formatCurrency } from "@/lib/utils";
 import type { SystemMetric, UserRow } from "@/types";
 
@@ -26,31 +29,32 @@ export function AdminDashboard({
           <p className="text-sm uppercase tracking-[0.24em] text-accent">Admin control room</p>
           <CardTitle className="mt-3">Revenue, users, and platform health</CardTitle>
           <CardDescription className="mt-3 max-w-2xl">
-            This protected page combines revenue monitoring, account oversight,
-            and system metrics for platform administrators.
+            This protected page combines revenue monitoring, account oversight, and system metrics for platform
+            administrators.
           </CardDescription>
         </CardHeader>
       </Card>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {systemMetrics.map((metric) => (
-          <article
-            key={metric.label}
-            className="rounded-2xl border border-white/10 bg-[#0d1322] p-5"
-          >
-            <p className="text-sm text-text-muted">{metric.label}</p>
-            <p className="mt-3 text-3xl font-semibold text-white">{metric.value}</p>
-            <p className="mt-2 text-sm text-text-muted">{metric.detail}</p>
-          </article>
+          <Panel key={metric.label} variant="dark" padding="md">
+            <Text variant="muted" className="text-sm">
+              {metric.label}
+            </Text>
+            <Text variant="stat">{metric.value}</Text>
+            <Text variant="muted" className="mt-2 text-sm">
+              {metric.detail}
+            </Text>
+          </Panel>
         ))}
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0d1322]">
+      <Panel variant="darkSection">
         <div className="border-b border-white/10 px-5 py-4">
           <h2 className="text-lg font-semibold text-white">User management</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <Text variant="muted" className="mt-1">
             Demo account registry for active and pending traders
-          </p>
+          </Text>
         </div>
 
         <div className="overflow-x-auto">
@@ -76,17 +80,17 @@ export function AdminDashboard({
                     {user.role}
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                    <Badge
+                      variant={
                         user.status === "Active"
-                          ? "bg-status-success/10 text-status-success"
+                          ? "success"
                           : user.status === "Pending"
-                            ? "bg-status-warning/10 text-status-warning"
-                            : "bg-status-danger/10 text-status-danger"
-                      }`}
+                            ? "warning"
+                            : "danger"
+                      }
                     >
                       {user.status}
-                    </span>
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-white">{formatCurrency(user.balance)}</TableCell>
                 </TableRow>
@@ -94,7 +98,7 @@ export function AdminDashboard({
             </TableBody>
           </Table>
         </div>
-      </section>
+      </Panel>
     </div>
   );
 }
