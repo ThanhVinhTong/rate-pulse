@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   gather_fx_info:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 45
 
     defaults:
