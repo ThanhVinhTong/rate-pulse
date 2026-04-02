@@ -23,6 +23,10 @@ func main() {
 	defer conn.Close()
 
 	store := db.NewStore(conn)
+	runGinServer(config, store)
+}
+
+func runGinServer(config util.Config, store *db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
 		log.Fatal("Cannot create server: ", err)

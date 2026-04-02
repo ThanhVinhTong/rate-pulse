@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Serve all HTTP requests for our banking service
+// Serve all HTTP requests for our rate pulse service
 type Server struct {
 	config     util.Config
 	store      *db.Store
