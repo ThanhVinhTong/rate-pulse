@@ -36,10 +36,16 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          install-dependencies: true
+      - name: Setup EdgeDriver
+        shell: pwsh
+        run: |
+          $edgeVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Edge\BLBeacon").version
+          $major = $edgeVersion.Split('.')[0]
+          $driverVersion = (Invoke-WebRequest "https://msedgedriver.azureedge.net/LATEST_RELEASE_$major").Content.Trim()
+          Invoke-WebRequest "https://msedgedriver.azureedge.net/$driverVersion/edgedriver_win64.zip" -OutFile "edgedriver.zip"
+          Expand-Archive "edgedriver.zip" -DestinationPath "edgedriver" -Force
+          $driverPath = Join-Path $pwd "edgedriver\msedgedriver.exe"
+          "EDGE_DRIVER_PATH=$driverPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Install Python dependencies
         run: |
