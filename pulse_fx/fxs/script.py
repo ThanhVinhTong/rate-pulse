@@ -31,8 +31,8 @@ class Script:
             logger.exception("Unexpected error creating database engine.")
             return
 
-        # bank_classes = [VCB, BIDV, ACB, VTB, MBB]
-        bank_classes = [VTB] # for debugging only
+        bank_classes = [VCB, BIDV, ACB, VTB, MBB]
+        # bank_classes = [VTB] # for debugging only
 
         for cls in bank_classes:
             conn = engine.connect()
