@@ -19,19 +19,19 @@ def start_driver(webdriver_path):
         # On Render/Linux, we prefer Chrome for reliability
         options = ChromeOptions()
         options.add_argument('--headless=new')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-gpu')
+        options.add_argument('--enable-javascript')
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
         options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_argument('--start-maximized')
         options.add_argument('--window-size=1280,900')
-        # options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
+        options.add_argument('--inprivate')
+        options.add_argument('--log-level=3')
+        options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])
+        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
         
-        # In Docker, we usually don't need to specify executable_path if it's in /usr/bin/
-        # but Render/Docker setup will place it where we define it.
-        if os.path.exists(webdriver_path):
-            service = ChromeService(executable_path=webdriver_path)
-        else:
-            service = ChromeService() # assumes it's in PATH
+        service = ChromeService() # assumes it's in PATH
             
         try:
             driver = webdriver.Chrome(service=service, options=options)
