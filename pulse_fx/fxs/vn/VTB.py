@@ -35,6 +35,8 @@ class VTB(FX):
             return
 
         try:
+            body_outer = self.driver.execute_script("return document.body.outerHTML;")
+            logger.warning("%s: body.outerHTML (first 20000 chars):\n%s", name, body_outer[:20000])
             date_input = self.driver.find_elements(By.TAG_NAME, "input")[0]
             date_str = (date_input.get_attribute("value") or "").strip()
 
