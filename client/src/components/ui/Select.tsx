@@ -12,6 +12,7 @@ import {
   isValidElement,
   useMemo,
   type ReactElement,
+  type ReactNode,
 } from "react";
 
 import { cn } from "@/lib/utils";
@@ -56,6 +57,30 @@ const selectOptionVariants = cva(
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {}
 
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function extractNodeText(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((item) => extractNodeText(item)).join(" ").trim();
+  }
+
+  if (isValidElement(node)) {
+    const props = node.props as { children?: ReactNode };
+    return extractNodeText(props.children);
+  }
+
+  return "";
+}
+
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, name, defaultValue, value, onChange, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -76,9 +101,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       .filter(isValidElement)
       .map((child) => {
         const el = child as ReactElement<{ value?: string; children?: React.ReactNode }>;
+        const resolvedValue = el.props.value ?? el.props.children;
+        const labelText = extractNodeText(el.props.children);
+        const valueText = extractNodeText(resolvedValue);
         return {
-          value: el.props.value ?? el.props.children,
+          value: resolvedValue,
           label: el.props.children,
+          searchText: `${labelText} ${valueText}`.trim(),
         };
       });
 
@@ -87,19 +116,27 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const selectedLabel = options.find((opt) => String(opt.value) === String(selectedValue))?.label || selectedValue;
 
     const filteredOptions = useMemo(() => {
-      const normalizedQuery = query.trim().toLowerCase();
-      if (!normalizedQuery) {
+      const regexQuery = query.trim();
+      if (!regexQuery) {
         return options;
       }
 
-      return options.filter((option) => {
-        const rawLabel = option.label;
-        const labelText =
-          typeof rawLabel === "string" || typeof rawLabel === "number"
-            ? String(rawLabel)
-            : String(option.value);
+      const normalizedQuery = normalizeSearchText(regexQuery);
 
-        return labelText.toLowerCase().includes(normalizedQuery);
+      const matcher = (() => {
+        try {
+          return new RegExp(regexQuery, "i");
+        } catch {
+          const escaped = regexQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return new RegExp(escaped, "i");
+        }
+      })();
+
+      return options.filter((option) => {
+        const searchText = option.searchText || String(option.value ?? "");
+        const normalizedSearchText = normalizeSearchText(searchText);
+
+        return matcher.test(searchText) || normalizedSearchText.includes(normalizedQuery);
       });
     }, [options, query]);
 
@@ -194,7 +231,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 }}
                 className={cn(
                   selectOptionVariants(),
-                  String(selectedValue) === String(option.value) && "hidden",
+                  !query.trim() && String(selectedValue) === String(option.value) && "hidden",
                 )}
               >
                 {option.label}
