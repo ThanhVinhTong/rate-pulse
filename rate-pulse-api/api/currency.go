@@ -115,12 +115,7 @@ func (server *Server) listCurrency(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.GetAllCurrenciesParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	currencies, err := server.store.GetAllCurrencies(ctx, arg)
+	currencies, err := server.store.GetAllCurrencies(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

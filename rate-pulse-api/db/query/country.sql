@@ -4,23 +4,21 @@ VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetCountryByID :one
-SELECT * FROM countries 
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries 
 WHERE country_id = $1 LIMIT 1;
 
 -- name: GetCountryByCode :one
-SELECT * FROM countries 
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries 
 WHERE country_code = $1 LIMIT 1;
 
 -- name: GetCountriesByCurrencyID :many
-SELECT * FROM countries
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries
 WHERE currency_id = $1
 ORDER BY country_id;
 
 -- name: GetAllCountries :many
-SELECT * FROM countries
-ORDER BY country_id
-LIMIT $1
-OFFSET $2;
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries
+ORDER BY country_id;
 
 -- name: UpdateCountry :one
 UPDATE countries

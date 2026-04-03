@@ -155,11 +155,7 @@ func (server *Server) listCountry(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.GetAllCountriesParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-	countries, err := server.store.GetAllCountries(ctx, arg)
+	countries, err := server.store.GetAllCountries(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

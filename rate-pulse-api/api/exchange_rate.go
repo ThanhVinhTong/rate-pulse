@@ -131,12 +131,12 @@ func (server *Server) listExchangeRateToday(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.GetAllExchangeRatesTodayParams{
+	arg := db.GetAllExchangeRatesTodayNormalisedParams{
 		SourceCurrencyID: req.SourceCurrencyID,
 		Limit:            req.Limit,
 	}
 
-	exchangeRates, err := server.store.GetAllExchangeRatesToday(ctx, arg)
+	exchangeRates, err := server.store.GetAllExchangeRatesTodayNormalised(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

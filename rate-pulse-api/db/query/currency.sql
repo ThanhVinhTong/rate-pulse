@@ -4,18 +4,16 @@ VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetCurrencyByID :one
-SELECT * FROM currencies 
+SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies 
 WHERE currency_id = $1 LIMIT 1;
 
 -- name: GetCurrencyByCode :one
-SELECT * FROM currencies 
+SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies 
 WHERE currency_code = $1 LIMIT 1;
 
 -- name: GetAllCurrencies :many
-SELECT * FROM currencies
-ORDER BY currency_id
-LIMIT $1
-OFFSET $2;
+SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies
+ORDER BY currency_id;
 
 -- name: UpdateCurrency :one
 UPDATE currencies

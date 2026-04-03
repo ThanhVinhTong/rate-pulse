@@ -47,33 +47,35 @@ func (q *Queries) DeleteCountry(ctx context.Context, countryID int32) error {
 }
 
 const getAllCountries = `-- name: GetAllCountries :many
-SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries
 ORDER BY country_id
-LIMIT $1
-OFFSET $2
 `
 
-type GetAllCountriesParams struct {
-	Limit  int32
-	Offset int32
+type GetAllCountriesRow struct {
+	CountryID   int32
+	CountryName string
+	CountryCode sql.NullString
+	CurrencyID  int32
+	UpdatedAt   sql.NullTime
+	CreatedAt   sql.NullTime
 }
 
-func (q *Queries) GetAllCountries(ctx context.Context, arg GetAllCountriesParams) ([]Country, error) {
-	rows, err := q.db.QueryContext(ctx, getAllCountries, arg.Limit, arg.Offset)
+func (q *Queries) GetAllCountries(ctx context.Context) ([]GetAllCountriesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCountries)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Country
+	var items []GetAllCountriesRow
 	for rows.Next() {
-		var i Country
+		var i GetAllCountriesRow
 		if err := rows.Scan(
 			&i.CountryID,
 			&i.CountryName,
+			&i.CountryCode,
 			&i.CurrencyID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
-			&i.CountryCode,
 		); err != nil {
 			return nil, err
 		}
@@ -89,27 +91,36 @@ func (q *Queries) GetAllCountries(ctx context.Context, arg GetAllCountriesParams
 }
 
 const getCountriesByCurrencyID = `-- name: GetCountriesByCurrencyID :many
-SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries
 WHERE currency_id = $1
 ORDER BY country_id
 `
 
-func (q *Queries) GetCountriesByCurrencyID(ctx context.Context, currencyID int32) ([]Country, error) {
+type GetCountriesByCurrencyIDRow struct {
+	CountryID   int32
+	CountryName string
+	CountryCode sql.NullString
+	CurrencyID  int32
+	UpdatedAt   sql.NullTime
+	CreatedAt   sql.NullTime
+}
+
+func (q *Queries) GetCountriesByCurrencyID(ctx context.Context, currencyID int32) ([]GetCountriesByCurrencyIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, getCountriesByCurrencyID, currencyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Country
+	var items []GetCountriesByCurrencyIDRow
 	for rows.Next() {
-		var i Country
+		var i GetCountriesByCurrencyIDRow
 		if err := rows.Scan(
 			&i.CountryID,
 			&i.CountryName,
+			&i.CountryCode,
 			&i.CurrencyID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
-			&i.CountryCode,
 		); err != nil {
 			return nil, err
 		}
@@ -125,39 +136,57 @@ func (q *Queries) GetCountriesByCurrencyID(ctx context.Context, currencyID int32
 }
 
 const getCountryByCode = `-- name: GetCountryByCode :one
-SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries 
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries 
 WHERE country_code = $1 LIMIT 1
 `
 
-func (q *Queries) GetCountryByCode(ctx context.Context, countryCode sql.NullString) (Country, error) {
+type GetCountryByCodeRow struct {
+	CountryID   int32
+	CountryName string
+	CountryCode sql.NullString
+	CurrencyID  int32
+	UpdatedAt   sql.NullTime
+	CreatedAt   sql.NullTime
+}
+
+func (q *Queries) GetCountryByCode(ctx context.Context, countryCode sql.NullString) (GetCountryByCodeRow, error) {
 	row := q.db.QueryRowContext(ctx, getCountryByCode, countryCode)
-	var i Country
+	var i GetCountryByCodeRow
 	err := row.Scan(
 		&i.CountryID,
 		&i.CountryName,
+		&i.CountryCode,
 		&i.CurrencyID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.CountryCode,
 	)
 	return i, err
 }
 
 const getCountryByID = `-- name: GetCountryByID :one
-SELECT country_id, country_name, currency_id, updated_at, created_at, country_code FROM countries 
+SELECT country_id, country_name, country_code, currency_id, updated_at, created_at FROM countries 
 WHERE country_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetCountryByID(ctx context.Context, countryID int32) (Country, error) {
+type GetCountryByIDRow struct {
+	CountryID   int32
+	CountryName string
+	CountryCode sql.NullString
+	CurrencyID  int32
+	UpdatedAt   sql.NullTime
+	CreatedAt   sql.NullTime
+}
+
+func (q *Queries) GetCountryByID(ctx context.Context, countryID int32) (GetCountryByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getCountryByID, countryID)
-	var i Country
+	var i GetCountryByIDRow
 	err := row.Scan(
 		&i.CountryID,
 		&i.CountryName,
+		&i.CountryCode,
 		&i.CurrencyID,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.CountryCode,
 	)
 	return i, err
 }

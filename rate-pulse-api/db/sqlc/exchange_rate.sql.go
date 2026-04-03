@@ -133,6 +133,107 @@ func (q *Queries) GetAllExchangeRatesToday(ctx context.Context, arg GetAllExchan
 	return items, nil
 }
 
+const getAllExchangeRatesTodayNormalised = `-- name: GetAllExchangeRatesTodayNormalised :many
+
+WITH ranked AS (
+  SELECT
+    er.rate_id,
+    er.rate_value,
+    sc.currency_code AS source_currency_code,
+    dc.currency_code AS destination_currency_code,
+    er.valid_from_date,
+    rs.source_code AS rate_source_code,
+    ert.type_name   AS type_name,
+    er.updated_at as updated_at,
+    er.created_at as created_at,
+
+    ROW_NUMBER() OVER (
+      PARTITION BY
+        er.destination_currency_id,
+        er.source_id,
+        er.type_id
+      ORDER BY
+        er.created_at DESC NULLS LAST
+    ) AS rn
+  FROM exchange_rates er
+  JOIN currencies sc
+    ON er.source_currency_id = sc.currency_id
+  JOIN currencies dc
+    ON er.destination_currency_id = dc.currency_id
+  LEFT JOIN rate_sources rs
+    ON er.source_id = rs.source_id
+  LEFT JOIN exchange_rate_types ert
+    ON er.type_id = ert.type_id
+  WHERE er.created_at >= (SELECT NOW()::date)
+    AND er.source_currency_id = $1
+)
+SELECT
+  rate_id,
+  rate_value,
+  source_currency_code,
+  destination_currency_code,
+  valid_from_date,
+  rate_source_code,
+  type_name,
+  created_at,
+  updated_at
+FROM ranked
+WHERE rn = 1
+ORDER BY rate_id DESC
+LIMIT $2
+`
+
+type GetAllExchangeRatesTodayNormalisedParams struct {
+	SourceCurrencyID int32
+	Limit            int32
+}
+
+type GetAllExchangeRatesTodayNormalisedRow struct {
+	RateID                  int32
+	RateValue               string
+	SourceCurrencyCode      string
+	DestinationCurrencyCode string
+	ValidFromDate           time.Time
+	RateSourceCode          sql.NullString
+	TypeName                sql.NullString
+	CreatedAt               sql.NullTime
+	UpdatedAt               sql.NullTime
+}
+
+// $2: page size
+func (q *Queries) GetAllExchangeRatesTodayNormalised(ctx context.Context, arg GetAllExchangeRatesTodayNormalisedParams) ([]GetAllExchangeRatesTodayNormalisedRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllExchangeRatesTodayNormalised, arg.SourceCurrencyID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllExchangeRatesTodayNormalisedRow
+	for rows.Next() {
+		var i GetAllExchangeRatesTodayNormalisedRow
+		if err := rows.Scan(
+			&i.RateID,
+			&i.RateValue,
+			&i.SourceCurrencyCode,
+			&i.DestinationCurrencyCode,
+			&i.ValidFromDate,
+			&i.RateSourceCode,
+			&i.TypeName,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getExchangeRateByID = `-- name: GetExchangeRateByID :one
 SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
 FROM exchange_rates
@@ -172,11 +273,6 @@ func (q *Queries) GetExchangeRateByID(ctx context.Context, rateID int32) (GetExc
 }
 
 const updateExchangeRate = `-- name: UpdateExchangeRate :one
-
-
-
-
-
 UPDATE exchange_rates
 SET 
     rate_value = COALESCE($2, rate_value),
@@ -202,66 +298,6 @@ type UpdateExchangeRateParams struct {
 	TypeID                sql.NullInt32
 }
 
-// $2: page size
-// -- name: GetExchangeRatesByTypeAfterID :many
-// SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
-// FROM exchange_rates
-// WHERE created_at >= (SELECT NOW()::date)
-//
-//	AND rate_id > $2
-//
-// ORDER BY rate_id
-// LIMIT $3;
-// -- name: GetExchangeRatesByCurrencyPairAfter :many
-// SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
-// FROM exchange_rates
-// WHERE source_currency_id = $1
-//
-//	AND destination_currency_id = $2
-//	AND (
-//	  valid_from_date < $3
-//	  OR (valid_from_date = $3 AND rate_id < $4)
-//	)
-//
-// ORDER BY valid_from_date DESC, rate_id DESC
-// LIMIT $5;
-// -- name: GetLatestRatesByPairSourceType :many
-// WITH ranked AS (
-//
-//	SELECT
-//	  er.rate_id,
-//	  er.rate_value,
-//	  er.source_currency_id,
-//	  er.destination_currency_id,
-//	  er.source_id,
-//	  er.type_id,
-//	  er.valid_from_date,
-//	  er.updated_at,
-//	  ROW_NUMBER() OVER (
-//	    PARTITION BY er.source_id, er.source_currency_id, er.destination_currency_id, er.type_id
-//	    ORDER BY er.valid_from_date DESC, er.rate_id DESC
-//	  ) AS rn
-//	FROM exchange_rates er
-//	WHERE er.source_currency_id = $1
-//	  AND er.destination_currency_id = $2
-//
-// )
-// SELECT
-//
-//	rate_id, rate_value, source_currency_id, destination_currency_id, source_id, type_id, valid_from_date, updated_at
-//
-// FROM ranked
-// WHERE rn = 1
-// ORDER BY source_id, type_id;
-// -- name: GetExchangeRatesByCurrencyPairLatest :many
-// SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
-// FROM exchange_rates
-// WHERE source_currency_id = $1
-//
-//	AND destination_currency_id = $2
-//
-// ORDER BY valid_from_date DESC, rate_id DESC
-// LIMIT $3;
 func (q *Queries) UpdateExchangeRate(ctx context.Context, arg UpdateExchangeRateParams) (ExchangeRate, error) {
 	row := q.db.QueryRowContext(ctx, updateExchangeRate,
 		arg.RateID,

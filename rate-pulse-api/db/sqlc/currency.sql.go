@@ -49,17 +49,10 @@ func (q *Queries) DeleteCurrency(ctx context.Context, currencyID int32) error {
 const getAllCurrencies = `-- name: GetAllCurrencies :many
 SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies
 ORDER BY currency_id
-LIMIT $1
-OFFSET $2
 `
 
-type GetAllCurrenciesParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) GetAllCurrencies(ctx context.Context, arg GetAllCurrenciesParams) ([]Currency, error) {
-	rows, err := q.db.QueryContext(ctx, getAllCurrencies, arg.Limit, arg.Offset)
+func (q *Queries) GetAllCurrencies(ctx context.Context) ([]Currency, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCurrencies)
 	if err != nil {
 		return nil, err
 	}
