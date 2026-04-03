@@ -73,16 +73,24 @@ jobs:
               --from-literal=REFRESH_TOKEN_DURATION='${{ secrets.REFRESH_TOKEN_DURATION }}' \
               --dry-run=client -o yaml | kubectl apply -f -
             
-            # 2. Apply deployment manifests
+            # 2. Docker Hub pull secret (same credentials as the build job)
+            kubectl create secret docker-registry dockerhub-pull \
+              --docker-server=https://index.docker.io/v1/ \
+              --docker-username='${{ secrets.DOCKERHUB_USERNAME }}' \
+              --docker-password='${{ secrets.DOCKERHUB_TOKEN }}' \
+              --docker-email=noreply@docker.com \
+              --dry-run=client -o yaml | kubectl apply -f -
+
+            # 3. Apply deployment manifests
             kubectl apply -f digitalocean/deployment.yaml
             kubectl apply -f digitalocean/service.yaml
             kubectl apply -f digitalocean/issuer.yaml
             kubectl apply -f digitalocean/ingress.yaml
               
-            # 3. Restart deployment and wait for it to be ready
+            # 4. Restart deployment and wait for it to be ready
             kubectl rollout restart deployment/rate-pulse-api-deployment
             kubectl rollout status deployment/rate-pulse-api-deployment --timeout=180s
 
-            # 4. Delete configmap and app.env file
+            # 5. Delete configmap and app.env file
             kubectl delete configmap app-env --ignore-not-found=true
             rm -f ~/rate-pulse-api/app.env
