@@ -24,19 +24,20 @@ const (
 
 type User struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Username           string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Email              string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	UserType           string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
-	EmailVerified      bool                   `protobuf:"varint,4,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
-	TimeZone           string                 `protobuf:"bytes,5,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
-	LanguagePreference string                 `protobuf:"bytes,6,opt,name=language_preference,json=languagePreference,proto3" json:"language_preference,omitempty"`
-	CountryOfResidence string                 `protobuf:"bytes,7,opt,name=country_of_residence,json=countryOfResidence,proto3" json:"country_of_residence,omitempty"`
-	CountryOfBirth     string                 `protobuf:"bytes,8,opt,name=country_of_birth,json=countryOfBirth,proto3" json:"country_of_birth,omitempty"`
-	IsActive           bool                   `protobuf:"varint,9,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	FirstName          string                 `protobuf:"bytes,10,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName           string                 `protobuf:"bytes,11,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UserId             int32                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username           string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Email              string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	UserType           string                 `protobuf:"bytes,4,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	EmailVerified      bool                   `protobuf:"varint,5,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
+	TimeZone           string                 `protobuf:"bytes,6,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
+	LanguagePreference string                 `protobuf:"bytes,7,opt,name=language_preference,json=languagePreference,proto3" json:"language_preference,omitempty"`
+	CountryOfResidence string                 `protobuf:"bytes,8,opt,name=country_of_residence,json=countryOfResidence,proto3" json:"country_of_residence,omitempty"`
+	CountryOfBirth     string                 `protobuf:"bytes,9,opt,name=country_of_birth,json=countryOfBirth,proto3" json:"country_of_birth,omitempty"`
+	IsActive           bool                   `protobuf:"varint,10,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	FirstName          string                 `protobuf:"bytes,11,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName           string                 `protobuf:"bytes,12,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -69,6 +70,13 @@ func (x *User) ProtoReflect() protoreflect.Message {
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *User) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
 }
 
 func (x *User) GetUsername() string {
@@ -167,25 +175,26 @@ var File_user_proto protoreflect.FileDescriptor
 const file_user_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"user.proto\x12\x02pb\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x03\n" +
-	"\x04User\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
-	"\tuser_type\x18\x03 \x01(\tR\buserType\x12%\n" +
-	"\x0eemail_verified\x18\x04 \x01(\bR\remailVerified\x12\x1b\n" +
-	"\ttime_zone\x18\x05 \x01(\tR\btimeZone\x12/\n" +
-	"\x13language_preference\x18\x06 \x01(\tR\x12languagePreference\x120\n" +
-	"\x14country_of_residence\x18\a \x01(\tR\x12countryOfResidence\x12(\n" +
-	"\x10country_of_birth\x18\b \x01(\tR\x0ecountryOfBirth\x12\x1b\n" +
-	"\tis_active\x18\t \x01(\bR\bisActive\x12\x1d\n" +
+	"user.proto\x12\x02pb\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8e\x04\n" +
+	"\x04User\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x05R\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1b\n" +
+	"\tuser_type\x18\x04 \x01(\tR\buserType\x12%\n" +
+	"\x0eemail_verified\x18\x05 \x01(\bR\remailVerified\x12\x1b\n" +
+	"\ttime_zone\x18\x06 \x01(\tR\btimeZone\x12/\n" +
+	"\x13language_preference\x18\a \x01(\tR\x12languagePreference\x120\n" +
+	"\x14country_of_residence\x18\b \x01(\tR\x12countryOfResidence\x12(\n" +
+	"\x10country_of_birth\x18\t \x01(\tR\x0ecountryOfBirth\x12\x1b\n" +
+	"\tis_active\x18\n" +
+	" \x01(\bR\bisActive\x12\x1d\n" +
 	"\n" +
-	"first_name\x18\n" +
-	" \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\v \x01(\tR\blastName\x129\n" +
+	"first_name\x18\v \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\f \x01(\tR\blastName\x129\n" +
 	"\n" +
-	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"created_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAtB(Z&github.com/ThanhVinhTong/rate-pulse/pbb\x06proto3"
+	"updated_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAtB(Z&github.com/ThanhVinhTong/rate-pulse/pbb\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once

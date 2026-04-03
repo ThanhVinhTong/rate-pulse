@@ -51,9 +51,8 @@ func (server *Server) setupRouter() {
 	// Register specific paths before /:id routes.
 	router.GET("/currencies", server.listCurrency)
 	router.GET("/currencies/:id", server.getCurrency)
-	router.GET("/exchange-rates/type", server.listExchangeRateByType)
 	router.GET("/exchange-rates/:id", server.getExchangeRate)
-	router.GET("/exchange-rates", server.listExchangeRate)
+	router.GET("/exchange-rates/today", server.listExchangeRateToday)
 	router.GET("/exchange-rate-types", server.listExchangeRateTypes)
 	router.GET("/rate-sources", server.listRateSource)
 	router.GET("/rate-sources/:id", server.getRateSource)

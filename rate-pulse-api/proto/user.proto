@@ -7,17 +7,18 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/ThanhVinhTong/rate-pulse/pb";
 
 message User {
-    string username = 1;
-    string email = 2;
-    string user_type = 3;
-    bool email_verified = 4;
-    string time_zone = 5;
-    string language_preference = 6;
-    string country_of_residence = 7;
-    string country_of_birth = 8;
-    bool is_active = 9;
-    string first_name = 10;
-    string last_name = 11;
-    google.protobuf.Timestamp created_at = 12;
-    google.protobuf.Timestamp updated_at = 13;
+    int32 user_id = 1;
+    string username = 2;
+    string email = 3;
+    string user_type = 4;
+    bool email_verified = 5;
+    string time_zone = 6;
+    string language_preference = 7;
+    string country_of_residence = 8;
+    string country_of_birth = 9;
+    bool is_active = 10;
+    string first_name = 11;
+    string last_name = 12;
+    google.protobuf.Timestamp created_at = 13;
+    google.protobuf.Timestamp updated_at = 14;
 }

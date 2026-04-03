@@ -72,20 +72,21 @@ func (q *Queries) DeleteExchangeRate(ctx context.Context, rateID int32) error {
 	return err
 }
 
-const getAllExchangeRatesAfterID = `-- name: GetAllExchangeRatesAfterID :many
+const getAllExchangeRatesToday = `-- name: GetAllExchangeRatesToday :many
 SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
 FROM exchange_rates
-WHERE rate_id > $1 -- $1: last seen rate_id (use 0 for first page)
-ORDER BY rate_id
+WHERE created_at >= (SELECT NOW()::date)
+AND source_currency_id = $1
+ORDER BY rate_id DESC
 LIMIT $2
 `
 
-type GetAllExchangeRatesAfterIDParams struct {
-	RateID int32
-	Limit  int32
+type GetAllExchangeRatesTodayParams struct {
+	SourceCurrencyID int32
+	Limit            int32
 }
 
-type GetAllExchangeRatesAfterIDRow struct {
+type GetAllExchangeRatesTodayRow struct {
 	RateID                int32
 	RateValue             string
 	SourceCurrencyID      int32
@@ -98,15 +99,15 @@ type GetAllExchangeRatesAfterIDRow struct {
 	UpdatedAt             sql.NullTime
 }
 
-func (q *Queries) GetAllExchangeRatesAfterID(ctx context.Context, arg GetAllExchangeRatesAfterIDParams) ([]GetAllExchangeRatesAfterIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllExchangeRatesAfterID, arg.RateID, arg.Limit)
+func (q *Queries) GetAllExchangeRatesToday(ctx context.Context, arg GetAllExchangeRatesTodayParams) ([]GetAllExchangeRatesTodayRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllExchangeRatesToday, arg.SourceCurrencyID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAllExchangeRatesAfterIDRow
+	var items []GetAllExchangeRatesTodayRow
 	for rows.Next() {
-		var i GetAllExchangeRatesAfterIDRow
+		var i GetAllExchangeRatesTodayRow
 		if err := rows.Scan(
 			&i.RateID,
 			&i.RateValue,
@@ -170,281 +171,12 @@ func (q *Queries) GetExchangeRateByID(ctx context.Context, rateID int32) (GetExc
 	return i, err
 }
 
-const getExchangeRatesByCurrencyPairAfter = `-- name: GetExchangeRatesByCurrencyPairAfter :many
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
-FROM exchange_rates
-WHERE source_currency_id = $1
-  AND destination_currency_id = $2
-  AND (
-    valid_from_date < $3
-    OR (valid_from_date = $3 AND rate_id < $4)
-  )
-ORDER BY valid_from_date DESC, rate_id DESC
-LIMIT $5
-`
-
-type GetExchangeRatesByCurrencyPairAfterParams struct {
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	ValidFromDate         time.Time
-	RateID                int32
-	Limit                 int32
-}
-
-type GetExchangeRatesByCurrencyPairAfterRow struct {
-	RateID                int32
-	RateValue             string
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	ValidFromDate         time.Time
-	ValidToDate           sql.NullTime
-	SourceID              sql.NullInt32
-	TypeID                sql.NullInt32
-	CreatedAt             sql.NullTime
-	UpdatedAt             sql.NullTime
-}
-
-func (q *Queries) GetExchangeRatesByCurrencyPairAfter(ctx context.Context, arg GetExchangeRatesByCurrencyPairAfterParams) ([]GetExchangeRatesByCurrencyPairAfterRow, error) {
-	rows, err := q.db.QueryContext(ctx, getExchangeRatesByCurrencyPairAfter,
-		arg.SourceCurrencyID,
-		arg.DestinationCurrencyID,
-		arg.ValidFromDate,
-		arg.RateID,
-		arg.Limit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetExchangeRatesByCurrencyPairAfterRow
-	for rows.Next() {
-		var i GetExchangeRatesByCurrencyPairAfterRow
-		if err := rows.Scan(
-			&i.RateID,
-			&i.RateValue,
-			&i.SourceCurrencyID,
-			&i.DestinationCurrencyID,
-			&i.ValidFromDate,
-			&i.ValidToDate,
-			&i.SourceID,
-			&i.TypeID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getExchangeRatesByCurrencyPairLatest = `-- name: GetExchangeRatesByCurrencyPairLatest :many
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
-FROM exchange_rates
-WHERE source_currency_id = $1
-  AND destination_currency_id = $2
-ORDER BY valid_from_date DESC, rate_id DESC
-LIMIT $3
-`
-
-type GetExchangeRatesByCurrencyPairLatestParams struct {
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	Limit                 int32
-}
-
-type GetExchangeRatesByCurrencyPairLatestRow struct {
-	RateID                int32
-	RateValue             string
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	ValidFromDate         time.Time
-	ValidToDate           sql.NullTime
-	SourceID              sql.NullInt32
-	TypeID                sql.NullInt32
-	CreatedAt             sql.NullTime
-	UpdatedAt             sql.NullTime
-}
-
-func (q *Queries) GetExchangeRatesByCurrencyPairLatest(ctx context.Context, arg GetExchangeRatesByCurrencyPairLatestParams) ([]GetExchangeRatesByCurrencyPairLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getExchangeRatesByCurrencyPairLatest, arg.SourceCurrencyID, arg.DestinationCurrencyID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetExchangeRatesByCurrencyPairLatestRow
-	for rows.Next() {
-		var i GetExchangeRatesByCurrencyPairLatestRow
-		if err := rows.Scan(
-			&i.RateID,
-			&i.RateValue,
-			&i.SourceCurrencyID,
-			&i.DestinationCurrencyID,
-			&i.ValidFromDate,
-			&i.ValidToDate,
-			&i.SourceID,
-			&i.TypeID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getExchangeRatesByTypeAfterID = `-- name: GetExchangeRatesByTypeAfterID :many
-
-SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
-FROM exchange_rates
-WHERE type_id = $1
-  AND rate_id > $2
-ORDER BY rate_id
-LIMIT $3
-`
-
-type GetExchangeRatesByTypeAfterIDParams struct {
-	TypeID sql.NullInt32
-	RateID int32
-	Limit  int32
-}
-
-type GetExchangeRatesByTypeAfterIDRow struct {
-	RateID                int32
-	RateValue             string
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	ValidFromDate         time.Time
-	ValidToDate           sql.NullTime
-	SourceID              sql.NullInt32
-	TypeID                sql.NullInt32
-	CreatedAt             sql.NullTime
-	UpdatedAt             sql.NullTime
-}
-
-// $2: page size
-func (q *Queries) GetExchangeRatesByTypeAfterID(ctx context.Context, arg GetExchangeRatesByTypeAfterIDParams) ([]GetExchangeRatesByTypeAfterIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getExchangeRatesByTypeAfterID, arg.TypeID, arg.RateID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetExchangeRatesByTypeAfterIDRow
-	for rows.Next() {
-		var i GetExchangeRatesByTypeAfterIDRow
-		if err := rows.Scan(
-			&i.RateID,
-			&i.RateValue,
-			&i.SourceCurrencyID,
-			&i.DestinationCurrencyID,
-			&i.ValidFromDate,
-			&i.ValidToDate,
-			&i.SourceID,
-			&i.TypeID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getLatestRatesByPairSourceType = `-- name: GetLatestRatesByPairSourceType :many
-WITH ranked AS (
-  SELECT
-    er.rate_id,
-    er.rate_value,
-    er.source_currency_id,
-    er.destination_currency_id,
-    er.source_id,
-    er.type_id,
-    er.valid_from_date,
-    er.updated_at,
-    ROW_NUMBER() OVER (
-      PARTITION BY er.source_id, er.source_currency_id, er.destination_currency_id, er.type_id
-      ORDER BY er.valid_from_date DESC, er.rate_id DESC
-    ) AS rn
-  FROM exchange_rates er
-  WHERE er.source_currency_id = $1
-    AND er.destination_currency_id = $2
-)
-SELECT
-  rate_id, rate_value, source_currency_id, destination_currency_id, source_id, type_id, valid_from_date, updated_at
-FROM ranked
-WHERE rn = 1
-ORDER BY source_id, type_id
-`
-
-type GetLatestRatesByPairSourceTypeParams struct {
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-}
-
-type GetLatestRatesByPairSourceTypeRow struct {
-	RateID                int32
-	RateValue             string
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	SourceID              sql.NullInt32
-	TypeID                sql.NullInt32
-	ValidFromDate         time.Time
-	UpdatedAt             sql.NullTime
-}
-
-func (q *Queries) GetLatestRatesByPairSourceType(ctx context.Context, arg GetLatestRatesByPairSourceTypeParams) ([]GetLatestRatesByPairSourceTypeRow, error) {
-	rows, err := q.db.QueryContext(ctx, getLatestRatesByPairSourceType, arg.SourceCurrencyID, arg.DestinationCurrencyID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetLatestRatesByPairSourceTypeRow
-	for rows.Next() {
-		var i GetLatestRatesByPairSourceTypeRow
-		if err := rows.Scan(
-			&i.RateID,
-			&i.RateValue,
-			&i.SourceCurrencyID,
-			&i.DestinationCurrencyID,
-			&i.SourceID,
-			&i.TypeID,
-			&i.ValidFromDate,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateExchangeRate = `-- name: UpdateExchangeRate :one
+
+
+
+
+
 UPDATE exchange_rates
 SET 
     rate_value = COALESCE($2, rate_value),
@@ -470,6 +202,66 @@ type UpdateExchangeRateParams struct {
 	TypeID                sql.NullInt32
 }
 
+// $2: page size
+// -- name: GetExchangeRatesByTypeAfterID :many
+// SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
+// FROM exchange_rates
+// WHERE created_at >= (SELECT NOW()::date)
+//
+//	AND rate_id > $2
+//
+// ORDER BY rate_id
+// LIMIT $3;
+// -- name: GetExchangeRatesByCurrencyPairAfter :many
+// SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
+// FROM exchange_rates
+// WHERE source_currency_id = $1
+//
+//	AND destination_currency_id = $2
+//	AND (
+//	  valid_from_date < $3
+//	  OR (valid_from_date = $3 AND rate_id < $4)
+//	)
+//
+// ORDER BY valid_from_date DESC, rate_id DESC
+// LIMIT $5;
+// -- name: GetLatestRatesByPairSourceType :many
+// WITH ranked AS (
+//
+//	SELECT
+//	  er.rate_id,
+//	  er.rate_value,
+//	  er.source_currency_id,
+//	  er.destination_currency_id,
+//	  er.source_id,
+//	  er.type_id,
+//	  er.valid_from_date,
+//	  er.updated_at,
+//	  ROW_NUMBER() OVER (
+//	    PARTITION BY er.source_id, er.source_currency_id, er.destination_currency_id, er.type_id
+//	    ORDER BY er.valid_from_date DESC, er.rate_id DESC
+//	  ) AS rn
+//	FROM exchange_rates er
+//	WHERE er.source_currency_id = $1
+//	  AND er.destination_currency_id = $2
+//
+// )
+// SELECT
+//
+//	rate_id, rate_value, source_currency_id, destination_currency_id, source_id, type_id, valid_from_date, updated_at
+//
+// FROM ranked
+// WHERE rn = 1
+// ORDER BY source_id, type_id;
+// -- name: GetExchangeRatesByCurrencyPairLatest :many
+// SELECT rate_id, rate_value, source_currency_id, destination_currency_id, valid_from_date, valid_to_date, source_id, type_id, created_at, updated_at
+// FROM exchange_rates
+// WHERE source_currency_id = $1
+//
+//	AND destination_currency_id = $2
+//
+// ORDER BY valid_from_date DESC, rate_id DESC
+// LIMIT $3;
 func (q *Queries) UpdateExchangeRate(ctx context.Context, arg UpdateExchangeRateParams) (ExchangeRate, error) {
 	row := q.db.QueryRowContext(ctx, updateExchangeRate,
 		arg.RateID,

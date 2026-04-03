@@ -3,11 +3,12 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net"
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/gapi"
-	"github.com/ThanhVinhTong/rate-pulse/pb"
+	pb "github.com/ThanhVinhTong/rate-pulse/pb"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -28,6 +29,7 @@ func main() {
 
 	store := db.NewStore(conn)
 	runGinServer(config, store)
+	// runGrpcServer(config, store)
 }
 
 func runGinServer(config util.Config, store *db.Store) {
@@ -51,4 +53,15 @@ func runGrpcServer(config util.Config, store *db.Store) {
 	grpcServer := grpc.NewServer()
 	pb.RegisterRatePulseServiceServer(grpcServer, server)
 	reflection.Register(grpcServer) // Freely explore what RPC methods are available
+
+	listener, err := net.Listen("tcp", config.GRPCServerAddress)
+	if err != nil {
+		log.Fatal("Cannot create listener")
+	}
+
+	log.Printf("gRPC server started on %s", config.GRPCServerAddress)
+	err = grpcServer.Serve(listener)
+	if err != nil {
+		log.Fatal("Cannot serve gRPC server: ", err)
+	}
 }
