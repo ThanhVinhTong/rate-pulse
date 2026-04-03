@@ -33,12 +33,6 @@ const valueProps = [
   },
 ] as const;
 
-const previewPairs = [
-  { pair: "USD / JPY", tag: "Cash & transfer" },
-  { pair: "EUR / VND", tag: "Per bank & type" },
-  { pair: "GBP / USD", tag: "Converter & chart" },
-] as const;
-
 const homeNews = NEWS_ARTICLES.slice(0, 3);
 
 export default function Home() {
@@ -115,19 +109,7 @@ export default function Home() {
           </TextLink>
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-3">
-          {previewPairs.map((item) => (
-            <Panel key={item.pair} variant="preview" padding="md">
-              <Text variant="labelUpper" className="font-semibold tracking-wider">
-                {item.tag}
-              </Text>
-              <Heading level="h3" className="mt-3 text-xl font-bold">
-                {item.pair}
-              </Heading>
-              <Text variant="caption" className="mt-6">
-                Shown in-app when data is available
-              </Text>
-            </Panel>
-          ))}
+          <p>test</p>
         </div>
       </section>
 
