@@ -10,6 +10,8 @@ import type { ApiCurrency, ApiCountry, ApiRateSource } from "@/lib/exchange-rate
 import { buildPairSnapshots, type ExchangeRateRowInput } from "@/lib/pair-snapshot";
 import type { CurrencyPair, ExchangeRateType, PairSnapshot, TimeRange } from "@/types";
 import { TIME_RANGES } from "@/lib/constants";
+import { getSession } from "@/lib/auth";
+import { getAllUserCurrencyPreferences, UserCurrencyPreferencesMap } from "@/app/actions";
 
 interface CurrencyOption {
   code: string;
@@ -18,10 +20,19 @@ interface CurrencyOption {
   continent: string;
 }
 
-interface DashboardPayload {
+interface MapApiResult {
   pairs: CurrencyPair[];
   pairSnapshots: PairSnapshot[];
   currencyOptions: CurrencyOption[];
+}
+
+interface DashboardPayload extends MapApiResult {
+  userCurrencyPreferences: {
+    baseCurrencyCode?: string;
+    targetCurrencyCode?: string;
+  };
+  preferredBaseCurrencies: CurrencyOption[];
+  preferredTargetCurrencies: CurrencyOption[];
 }
 
 export const metadata: Metadata = {
@@ -39,7 +50,7 @@ function mapApiToDashboard(
   sources: ApiRateSource[],
   rates: ExchangeRateRowInput[],
   typesFromApi: ExchangeRateType[],
-): DashboardPayload {
+): MapApiResult {
   const currencyById = new Map(currencies.map((item) => [item.CurrencyID, item]));
   const countryByCurrencyId = new Map<number, string>();
   for (const country of countries) {
@@ -104,6 +115,17 @@ function mapApiToDashboard(
 
 async function getDashboardPayload(): Promise<DashboardPayload> {
   try {
+    // Get user preferences if authenticated
+    let userPrefsRaw: UserCurrencyPreferencesMap = { all: [] };
+    try {
+      const session = await getSession();
+      if (session?.accessToken) {
+        userPrefsRaw = await getAllUserCurrencyPreferences(session.accessToken);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user preferences:", err);
+    }
+
     // Run all API calls in parallel. The dominant cost is usually `fetchAllExchangeRates()` (many
     // cursor batches to the remote API); overlapping countries/sources/metadata avoids stacking
     // their latency after the first wave.
@@ -141,13 +163,82 @@ async function getDashboardPayload(): Promise<DashboardPayload> {
       valid_from_date: rate.valid_from_date,
     }));
 
-    return mapApiToDashboard(currencies, countries, sources, rates, typesFromApi);
+    const payload = mapApiToDashboard(currencies, countries, sources, rates, typesFromApi);
+    
+    // Map user preference IDs to currency objects and codes
+    const currencyIdToCode = new Map<number, string>();
+    const currencyIdToObject = new Map<number, CurrencyOption>();
+    const countryByCurrencyId = new Map<number, string>();
+
+    for (const country of countries) {
+      if (!countryByCurrencyId.has(country.CurrencyID)) {
+        countryByCurrencyId.set(country.CurrencyID, country.CountryName);
+      }
+    }
+    
+    for (const curr of currencies) {
+      if (typeof curr.CurrencyID === "number" && typeof curr.CurrencyCode === "string") {
+        currencyIdToCode.set(curr.CurrencyID, curr.CurrencyCode);
+        const symbol = typeof curr.CurrencySymbol === "string" 
+          ? curr.CurrencySymbol 
+          : (curr.CurrencySymbol?.Valid && typeof curr.CurrencySymbol?.String === "string" 
+              ? curr.CurrencySymbol.String 
+              : curr.CurrencyCode);
+        currencyIdToObject.set(curr.CurrencyID, {
+          code: curr.CurrencyCode,
+          name: curr.CurrencyName,
+          symbol,
+          continent: countryByCurrencyId.get(curr.CurrencyID) ?? "Other",
+        });
+      }
+    }
+    
+    const dedupeByCode = (items: CurrencyOption[]): CurrencyOption[] => {
+      const seen = new Set<string>();
+      return items.filter((item) => {
+        if (seen.has(item.code)) {
+          return false;
+        }
+        seen.add(item.code);
+        return true;
+      });
+    };
+
+    const preferredBaseCurrencies = dedupeByCode(
+      userPrefsRaw.all
+        .filter((pref) => pref.isFavorite === true)
+        .map((pref) => currencyIdToObject.get(pref.currencyId))
+        .filter((curr): curr is CurrencyOption => curr !== undefined),
+    );
+
+    const preferredTargetCurrencies = dedupeByCode(
+      userPrefsRaw.all
+        .filter((pref) => pref.isFavorite === false)
+        .map((pref) => currencyIdToObject.get(pref.currencyId))
+        .filter((curr): curr is CurrencyOption => curr !== undefined),
+    );
+    
+    const baseCurrencyCode = userPrefsRaw.base ? currencyIdToCode.get(userPrefsRaw.base) : undefined;
+    const targetCurrencyCode = userPrefsRaw.target ? currencyIdToCode.get(userPrefsRaw.target) : undefined;
+    
+    return {
+      ...payload,
+      userCurrencyPreferences: {
+        baseCurrencyCode,
+        targetCurrencyCode,
+      },
+      preferredBaseCurrencies,
+      preferredTargetCurrencies,
+    };
   } catch (error) {
     console.error("Dashboard payload fetch failed:", error);
     return {
       pairs: [],
       pairSnapshots: [],
       currencyOptions: [],
+      userCurrencyPreferences: {},
+      preferredBaseCurrencies: [],
+      preferredTargetCurrencies: [],
     };
   }
 }
@@ -166,6 +257,9 @@ export default async function ExchangeRatesPage({
       initialPairs={payload.pairs.length > 0 ? payload.pairs : []}
       initialPairSnapshots={payload.pairSnapshots}
       supportedCurrencyOptions={payload.currencyOptions}
+      userCurrencyPreferences={payload.userCurrencyPreferences}
+      preferredBaseCurrencies={payload.preferredBaseCurrencies}
+      preferredTargetCurrencies={payload.preferredTargetCurrencies}
       range={range}
     />
   );

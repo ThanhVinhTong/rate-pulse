@@ -33,9 +33,16 @@ const tabs = [
 interface ProfileTabsProps {
   session: AuthSession;
   countries: CountryOption[];
+  currencies: Array<{
+    currencyId: number;
+    currencyCode: string;
+    currencyName: string;
+    currencySymbol?: string;
+  }>;
+  selectedCurrencyId: number | null;
 }
 
-export function ProfileTabs({ session, countries }: ProfileTabsProps) {
+export function ProfileTabs({ session, countries, currencies, selectedCurrencyId }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>("personal");
 
   const tabCopy = useMemo(
@@ -84,7 +91,9 @@ export function ProfileTabs({ session, countries }: ProfileTabsProps) {
             {tabCopy[activeTab]}
           </p>
           {activeTab === "personal" && <ProfileForm session={session} countries={countries} />}
-          {activeTab === "preferences" && <PreferencesForm />}
+          {activeTab === "preferences" && (
+            <PreferencesForm currencies={currencies} selectedCurrencyId={selectedCurrencyId} />
+          )}
           {activeTab === "security" && <SecurityForm session={session} />}
         </div>
       </div>

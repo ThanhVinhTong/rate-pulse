@@ -126,6 +126,20 @@ interface ExchangeRatesDashboardProps {
     symbol: string;
     continent: string;
   }>;
+  userCurrencyPreferences?: {
+    baseCurrencyCode?: string;
+    targetCurrencyCode?: string;
+  };
+  preferredBaseCurrencies?: Array<{
+    code: string;
+    name: string;
+    symbol?: string;
+  }>;
+  preferredTargetCurrencies?: Array<{
+    code: string;
+    name: string;
+    symbol?: string;
+  }>;
   range: TimeRange;
 }
 
@@ -133,6 +147,9 @@ export function ExchangeRatesDashboard({
   initialPairs,
   initialPairSnapshots,
   supportedCurrencyOptions,
+  userCurrencyPreferences,
+  preferredBaseCurrencies = [],
+  preferredTargetCurrencies = [],
   range,
 }: ExchangeRatesDashboardProps) {
   const [pairSnapshots, setPairSnapshots] = useState(initialPairSnapshots);
@@ -144,8 +161,13 @@ export function ExchangeRatesDashboard({
   const realtimePairs = useRealtimeRates(initialPairs);
   const defaultPair = realtimePairs[0]?.pair ?? "USD/JPY";
   const [initialBase, initialTarget] = defaultPair.split("/");
-  const [selectedBaseCurrency, setSelectedBaseCurrency] = useState(initialBase);
-  const [selectedTargetCurrency, setSelectedTargetCurrency] = useState(initialTarget);
+  
+  // Use user preferences if available, otherwise use defaults
+  const baseCurrencyCode = userCurrencyPreferences?.baseCurrencyCode || initialBase;
+  const targetCurrencyCode = userCurrencyPreferences?.targetCurrencyCode || initialTarget;
+  
+  const [selectedBaseCurrency, setSelectedBaseCurrency] = useState(baseCurrencyCode);
+  const [selectedTargetCurrency, setSelectedTargetCurrency] = useState(targetCurrencyCode);
   const [selectedSource, setSelectedSource] = useState("All Sources");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
@@ -293,6 +315,9 @@ export function ExchangeRatesDashboard({
         selectedSource={effectiveSelectedSource}
         conversionUpdatedAt={conversionUpdatedAt}
         favoritesOnly={favoritesOnly}
+        userCurrencyPreferences={userCurrencyPreferences}
+        preferredBaseCurrencies={preferredBaseCurrencies}
+        preferredTargetCurrencies={preferredTargetCurrencies}
         onBaseCurrencyChange={handleBaseCurrencyChange}
         onTargetCurrencyChange={handleTargetCurrencyChange}
         onSourceChange={setSelectedSource}

@@ -29,6 +29,12 @@ interface ExchangeRateFiltersProps {
   selectedSource: string;
   conversionUpdatedAt: string;
   favoritesOnly: boolean;
+  userCurrencyPreferences?: {
+    baseCurrencyCode?: string;
+    targetCurrencyCode?: string;
+  };
+  preferredBaseCurrencies?: CurrencyOption[];
+  preferredTargetCurrencies?: CurrencyOption[];
   onBaseCurrencyChange: (currency: string) => void;
   onTargetCurrencyChange: (currency: string) => void;
   onSourceChange: (source: string) => void;
@@ -38,7 +44,7 @@ interface ExchangeRateFiltersProps {
 interface CurrencyDropdownProps {
   label: string;
   value: string;
-  options: CurrencyOption[];
+  options: Array<CurrencyOption & { isBasePreference?: boolean; isTargetPreference?: boolean }>;
   onSelect: (code: string) => void;
 }
 
@@ -108,7 +114,14 @@ function CurrencyDropdown({ label, value, options, onSelect }: CurrencyDropdownP
                   setIsOpen(false);
                 }}
               >
-                {option.code} - {option.name}
+                <span className="flex-1">
+                  {option.code} - {option.name}
+                </span>
+                {(option.isBasePreference || option.isTargetPreference) && (
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                    {option.isBasePreference ? "Base" : "Target"}
+                  </span>
+                )}
               </DropdownMenuItem>
             ))}
 
@@ -132,12 +145,52 @@ export function ExchangeRateFilters({
   selectedSource,
   conversionUpdatedAt,
   favoritesOnly,
+  userCurrencyPreferences,
+  preferredBaseCurrencies,
+  preferredTargetCurrencies,
   onBaseCurrencyChange,
   onTargetCurrencyChange,
   onSourceChange,
   onFavoritesOnlyToggle,
 }: ExchangeRateFiltersProps) {
-  const targetOptions = currencies.filter((currency) => currency.code !== baseCurrency);
+  const withSelectedCurrency = (options: CurrencyOption[], code: string): CurrencyOption[] => {
+    if (options.some((item) => item.code === code)) {
+      return options;
+    }
+    const selected = currencies.find((item) => item.code === code);
+    return selected ? [...options, selected] : options;
+  };
+
+  const baseAvailableCurrencies = useMemo(() => {
+    const baseOptions =
+      preferredBaseCurrencies && preferredBaseCurrencies.length > 0
+        ? preferredBaseCurrencies
+        : currencies;
+    return withSelectedCurrency(baseOptions, baseCurrency);
+  }, [preferredBaseCurrencies, currencies, baseCurrency]);
+
+  const targetAvailableCurrencies = useMemo(() => {
+    const targetOptions =
+      preferredTargetCurrencies && preferredTargetCurrencies.length > 0
+        ? preferredTargetCurrencies
+        : currencies;
+    return withSelectedCurrency(targetOptions, targetCurrency);
+  }, [preferredTargetCurrencies, currencies, targetCurrency]);
+
+  const targetOptions = targetAvailableCurrencies.filter((currency) => currency.code !== baseCurrency);
+
+  // Add preference indicators
+  const currenciesWithPreferences = baseAvailableCurrencies.map((currency) => ({
+    ...currency,
+    isBasePreference: userCurrencyPreferences?.baseCurrencyCode === currency.code,
+    isTargetPreference: userCurrencyPreferences?.targetCurrencyCode === currency.code,
+  }));
+
+  const targetOptionsWithPreferences = targetOptions.map((currency) => ({
+    ...currency,
+    isBasePreference: userCurrencyPreferences?.baseCurrencyCode === currency.code,
+    isTargetPreference: userCurrencyPreferences?.targetCurrencyCode === currency.code,
+  }));
 
   return (
     <Panel variant="sheet" padding="md" className="mb-6">
@@ -150,14 +203,14 @@ export function ExchangeRateFilters({
         <CurrencyDropdown
           label="Base Currency"
           value={baseCurrency}
-          options={currencies}
+          options={currenciesWithPreferences}
           onSelect={onBaseCurrencyChange}
         />
 
         <CurrencyDropdown
           label="Target Currency"
           value={targetCurrency}
-          options={targetOptions}
+          options={targetOptionsWithPreferences}
           onSelect={onTargetCurrencyChange}
         />
 

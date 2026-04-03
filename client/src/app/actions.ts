@@ -342,6 +342,181 @@ export async function updateSettingsAction(
   };
 }
 
+export async function updateCurrencyPreferenceAction(
+  _: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const currencyIdRaw = String(formData.get("primaryCurrencyId") ?? "").trim();
+  const isPrimary = formData.get("isPrimary") === "on";
+
+  if (!currencyIdRaw) {
+    return {
+      status: "error",
+      message: "Choose your perfer currency.",
+    };
+  }
+
+  const currencyId = Number(currencyIdRaw);
+  if (!Number.isInteger(currencyId) || currencyId < 1) {
+    return {
+      status: "error",
+      message: "Invalid currency selection.",
+    };
+  }
+
+  const accessToken = await getValidAccessToken();
+
+  if (!accessToken) {
+    return {
+      status: "error",
+      message: "Your session has expired. Please sign in again.",
+    };
+  }
+
+  const payload = {
+    currency_id: currencyId,
+    is_favorite: isPrimary,
+  };
+
+  try {
+    const createRes = await fetch(`${API_BASE_URL}/currency-preference`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+      body: JSON.stringify(payload),
+    });
+
+    if (!createRes.ok) {
+      const updateRes = await fetch(`${API_BASE_URL}/currency-preference/${currencyId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+        body: JSON.stringify(payload),
+      });
+
+      if (!updateRes.ok) {
+        const error = await updateRes.json().catch(() => ({ error: "Unable to save currency preference" }));
+        return {
+          status: "error",
+          message: error.error || "Unable to save currency preference.",
+        };
+      }
+    }
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  revalidatePath("/profile");
+
+  return {
+    status: "success",
+    message: isPrimary
+      ? "Currency preference saved as base currency."
+      : "Currency preference saved as target currency.",
+  };
+}
+
+interface UserCurrencyPreference {
+  CurrencyID?: number;
+  currency_id?: number;
+  IsFavorite?: boolean | null | { Bool?: boolean; Valid?: boolean; bool?: boolean; valid?: boolean };
+  is_favorite?: boolean | null | { Bool?: boolean; Valid?: boolean; bool?: boolean; valid?: boolean };
+}
+
+function parseNullableBool(
+  value: UserCurrencyPreference["IsFavorite"] | UserCurrencyPreference["is_favorite"],
+): boolean | null {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (value && typeof value === "object") {
+    const valid = "Valid" in value ? value.Valid : value.valid;
+    const boolValue = "Bool" in value ? value.Bool : value.bool;
+    if (valid === true && typeof boolValue === "boolean") {
+      return boolValue;
+    }
+  }
+
+  return null;
+}
+
+export interface UserCurrencyPreferencesMap {
+  base?: number | null; // currency_id marked as base (is_favorite = true)
+  target?: number | null; // currency_id marked as target (is_favorite = false)
+  all: Array<{ currencyId: number; isFavorite: boolean | null }>;
+}
+
+export async function getAllUserCurrencyPreferences(
+  accessToken: string,
+): Promise<UserCurrencyPreferencesMap> {
+  const preferences: Array<{ currencyId: number; isFavorite: boolean | null }> = [];
+  let baseCurrencyId: number | null = null;
+  let targetCurrencyId: number | null = null;
+
+  const pageSize = 10;
+
+  try {
+    for (let pageId = 1; pageId <= 100; pageId += 1) {
+      const response = await fetch(
+        `${API_BASE_URL}/currency-preference-userid?page_id=${pageId}&page_size=${pageSize}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: "no-store",
+        },
+      );
+
+      if (!response.ok) {
+        break;
+      }
+
+      const data = (await response.json()) as UserCurrencyPreference[];
+
+      if (!Array.isArray(data) || data.length === 0) {
+        break;
+      }
+
+      for (const item of data) {
+        const currencyId = typeof item.CurrencyID === "number" ? item.CurrencyID : item.currency_id;
+        const isFavorite = parseNullableBool(item.IsFavorite ?? item.is_favorite ?? null);
+
+        if (typeof currencyId === "number" && currencyId > 0) {
+          preferences.push({
+            currencyId,
+            isFavorite,
+          });
+
+          // Track the first base (is_favorite = true) and first target (is_favorite = false)
+          if (isFavorite === true && baseCurrencyId === null) {
+            baseCurrencyId = currencyId;
+          } else if (isFavorite === false && targetCurrencyId === null) {
+            targetCurrencyId = currencyId;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch user currency preferences:", err);
+  }
+
+  return {
+    base: baseCurrencyId,
+    target: targetCurrencyId,
+    all: preferences,
+  };
+}
+
 export async function refreshExchangeRatesAction(): Promise<ActionState & { data?: PairSnapshot[] }> {
   try {
     const [currencies, countries, sources, ratesRaw, typesFromApi] = await Promise.all([
