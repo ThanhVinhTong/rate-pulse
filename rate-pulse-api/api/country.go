@@ -127,34 +127,15 @@ func (server *Server) getCountryByCode(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, country)
 }
 
-// listCountryRequest represents the query parameters for listing countries with pagination.
-// PageID starts from 1 and PageSize must be between 5 and 10.
-type listCountryRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
-}
-
-// listCountry retrieves a paginated list of countries.
-// Pagination is controlled via query parameters page_id and page_size.
+// listCountry retrieves a list of all countries.
 //
-// GET /countries?page_id=1&page_size=10
-//
-// Query parameters:
-//   - page_id: The page number to retrieve (required, must be >= 1)
-//   - page_size: The number of countries per page (required, must be between 5 and 10)
+// GET /countries
 //
 // Response: Array of Country objects on success, error message on failure
 // Status codes:
 //   - 200 OK: Countries retrieved successfully
-//   - 400 Bad Request: Invalid or missing pagination parameters
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCountry(ctx *gin.Context) {
-	var req listCountryRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
 	countries, err := server.store.GetAllCountries(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

@@ -59,17 +59,10 @@ func (q *Queries) DeleteRateSource(ctx context.Context, sourceID int32) error {
 const getAllRateSources = `-- name: GetAllRateSources :many
 SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
 ORDER BY source_id
-LIMIT $1
-OFFSET $2
 `
 
-type GetAllRateSourcesParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) GetAllRateSources(ctx context.Context, arg GetAllRateSourcesParams) ([]RateSource, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRateSources, arg.Limit, arg.Offset)
+func (q *Queries) GetAllRateSources(ctx context.Context) ([]RateSource, error) {
+	rows, err := q.db.QueryContext(ctx, getAllRateSources)
 	if err != nil {
 		return nil, err
 	}

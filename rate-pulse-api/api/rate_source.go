@@ -90,40 +90,15 @@ func (server *Server) getRateSource(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rateSource)
 }
 
-// listRateSourceRequest represents the query parameters for listing rate sources with pagination.
-// PageID starts from 1 and PageSize must be between 5 and 10.
-type listRateSourceRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
-}
-
-// listRateSource retrieves a paginated list of rate sources.
-// Pagination is controlled via query parameters page_id and page_size.
-//
-// GET /rate-sources?page_id=1&page_size=10
-//
-// Query parameters:
-//   - page_id: The page number to retrieve (required, must be >= 1)
-//   - page_size: The number of rate sources per page (required, must be between 5 and 10)
+// listRateSource retrieves a list of all rate sources.
+// GET /rate-sources
 //
 // Response: Array of RateSource objects on success, error message on failure
 // Status codes:
 //   - 200 OK: Rate sources retrieved successfully
-//   - 400 Bad Request: Invalid or missing pagination parameters
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listRateSource(ctx *gin.Context) {
-	var req listRateSourceRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.GetAllRateSourcesParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	rateSources, err := server.store.GetAllRateSources(ctx, arg)
+	rateSources, err := server.store.GetAllRateSources(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

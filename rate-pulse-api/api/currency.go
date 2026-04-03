@@ -87,34 +87,15 @@ func (server *Server) getCurrency(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, currency)
 }
 
-// listCurrencyRequest represents the query parameters for listing currencies with pagination.
-// PageID starts from 1 and PageSize must be between 5 and 10.
-type listCurrencyRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
-}
-
-// listCurrency retrieves a paginated list of currencies.
-// Pagination is controlled via query parameters page_id and page_size.
+// listCurrency retrieves a list of all currencies.
 //
-// GET /currencies?page_id=1&page_size=10
-//
-// Query parameters:
-//   - page_id: The page number to retrieve (required, must be >= 1)
-//   - page_size: The number of currencies per page (required, must be between 5 and 10)
+// GET /currencies
 //
 // Response: Array of Currency objects on success, error message on failure
 // Status codes:
 //   - 200 OK: Currencies retrieved successfully
-//   - 400 Bad Request: Invalid or missing pagination parameters
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCurrency(ctx *gin.Context) {
-	var req listCurrencyRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
 	currencies, err := server.store.GetAllCurrencies(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
