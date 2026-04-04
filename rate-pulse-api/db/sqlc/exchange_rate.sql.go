@@ -164,8 +164,7 @@ WITH ranked AS (
     ON er.source_id = rs.source_id
   LEFT JOIN exchange_rate_types ert
     ON er.type_id = ert.type_id
-  WHERE er.created_at >= (SELECT NOW()::date)
-    AND er.source_currency_id = $1
+  WHERE er.source_currency_id = $1
 )
 SELECT
   rate_id,
