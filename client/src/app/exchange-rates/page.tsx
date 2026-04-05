@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 // Type definition
 interface ExchangeRateLatest {
   RateID: number;
@@ -45,6 +47,10 @@ function roundUp(num: number, precision: number) {
   return num.toFixed(precision);
 }
 
+function rateSourceKey(r: ExchangeRateLatest): string {
+  return r.RateSourceCode?.Valid ? r.RateSourceCode.String : "UNKNOWN";
+}
+
 export default async function ExchangeRatesPage({}: {}) {
   const base = process.env.API_BASE_URL ?? "https://api.rate-pulse.me";
 
@@ -60,7 +66,14 @@ export default async function ExchangeRatesPage({}: {}) {
     throw new Error(`Failed to fetch exchange rates: ${errorText}`);
   }
   const exchangeRatesLatest: ExchangeRateLatest[] = await exchangeRatesLatestRes.json();
-  
+
+  const groups = new Map<string, ExchangeRateLatest[]>();
+  for (const r of exchangeRatesLatest) {
+    const key = rateSourceKey(r);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r);
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse text-sm">
@@ -75,45 +88,60 @@ export default async function ExchangeRatesPage({}: {}) {
           </tr>
         </thead>
         <tbody>
-          {exchangeRatesLatest.map((r) => (
-            <tr key={r.RateID} className="block border-b border-neutral-200 dark:border-neutral-800 md:table-row md:py-3">
-              <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                  Pair:{" "}
-                </span>
-                {r.SourceCurrencyCode} → {r.DestinationCurrencyCode}
-              </td>
-              <td className="block w-full p-2 md:table-cell md:w-auto md:p-2 tabular-nums">
-                <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                  Rate:{" "}
-                </span>
-                {roundUp(Number(r.RateValue), 3)}
-              </td>
-              <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                  Type:{" "}
-                </span>
-                {nullString(r.TypeName)}
-              </td>
-              <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                  Source:{" "}
-                </span>
-                {nullString(r.RateSourceCode)}
-              </td>
-              <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                  Valid from:{" "}
-                </span>
-                {new Date(r.ValidFromDate).toLocaleString()}
-              </td>
-              <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                  Updated:{" "}
-                </span>
-                {nullTime(r.UpdatedAt)}
-              </td>
-            </tr>
+          {[...groups.entries()].map(([sourceKey, rows]) => (
+            <Fragment key={sourceKey}>
+              <tr className="block border-b border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800 md:table-row">
+                <td
+                  colSpan={6}
+                  className="block w-full p-2 font-semibold md:table-cell"
+                >
+                  Source: {sourceKey}
+                </td>
+              </tr>
+              {rows.map((r) => (
+                <tr
+                  key={r.RateID}
+                  className="block border-b border-neutral-200 dark:border-neutral-800 md:table-row md:py-3"
+                >
+                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
+                      Pair:{" "}
+                    </span>
+                    {r.SourceCurrencyCode} → {r.DestinationCurrencyCode}
+                  </td>
+                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2 tabular-nums">
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
+                      Rate:{" "}
+                    </span>
+                    {roundUp(Number(r.RateValue), 3)}
+                  </td>
+                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
+                      Type:{" "}
+                    </span>
+                    {nullString(r.TypeName)}
+                  </td>
+                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
+                      Source:{" "}
+                    </span>
+                    {nullString(r.RateSourceCode)}
+                  </td>
+                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
+                      Valid from:{" "}
+                    </span>
+                    {new Date(r.ValidFromDate).toLocaleString()}
+                  </td>
+                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
+                      Updated:{" "}
+                    </span>
+                    {nullTime(r.UpdatedAt)}
+                  </td>
+                </tr>
+              ))}
+            </Fragment>
           ))}
         </tbody>
       </table>
