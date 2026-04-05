@@ -56,6 +56,7 @@ func (server *Server) setupRouter() {
 	router.GET("/exchange-rates-latest", server.listExchangeRateToday)
 	router.GET("/exchange-rate-types", server.listExchangeRateTypes)
 	router.GET("/rate-sources", server.listRateSource)
+	router.GET("/rate-sources/metadata", server.listRateSourceMetadata)
 	router.GET("/rate-sources/:id", server.getRateSource)
 	router.GET("/countries/code/:country_code", server.getCountryByCode)
 	router.GET("/countries/:id", server.getCountry)

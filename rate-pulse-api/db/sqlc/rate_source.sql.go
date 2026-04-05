@@ -56,29 +56,88 @@ func (q *Queries) DeleteRateSource(ctx context.Context, sourceID int32) error {
 	return err
 }
 
-const getAllRateSources = `-- name: GetAllRateSources :many
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
+const getRateSourceByCode = `-- name: GetRateSourceByCode :one
+SELECT source_id, source_name, source_link, source_country, source_status, source_code FROM rate_sources
+WHERE source_code = $1 LIMIT 1
+`
+
+type GetRateSourceByCodeRow struct {
+	SourceID      int32
+	SourceName    string
+	SourceLink    sql.NullString
+	SourceCountry sql.NullString
+	SourceStatus  sql.NullString
+	SourceCode    sql.NullString
+}
+
+func (q *Queries) GetRateSourceByCode(ctx context.Context, sourceCode sql.NullString) (GetRateSourceByCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, getRateSourceByCode, sourceCode)
+	var i GetRateSourceByCodeRow
+	err := row.Scan(
+		&i.SourceID,
+		&i.SourceName,
+		&i.SourceLink,
+		&i.SourceCountry,
+		&i.SourceStatus,
+		&i.SourceCode,
+	)
+	return i, err
+}
+
+const getRateSourceByID = `-- name: GetRateSourceByID :one
+SELECT source_id, source_name, source_link, source_country, source_status, source_code FROM rate_sources
+WHERE source_id = $1 LIMIT 1
+`
+
+type GetRateSourceByIDRow struct {
+	SourceID      int32
+	SourceName    string
+	SourceLink    sql.NullString
+	SourceCountry sql.NullString
+	SourceStatus  sql.NullString
+	SourceCode    sql.NullString
+}
+
+func (q *Queries) GetRateSourceByID(ctx context.Context, sourceID int32) (GetRateSourceByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getRateSourceByID, sourceID)
+	var i GetRateSourceByIDRow
+	err := row.Scan(
+		&i.SourceID,
+		&i.SourceName,
+		&i.SourceLink,
+		&i.SourceCountry,
+		&i.SourceStatus,
+		&i.SourceCode,
+	)
+	return i, err
+}
+
+const listRateSourceMetadata = `-- name: ListRateSourceMetadata :many
+SELECT source_id, source_name, source_code, source_link FROM rate_sources
 ORDER BY source_id
 `
 
-func (q *Queries) GetAllRateSources(ctx context.Context) ([]RateSource, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRateSources)
+type ListRateSourceMetadataRow struct {
+	SourceID   int32
+	SourceName string
+	SourceCode sql.NullString
+	SourceLink sql.NullString
+}
+
+func (q *Queries) ListRateSourceMetadata(ctx context.Context) ([]ListRateSourceMetadataRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRateSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RateSource
+	var items []ListRateSourceMetadataRow
 	for rows.Next() {
-		var i RateSource
+		var i ListRateSourceMetadataRow
 		if err := rows.Scan(
 			&i.SourceID,
 			&i.SourceName,
-			&i.SourceLink,
-			&i.SourceCountry,
-			&i.SourceStatus,
-			&i.UpdatedAt,
-			&i.CreatedAt,
 			&i.SourceCode,
+			&i.SourceLink,
 		); err != nil {
 			return nil, err
 		}
@@ -93,46 +152,48 @@ func (q *Queries) GetAllRateSources(ctx context.Context) ([]RateSource, error) {
 	return items, nil
 }
 
-const getRateSourceByCode = `-- name: GetRateSourceByCode :one
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
-WHERE source_code = $1 LIMIT 1
+const listRateSources = `-- name: ListRateSources :many
+SELECT source_id, source_name, source_link, source_country, source_status, source_code FROM rate_sources
+ORDER BY source_id
 `
 
-func (q *Queries) GetRateSourceByCode(ctx context.Context, sourceCode sql.NullString) (RateSource, error) {
-	row := q.db.QueryRowContext(ctx, getRateSourceByCode, sourceCode)
-	var i RateSource
-	err := row.Scan(
-		&i.SourceID,
-		&i.SourceName,
-		&i.SourceLink,
-		&i.SourceCountry,
-		&i.SourceStatus,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-		&i.SourceCode,
-	)
-	return i, err
+type ListRateSourcesRow struct {
+	SourceID      int32
+	SourceName    string
+	SourceLink    sql.NullString
+	SourceCountry sql.NullString
+	SourceStatus  sql.NullString
+	SourceCode    sql.NullString
 }
 
-const getRateSourceByID = `-- name: GetRateSourceByID :one
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
-WHERE source_id = $1 LIMIT 1
-`
-
-func (q *Queries) GetRateSourceByID(ctx context.Context, sourceID int32) (RateSource, error) {
-	row := q.db.QueryRowContext(ctx, getRateSourceByID, sourceID)
-	var i RateSource
-	err := row.Scan(
-		&i.SourceID,
-		&i.SourceName,
-		&i.SourceLink,
-		&i.SourceCountry,
-		&i.SourceStatus,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-		&i.SourceCode,
-	)
-	return i, err
+func (q *Queries) ListRateSources(ctx context.Context) ([]ListRateSourcesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRateSources)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRateSourcesRow
+	for rows.Next() {
+		var i ListRateSourcesRow
+		if err := rows.Scan(
+			&i.SourceID,
+			&i.SourceName,
+			&i.SourceLink,
+			&i.SourceCountry,
+			&i.SourceStatus,
+			&i.SourceCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateRateSource = `-- name: UpdateRateSource :one

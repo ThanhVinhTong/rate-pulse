@@ -93,12 +93,28 @@ func (server *Server) getRateSource(ctx *gin.Context) {
 // listRateSource retrieves a list of all rate sources.
 // GET /rate-sources
 //
+// GET /rate-sources/metadata
+//
+// Response: Array of RateSourceMetadata objects on success, error message on failure
+// Status codes:
+//   - 200 OK: Rate source metadata retrieved successfully
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) listRateSourceMetadata(ctx *gin.Context) {
+	rateSourceMetadata, err := server.store.ListRateSourceMetadata(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, rateSourceMetadata)
+}
+
 // Response: Array of RateSource objects on success, error message on failure
 // Status codes:
 //   - 200 OK: Rate sources retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listRateSource(ctx *gin.Context) {
-	rateSources, err := server.store.GetAllRateSources(ctx)
+	rateSources, err := server.store.ListRateSources(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

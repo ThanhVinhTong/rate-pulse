@@ -145,7 +145,6 @@ WITH ranked AS (
     rs.source_code AS rate_source_code,
     ert.type_name   AS type_name,
     er.updated_at as updated_at,
-    er.created_at as created_at,
 
     ROW_NUMBER() OVER (
       PARTITION BY
@@ -153,7 +152,7 @@ WITH ranked AS (
         er.source_id,
         er.type_id
       ORDER BY
-        er.created_at DESC NULLS LAST
+        er.updated_at DESC NULLS LAST
     ) AS rn
   FROM exchange_rates er
   JOIN currencies sc
@@ -174,7 +173,6 @@ SELECT
   valid_from_date,
   rate_source_code,
   type_name,
-  created_at,
   updated_at
 FROM ranked
 WHERE rn = 1
@@ -195,7 +193,6 @@ type GetAllExchangeRatesTodayNormalisedRow struct {
 	ValidFromDate           time.Time
 	RateSourceCode          sql.NullString
 	TypeName                sql.NullString
-	CreatedAt               sql.NullTime
 	UpdatedAt               sql.NullTime
 }
 
@@ -217,7 +214,6 @@ func (q *Queries) GetAllExchangeRatesTodayNormalised(ctx context.Context, arg Ge
 			&i.ValidFromDate,
 			&i.RateSourceCode,
 			&i.TypeName,
-			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
