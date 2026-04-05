@@ -3,10 +3,12 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,6 +38,16 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"https://www.rate-pulse.me",
+			"https://rate-pulse.me",
+		},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		MaxAge:       12 * time.Hour,
+	}))
 
 	// Public routes (no authentication required)
 	router.POST("/users/signup", server.createUser)

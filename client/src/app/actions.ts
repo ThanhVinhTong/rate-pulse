@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { clearSession, createSession, getSession } from "@/lib/auth";
 import type { ApiCurrency, ApiCountry, ApiRateSource } from "@/lib/exchange-rate-mapper";
 import { buildPairSnapshots, type ExchangeRateRowInput } from "@/lib/pair-snapshot";
-import { fetchAllExchangeRates, fetchAllPages, fetchExchangeRateTypes } from "@/lib/server/exchange-rates";
 import type { PairSnapshot } from "@/types";
 import type { ActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
@@ -229,39 +228,4 @@ export async function updateSettingsAction(
     status: "success",
     message: `${section} settings saved successfully.`,
   };
-}
-
-export async function refreshExchangeRatesAction(): Promise<ActionState & { data?: PairSnapshot[] }> {
-  try {
-    const [currencies, countries, sources, ratesRaw, typesFromApi] = await Promise.all([
-      fetchAllPages<ApiCurrency>("/currencies"),
-      fetchAllPages<ApiCountry>("/countries"),
-      fetchAllPages<ApiRateSource>("/rate-sources"),
-      fetchAllExchangeRates(),
-      fetchExchangeRateTypes(),
-    ]);
-
-    const rates: ExchangeRateRowInput[] = ratesRaw.map((rate) => ({
-      rate_id: rate.rate_id,
-      rate_value: rate.rate_value,
-      source_currency_id: rate.source_currency_id,
-      destination_currency_id: rate.destination_currency_id,
-      source_id: rate.source_id,
-      type_id: rate.type_id,
-      valid_from_date: rate.valid_from_date,
-    }));
-
-    const pairSnapshots = buildPairSnapshots(currencies, countries, sources, rates, typesFromApi);
-
-    return {
-      status: "success",
-      message: "Exchange rates refreshed successfully.",
-      data: pairSnapshots,
-    };
-  } catch (error) {
-    return {
-      status: "error",
-      message: error instanceof Error ? error.message : "Failed to refresh exchange rates.",
-    };
-  }
 }
