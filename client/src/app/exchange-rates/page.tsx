@@ -1,6 +1,32 @@
-import { Fragment } from "react";
+import { ExchangeRatesClientTable } from "@/components/dashboard/ExchangeRatesClientTable";
 
-// Type definition
+interface Currency {
+  CurrencyID: number;
+  CurrencyCode: string;
+  CurrencyName: string;
+  CurrencySymbol?: {
+    String: string;
+    Valid: boolean;
+  } | null;
+  UpdatedAt: {
+    Time: string;
+    Valid: boolean;
+  } | null;
+  CreatedAt: {
+    Time: string;
+    Valid: boolean;
+  } | null;
+}
+
+interface RateSourceApi {
+  SourceID: number;
+  SourceName: string;
+  SourceCode?: {
+    String: string;
+    Valid: boolean;
+  } | null;
+}
+
 interface ExchangeRateLatest {
   RateID: number;
   RateValue: string;
@@ -25,126 +51,56 @@ interface ExchangeRateLatest {
   } | null;
 }
 
-function nullString(
-  v: { String: string; Valid: boolean } | null | undefined,
-): string {
-  return v?.Valid ? v.String : "—";
-}
+const DEFAULT_SOURCE_CURRENCY_ID = 150;
+const RATES_LIMIT = 1000;
 
-function nullTime(
-  v: { Time: string; Valid: boolean } | null | undefined,
-): string {
-  return v?.Valid ? new Date(v.Time).toLocaleString() : "—";
-}
-
-function roundUp(num: number, precision: number) {
-  if (isNaN(num)) {
-    return 0.0000;
-  }
-  if (isNaN(precision)) {
-    precision = 4;
-  }
-  return num.toFixed(precision);
-}
-
-function rateSourceKey(r: ExchangeRateLatest): string {
-  return r.RateSourceCode?.Valid ? r.RateSourceCode.String : "UNKNOWN";
-}
-
-export default async function ExchangeRatesPage({}: {}) {
+export default async function ExchangeRatesPage() {
   const base = process.env.API_BASE_URL ?? "https://api.rate-pulse.me";
 
-  // Fetch exchange rates latest
-  const VN_MAIN_CURRENCY_ID = 150;
-  const VN_LIMIT = 200;
+  const currenciesRes = await fetch(`${base}/currencies`, { cache: "no-store" });
+  if (!currenciesRes.ok) {
+    const errorText = await currenciesRes.text();
+    throw new Error(`Failed to fetch currencies: ${errorText}`);
+  }
+  const currencies: Currency[] = await currenciesRes.json();
+
+  const rateSourcesRes = await fetch(`${base}/rate-sources`, {
+    cache: "no-store",
+  });
+  if (!rateSourcesRes.ok) {
+    const errorText = await rateSourcesRes.text();
+    throw new Error(`Failed to fetch rate sources: ${errorText}`);
+  }
+  const rateSources: RateSourceApi[] = await rateSourcesRes.json();
+
   const exchangeRatesLatestRes = await fetch(
-    `${base}/exchange-rates-latest?source_currency_id=${VN_MAIN_CURRENCY_ID}&limit=${VN_LIMIT}`,
-    { cache: "no-store" } // or next: { revalidate: 60 } for ISR
+    `${base}/exchange-rates-latest?source_currency_id=${DEFAULT_SOURCE_CURRENCY_ID}&limit=${RATES_LIMIT}`,
+    { next: { revalidate: 60 } },
   );
   if (!exchangeRatesLatestRes.ok) {
     const errorText = await exchangeRatesLatestRes.text();
     throw new Error(`Failed to fetch exchange rates: ${errorText}`);
   }
-  const exchangeRatesLatest: ExchangeRateLatest[] = await exchangeRatesLatestRes.json();
-
-  const groups = new Map<string, ExchangeRateLatest[]>();
-  for (const r of exchangeRatesLatest) {
-    const key = rateSourceKey(r);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(r);
-  }
+  const exchangeRatesLatest: ExchangeRateLatest[] =
+    await exchangeRatesLatestRes.json();
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse text-sm">
-        <thead className="hidden md:table-header-group">
-          <tr className="text-left text-lg font-bold uppercase tracking-wide">
-            <th className="p-2">Pair</th>
-            <th className="p-2">Rate</th>
-            <th className="p-2">Type</th>
-            <th className="p-2">Source</th>
-            <th className="p-2">Valid from</th>
-            <th className="p-2">Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...groups.entries()].map(([sourceKey, rows]) => (
-            <Fragment key={sourceKey}>
-              <tr className="block border-b border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800 md:table-row">
-                <td
-                  colSpan={6}
-                  className="block w-full p-2 font-semibold md:table-cell"
-                >
-                  Source: {sourceKey}
-                </td>
-              </tr>
-              {rows.map((r) => (
-                <tr
-                  key={r.RateID}
-                  className="block border-b border-neutral-200 dark:border-neutral-800 md:table-row md:py-3"
-                >
-                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                      Pair:{" "}
-                    </span>
-                    {r.SourceCurrencyCode} → {r.DestinationCurrencyCode}
-                  </td>
-                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2 tabular-nums">
-                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                      Rate:{" "}
-                    </span>
-                    {roundUp(Number(r.RateValue), 3)}
-                  </td>
-                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                      Type:{" "}
-                    </span>
-                    {nullString(r.TypeName)}
-                  </td>
-                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                      Source:{" "}
-                    </span>
-                    {nullString(r.RateSourceCode)}
-                  </td>
-                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                      Valid from:{" "}
-                    </span>
-                    {new Date(r.ValidFromDate).toLocaleString()}
-                  </td>
-                  <td className="block w-full p-2 md:table-cell md:w-auto md:p-2">
-                    <span className="font-medium text-neutral-500 dark:text-neutral-400 md:hidden">
-                      Updated:{" "}
-                    </span>
-                    {nullTime(r.UpdatedAt)}
-                  </td>
-                </tr>
-              ))}
-            </Fragment>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+        Exchange Rates
+      </h1>
+      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        Last updated: {new Date().toLocaleString()}
+      </p>
+      <div className="mt-6">
+        <ExchangeRatesClientTable
+          apiBase={base}
+          initialSourceCurrencyId={DEFAULT_SOURCE_CURRENCY_ID}
+          initialRates={exchangeRatesLatest}
+          currencies={currencies}
+          rateSources={rateSources}
+        />
+      </div>
     </div>
   );
 }
