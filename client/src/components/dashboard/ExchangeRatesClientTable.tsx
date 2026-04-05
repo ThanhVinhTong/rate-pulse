@@ -37,6 +37,11 @@ function nullTime(
   return v?.Valid ? formatDateTime(v.Time) : "—";
 }
 
+/** API may return a non-array when there are no rows — keep UI stable. */
+function asRateArray(v: unknown): ExchangeRateLatest[] {
+  return Array.isArray(v) ? v : [];
+}
+
 function roundUp(num: number, precision: number) {
   if (isNaN(num)) {
     return "0.0000";
@@ -170,7 +175,9 @@ export function ExchangeRatesClientTable({
   currencies,
   rateSources,
 }: Props) {
-  const [rates, setRates] = useState<ExchangeRateLatest[]>(initialRates);
+  const [rates, setRates] = useState<ExchangeRateLatest[]>(() =>
+    asRateArray(initialRates),
+  );
   const [sourceCurrencyId, setSourceCurrencyId] = useState(
     initialSourceCurrencyId,
   );
@@ -270,8 +277,8 @@ export function ExchangeRatesClientTable({
         const text = await res.text();
         throw new Error(text || res.statusText);
       }
-      const next: ExchangeRateLatest[] = await res.json();
-      setRates(next);
+      const data: unknown = await res.json();
+      setRates(asRateArray(data));
       setTargetFilter("");
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : "Failed to load rates");
@@ -307,8 +314,7 @@ export function ExchangeRatesClientTable({
         : "border-neutral-200 dark:border-neutral-700",
     ].join(" ");
 
-  const filterLabelClass =
-    "block rounded-lg focus-within:ring-2 focus-within:ring-emerald-500/25 focus-within:ring-offset-2 focus-within:ring-offset-emerald-50/0 dark:focus-within:ring-offset-neutral-950/0";
+  const filterLabelClass = "block";
 
   return (
     <div className="space-y-8">
@@ -572,7 +578,7 @@ export function ExchangeRatesClientTable({
                     >
                       <td className="border-l-0 px-3 py-2.5 pl-4 align-middle font-medium text-neutral-900 dark:text-neutral-100">
                         <span className="tabular-nums">
-                          {r.SourceCurrencyCode} →{" "}
+                          {r.SourceCurrencyCode} ↔{" "}
                           {r.DestinationCurrencyCode}
                         </span>
                       </td>
