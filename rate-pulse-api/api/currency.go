@@ -87,6 +87,24 @@ func (server *Server) getCurrency(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, currency)
 }
 
+// listCurrencyCodesAndNames retrieves a list of all currency codes and names.
+//
+// GET /currencies/codes-and-names
+//
+// Response: Array of Currency objects on success, error message on failure
+// Status codes:
+//   - 200 OK: Currency codes and names retrieved successfully
+//   - 500 Internal Server Error: Database or server error
+func (server *Server) listCurrencyCodesAndNames(ctx *gin.Context) {
+	currencies, err := server.store.GetAllCurrencyCodesAndNames(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, currencies)
+}
+
 // listCurrency retrieves a list of all currencies.
 //
 // GET /currencies

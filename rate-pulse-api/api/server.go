@@ -50,6 +50,7 @@ func (server *Server) setupRouter() {
 	// Public read-only market & reference data (no auth) — browse exchange-rates & analytics UIs while logged out.
 	// Register specific paths before /:id routes.
 	router.GET("/currencies", server.listCurrency)
+	router.GET("/currencies/codes-and-names", server.listCurrencyCodesAndNames)
 	router.GET("/currencies/:id", server.getCurrency)
 	router.GET("/exchange-rates/:id", server.getExchangeRate)
 	router.GET("/exchange-rates-latest", server.listExchangeRateToday)
