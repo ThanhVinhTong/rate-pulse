@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   description: "Work in progress",
 };
 
+// TODO: implement NEWS into this page
 export default function WIPPage() {
   return (
     <div>
