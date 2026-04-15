@@ -83,7 +83,7 @@ WHERE rate_id = $1;
 -- name: DeleteAllExchangeRates :exec
 DELETE FROM exchange_rates;
 
--- name: GetChartData :many
+-- name: GetAnalyticsData :many
 -- Fetches evenly distributed exchange rate data points across a time range.
 -- Returns up to num_data_points evenly spaced samples from the time range [start_time, now).
 -- Parameters:

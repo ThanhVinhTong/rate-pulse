@@ -229,7 +229,7 @@ func (q *Queries) GetAllExchangeRatesTodayNormalised(ctx context.Context, arg Ge
 	return items, nil
 }
 
-const getChartData = `-- name: GetChartData :many
+const getAnalyticsData = `-- name: GetAnalyticsData :many
 WITH bucketed AS (
   SELECT 
     er.rate_value,
@@ -247,7 +247,7 @@ FROM bucketed
 ORDER BY bucket, updated_at DESC
 `
 
-type GetChartDataParams struct {
+type GetAnalyticsDataParams struct {
 	SourceCurrencyID      int32
 	DestinationCurrencyID int32
 	SourceID              sql.NullInt32
@@ -255,7 +255,7 @@ type GetChartDataParams struct {
 	Ntile                 int32
 }
 
-type GetChartDataRow struct {
+type GetAnalyticsDataRow struct {
 	RateValue string
 	UpdatedAt sql.NullTime
 	TypeID    sql.NullInt32
@@ -270,8 +270,8 @@ type GetChartDataRow struct {
 //	$3: source_id
 //	$4: start_time (UpdatedAt in struct)
 //	$5: num_data_points (Ntile in struct)
-func (q *Queries) GetChartData(ctx context.Context, arg GetChartDataParams) ([]GetChartDataRow, error) {
-	rows, err := q.db.QueryContext(ctx, getChartData,
+func (q *Queries) GetAnalyticsData(ctx context.Context, arg GetAnalyticsDataParams) ([]GetAnalyticsDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAnalyticsData,
 		arg.SourceCurrencyID,
 		arg.DestinationCurrencyID,
 		arg.SourceID,
@@ -282,9 +282,9 @@ func (q *Queries) GetChartData(ctx context.Context, arg GetChartDataParams) ([]G
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetChartDataRow
+	var items []GetAnalyticsDataRow
 	for rows.Next() {
-		var i GetChartDataRow
+		var i GetAnalyticsDataRow
 		if err := rows.Scan(&i.RateValue, &i.UpdatedAt, &i.TypeID); err != nil {
 			return nil, err
 		}
