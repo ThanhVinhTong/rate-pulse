@@ -82,3 +82,28 @@ WHERE rate_id = $1;
 
 -- name: DeleteAllExchangeRates :exec
 DELETE FROM exchange_rates;
+
+-- name: GetChartData :many
+-- Fetches evenly distributed exchange rate data points across a time range.
+-- Returns up to num_data_points evenly spaced samples from the time range [start_time, now).
+-- Parameters:
+--   $1: source_currency_id
+--   $2: destination_currency_id
+--   $3: source_id
+--   $4: start_time (UpdatedAt in struct)
+--   $5: num_data_points (Ntile in struct)
+WITH bucketed AS (
+  SELECT 
+    er.rate_value,
+    er.updated_at,
+    er.type_id,
+    NTILE($5) OVER (ORDER BY er.updated_at) AS bucket
+  FROM exchange_rates er
+  WHERE er.source_currency_id = $1
+    AND er.destination_currency_id = $2
+    AND er.source_id = $3
+    AND er.updated_at >= $4
+)
+SELECT DISTINCT ON (bucket) rate_value, updated_at, type_id
+FROM bucketed
+ORDER BY bucket, updated_at DESC;
