@@ -13,17 +13,17 @@ export default function Error({
 }) {
   return (
     <Alert variant="dangerPanel">
-      <Text variant="overlineAccent" className="uppercase tracking-[0.24em] text-red-200">
+      <Text variant="overlineAccent" className="uppercase tracking-[0.16em] text-status-danger">
         Something went wrong
       </Text>
-      <Heading level="h1" className="mt-3 text-2xl font-semibold text-white">
+      <Heading level="h1" className="mt-3 text-2xl font-semibold text-text-primary">
         Unable to load this view
       </Heading>
       <Text variant="error">{error.message || "An unexpected rendering error occurred."}</Text>
       <Button
         type="button"
         variant="secondary"
-        className="mt-6 bg-white text-[#242e44] hover:bg-white/90"
+        className="mt-6"
         onClick={() => reset()}
       >
         Try again

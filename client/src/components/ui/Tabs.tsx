@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-export const tabsListVariants = cva("inline-flex rounded-xl border border-white/10 bg-white/5 p-1", {
+export const tabsListVariants = cva("inline-flex rounded-xl border border-border bg-surface-elevated p-1", {
   variants: {},
 });
 
@@ -11,8 +11,8 @@ export const tabsTriggerVariants = cva(
   {
     variants: {
       active: {
-        true: "bg-primary text-white shadow-sm",
-        false: "text-text-muted hover:text-white",
+        true: "bg-primary text-text-primary shadow-sm",
+        false: "text-text-muted hover:text-text-primary",
       },
     },
     defaultVariants: {

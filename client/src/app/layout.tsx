@@ -18,11 +18,11 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: "Rate-pulse Trading Platform",
+    default: "Rate-pulse",
     template: "%s | Rate-pulse",
   },
   description:
-    "Professional fintech trading platform with exchange rates, analytics, profile controls, and admin monitoring.",
+    "Compare exchange rates across sources, review trends, and manage saved account preferences.",
 };
 
 export default async function RootLayout({

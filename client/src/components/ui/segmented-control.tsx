@@ -4,11 +4,11 @@ import type { ButtonHTMLAttributes, HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export const segmentedRootVariants = cva(
-  "inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border p-1",
+  "inline-flex max-w-full gap-1 overflow-x-auto rounded-md border p-1",
   {
     variants: {
       tone: {
-        default: "border-slate-200 bg-slate-100 dark:border-white/10 dark:bg-[#0c1220]",
+        default: "border-border bg-panel",
       },
     },
     defaultVariants: {
@@ -23,8 +23,7 @@ export const segmentedItemVariants = cva(
     variants: {
       active: {
         true: "bg-primary text-white",
-        false:
-          "text-slate-600 hover:bg-white hover:text-slate-900 dark:text-text-muted dark:hover:bg-white/5 dark:hover:text-white",
+        false: "text-text-muted hover:bg-card hover:text-text-primary",
       },
     },
     defaultVariants: {

@@ -42,14 +42,14 @@ export function Sidebar({ session }: SidebarProps) {
       : baseItems;
 
   return (
-    <aside className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <Panel variant="inset" className="rounded-2xl border border-white/10 bg-[#0c1220] p-5">
+    <aside className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <Panel variant="inset" className="rounded-xl border border-border bg-panel p-5 text-text-primary">
         <div className="flex items-center gap-3">
           <IconBox variant="brand">
             <ShieldCheck className="h-5 w-5" />
           </IconBox>
           <div>
-            <p className="font-semibold text-white">{session.name}</p>
+            <p className="font-semibold text-text-primary">{session.name}</p>
             <Text variant="muted" className="text-sm">
               {`${session.email.split("@")[0].slice(0, 2)}•••••@${session.email.split("@")[1].slice(0, 2)}•••••`}
             </Text>

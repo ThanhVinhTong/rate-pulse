@@ -5,12 +5,11 @@ import { cn } from "@/lib/utils";
 
 export const themeToggleButtonVariants = cva(
   [
-    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition",
-    "border-2 border-[#00d3e5]/50 bg-[#070d18]/95 text-[#00d3e5]",
-    "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07),0_4px_14px_rgba(0,0,0,0.35)]",
-    "hover:border-[#00d3e5] hover:bg-[#0069fe]/25 hover:text-white",
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition",
+    "border border-white/15 bg-transparent text-slate-300",
+    "hover:bg-white/10 hover:text-text-primary",
     "active:scale-[0.97]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d3e5]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#121826]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1424]",
   ].join(" "),
 );
 

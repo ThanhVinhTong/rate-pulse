@@ -10,7 +10,7 @@ export const badgeVariants = cva("inline-flex items-center rounded-full px-3 py-
       success: "bg-status-success/10 text-status-success",
       warning: "bg-status-warning/10 text-status-warning",
       danger: "bg-status-danger/10 text-status-danger",
-      muted: "bg-white/5 text-text-muted",
+      muted: "bg-surface-elevated text-text-muted",
     },
   },
   defaultVariants: {

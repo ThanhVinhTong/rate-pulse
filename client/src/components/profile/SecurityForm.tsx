@@ -55,12 +55,12 @@ export function SecurityForm({ session: _session }: SecurityFormProps) {
   return (
     <Panel variant="securityShell">
       <div>
-        <Heading level="h3" className="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
+        <Heading level="h3" className="mb-6 text-xl font-semibold text-text-primary">
           Change Password
         </Heading>
         <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
           <FieldLabel>
-            <FieldCaption className="font-medium text-gray-700 dark:text-text-muted">
+            <FieldCaption className="font-medium text-text-muted">
               Current password
             </FieldCaption>
             <Input
@@ -68,12 +68,11 @@ export function SecurityForm({ session: _session }: SecurityFormProps) {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
             />
           </FieldLabel>
 
           <FieldLabel>
-            <FieldCaption className="font-medium text-gray-700 dark:text-text-muted">
+            <FieldCaption className="font-medium text-text-muted">
               New password
             </FieldCaption>
             <Input
@@ -81,12 +80,11 @@ export function SecurityForm({ session: _session }: SecurityFormProps) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              className="border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
             />
           </FieldLabel>
 
           <FieldLabel>
-            <FieldCaption className="font-medium text-gray-700 dark:text-text-muted">
+            <FieldCaption className="font-medium text-text-muted">
               Confirm new password
             </FieldCaption>
             <Input
@@ -94,7 +92,6 @@ export function SecurityForm({ session: _session }: SecurityFormProps) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-[#0c1220] dark:text-white"
             />
           </FieldLabel>
 
@@ -114,14 +111,14 @@ export function SecurityForm({ session: _session }: SecurityFormProps) {
         <Heading level="h3" className="mb-2 text-xl font-semibold text-red-600 dark:text-red-400">
           Danger Zone
         </Heading>
-        <Text variant="muted" className="mb-6 text-gray-500">
+        <Text variant="muted" className="mb-6">
           Once you delete your account, there is no going back. Please be certain.
         </Text>
 
         <Panel variant="dangerZone">
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white">Delete Account</h4>
-            <Text variant="muted" className="mt-1 text-gray-500">
+            <h4 className="font-medium text-text-primary">Delete Account</h4>
+            <Text variant="muted" className="mt-1">
               Permanently remove your account and all associated data.
             </Text>
           </div>

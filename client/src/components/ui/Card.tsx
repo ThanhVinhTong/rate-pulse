@@ -3,7 +3,9 @@ import type { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const cardVariants = cva("rounded-2xl border border-white/10 bg-white/5 shadow-panel");
+export const cardVariants = cva(
+  "rounded-xl border border-border bg-card shadow-sm"
+);
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(cardVariants(), className)} {...props} />;
@@ -14,7 +16,12 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("text-2xl font-semibold text-white", className)} {...props} />;
+  return (
+    <h2
+      className={cn("text-lg font-semibold text-text-primary", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardDescription({

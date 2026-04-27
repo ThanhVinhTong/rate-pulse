@@ -10,7 +10,7 @@ import { FieldCaption, FieldLabel } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Heading, Span, Text } from "@/components/ui/typography";
+import { Heading, Text } from "@/components/ui/typography";
 import { TextLink } from "@/components/ui/text-link";
 
 interface AuthFormProps {
@@ -33,11 +33,11 @@ export function AuthForm({ mode, action }: AuthFormProps) {
           {isSignup ? "Create account" : "Welcome back"}
         </Text>
         <Heading level="h1" className="mt-3">
-          {isSignup ? "Open your Rate-pulse workspace" : "Sign in to your trading desk"}
+          {isSignup ? "Create your Rate-pulse account" : "Sign in to Rate-pulse"}
         </Heading>
         <Text variant="body" className="mt-3">
           Demo access is mocked. Use any credentials, or include{" "}
-          <Span variant="inverse">admin</Span> in the email to unlock the admin view.
+          <span className="font-medium text-primary">admin</span> in the email to unlock the admin view.
         </Text>
       </div>
 

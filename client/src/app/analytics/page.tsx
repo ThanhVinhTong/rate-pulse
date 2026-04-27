@@ -28,19 +28,20 @@ export default async function AnalyticsPage() {
   const { currencies, rateSources } = await fetchData();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-emerald-100">Analytics</h1>
-          <p className="text-gray-500 dark:text-emerald-400 mt-1">
-            Exchange Rate Trends & Analysis
-          </p>
-        </div>
-
-        {/* Analytics Client Component */}
-        <AnalyticsClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
+          Analytics
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold text-text-primary">
+          Exchange rate trends
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-text-muted">
+          Review source-specific movement, compare currency pairs, and convert amounts using the latest available series.
+        </p>
       </div>
+
+      <AnalyticsClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
     </div>
   );
 }

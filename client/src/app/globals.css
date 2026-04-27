@@ -5,46 +5,56 @@
 /* Dark theme (default when .dark on <html>) */
 :root,
 .dark {
-  --color-surface: #0f1419;
-  --color-surface-elevated: #151c28;
-  --color-card: #1a2235;
-  --color-panel: #131b2a;
-  --color-border: #2d3a4f;
-  --color-primary: #3b8cff;
+  --color-surface: #0b1120;
+  --color-surface-elevated: #111827;
+  --color-card: #111827;
+  --color-panel: #172033;
+
+  --color-border: #263244;
+  --color-border-strong: #334155;
+
+  --color-primary: #3b82f6;
   --color-primary-muted: #60a5fa;
-  --color-accent: #22d3ee;
-  --color-accent-muted: #67e8f9;
-  --color-text-primary: #f1f5f9;
-  --color-text-muted: #94a3b8;
-  --color-text-tertiary: #64748b;
+  --color-accent: #93c5fd;
+  --color-accent-muted: #bfdbfe;
+
+  --color-text-primary: #f9fafb;
+  --color-text-muted: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
   --color-text-inverse: #0f172a;
-  --color-on-inset: #f8fafc;
+  --color-on-inset: #f9fafb;
   --color-on-inset-muted: #94a3b8;
+
+  --color-success: #34d399;
   --color-danger: #f87171;
   --color-warning: #fbbf24;
-  --color-success: #4ade80;
 }
 
 /* Light theme — single coherent ramp (navy text, cool white surfaces, blue accent) */
 .light {
-  --color-surface: #e8eef9;
+  --color-surface: #f5f7f9;
   --color-surface-elevated: #ffffff;
   --color-card: #ffffff;
-  --color-panel: #f4f7fd;
-  --color-border: #c5d0e6;
-  --color-primary: #0052d4;
-  --color-primary-muted: #0069fe;
-  --color-accent: #0891b2;
-  --color-accent-muted: #0e7490;
-  --color-text-primary: #0f172a;
-  --color-text-muted: #475569;
-  --color-text-tertiary: #64748b;
+  --color-panel: #f9fafb;
+
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  --color-primary: #2563eb;
+  --color-primary-muted: #3b82f6;
+  --color-accent: #0f62fe;
+  --color-accent-muted: #5b8def;
+
+  --color-text-primary: #111827;
+  --color-text-muted: #6b7280;
+  --color-text-tertiary: #9ca3af;
   --color-text-inverse: #ffffff;
-  --color-on-inset: #f8fafc;
+  --color-on-inset: #f9fafb;
   --color-on-inset-muted: #cbd5e1;
+
+  --color-success: #059669;
   --color-danger: #dc2626;
   --color-warning: #d97706;
-  --color-success: #15803d;
 }
 
 html {
@@ -54,15 +64,16 @@ html {
 body {
   min-height: 100vh;
   background-color: var(--color-surface);
-  background-image:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 140, 255, 0.16), transparent 50%),
-    linear-gradient(180deg, var(--color-surface) 0%, #0a0e14 100%);
+  color: var(--color-text-primary);
 }
 
 .light body {
-  background-image:
-    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(0, 82, 212, 0.09), transparent 55%),
-    linear-gradient(180deg, #f0f5fc 0%, var(--color-surface) 100%);
+  background-color: var(--color-surface);
+  background-image: none;
+}
+
+.dark body {
+  background-image: none;
 }
 
 *,
@@ -72,7 +83,7 @@ body {
 }
 
 ::selection {
-  background: rgba(0, 211, 229, 0.32);
+  background: rgba(37, 99, 235, 0.18);
 }
 
 @layer base {

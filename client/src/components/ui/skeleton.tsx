@@ -3,7 +3,7 @@ import type { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const skeletonVariants = cva("animate-pulse rounded-2xl border border-white/10 bg-white/5", {
+export const skeletonVariants = cva("animate-pulse rounded-xl border border-border bg-surface-elevated", {
   variants: {
     size: {
       banner: "h-40",

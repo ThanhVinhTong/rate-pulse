@@ -7,7 +7,7 @@ import { Heading, Text } from "@/components/ui/typography";
 
 export const metadata: Metadata = {
   title: "Sign Up",
-  description: "Create a new Rate-pulse trading platform account.",
+  description: "Create a new Rate-pulse account.",
 };
 
 export default function SignupPage() {
@@ -18,11 +18,10 @@ export default function SignupPage() {
       <Panel variant="glass" padding="lg">
         <Text variant="overlineAccent">Fast onboarding</Text>
         <Heading level="h1" className="mt-3">
-          Create your Rate-pulse workspace in minutes
+          Start comparing exchange rates
         </Heading>
         <Text variant="body" className="mt-4 leading-7">
-          This demo uses mock data and server actions so the full flow feels like a production-ready fintech
-          application while staying easy to extend later.
+          Create an account for saved preferences, protected pages, and role-aware account flows.
         </Text>
       </Panel>
     </div>

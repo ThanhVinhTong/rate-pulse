@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, Globe2, Newspaper, ShieldCheck } from "lucide-re
 import { NewsArticleCard } from "@/components/dashboard/NewsArticleCard";
 import { HeroGradientBackdrop } from "@/components/ui/hero";
 import { HomeHeroShowcase } from "@/components/home/HomeHeroShowcase";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Panel } from "@/components/ui/panel";
 import { Heading, Text } from "@/components/ui/typography";
 import { TextLink } from "@/components/ui/text-link";
@@ -35,6 +36,24 @@ const valueProps = [
 
 const homeNews = NEWS_ARTICLES.slice(0, 3);
 
+const fxPreviewCards = [
+  {
+    label: "Compare",
+    title: "Rates by source",
+    body: "Group bank and provider quotes by base currency, target currency, and source.",
+  },
+  {
+    label: "Filter",
+    title: "Fast controls",
+    body: "Search pairs, narrow sources, and review only the targets you need.",
+  },
+  {
+    label: "Review",
+    title: "Latest updates",
+    body: "See update timestamps and source metadata without leaving the rates view.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="space-y-0 pb-6">
@@ -46,17 +65,17 @@ export default function Home() {
 
             <h1
               id="hero-heading"
-              className="mt-6 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-7xl"
+              className="mt-6 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-text-primary sm:text-5xl lg:text-7xl"
             >
-              <span className="gradient-text-animated">Rates, news, and why they move.</span>
+              Compare exchange rates with context.
             </h1>
             <Text variant="bodyLg" className="mt-4 max-w-md">
-              Watch quotes from multiple sources and scan stories that sit next to your FX workflow—no execution, no
+              Watch quotes from multiple sources and scan stories that sit next to your FX workflow. No execution, no
               implied performance.
             </Text>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <TextLink href="/exchange-rates" variant="cta">
+              <TextLink className="text-white" href="/exchange-rates" variant="cta">
                 View exchange rates
               </TextLink>
               <TextLink href="/login" variant="subtle">
@@ -109,14 +128,29 @@ export default function Home() {
           </TextLink>
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-3">
-          <p>test</p>
+          {fxPreviewCards.map((item) => (
+            <Card key={item.title}>
+              <CardHeader>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
+                  {item.label}
+                </p>
+                <CardTitle className="mt-2">{item.title}</CardTitle>
+                <CardDescription className="mt-2">{item.body}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-2 rounded-full bg-panel">
+                  <div className="h-2 w-2/3 rounded-full bg-primary/70" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
 
       <section
         id="news"
         aria-labelledby="news-heading"
-        className="scroll-mt-24 border-t border-white/10 pt-14 sm:pb-8 sm:pt-20"
+        className="scroll-mt-24 border-t border-border pt-14 sm:pb-8 sm:pt-20"
       >
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>

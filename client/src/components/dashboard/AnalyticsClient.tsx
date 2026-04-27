@@ -198,25 +198,30 @@ export function AnalyticsClient({
     });
   }, [conversionAmount, baseRate]);
 
+  const labelClass = "text-xs font-medium text-text-muted";
+  const controlClass =
+    "mt-1 h-10 rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm " +
+    "focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
+
   return (
     <div className="space-y-6">
       {/* Filters Section */}
       <section
-        className="rounded-xl border border-emerald-700 bg-emerald-50/90 p-4 dark:border-emerald-700 dark:bg-emerald-950/50"
+        className="rounded-xl border border-border bg-card p-4 shadow-sm"
         aria-label="Filters"
       >
-        <h2 className="mb-4 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+        <h2 className="mb-4 text-sm font-semibold text-text-primary">
           Filters
         </h2>
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
           <label className="block shrink-0 md:min-w-[11rem]">
-            <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <span className={labelClass}>
               Rate Source
             </span>
             <select
               value={selectedSource}
               onChange={(e) => setSelectedSource(Number(e.target.value))}
-              className="mt-1 w-full min-w-[10rem] rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+              className={`${controlClass} w-full min-w-[10rem]`}
             >
               {sourceOptions.map((source) => (
                 <option key={source.id} value={source.id}>
@@ -230,16 +235,16 @@ export function AnalyticsClient({
 
       {/* Converter Section */}
       <section
-        className="rounded-xl border border-emerald-700 bg-emerald-50/90 p-4 dark:border-emerald-700 dark:bg-emerald-950/50"
+        className="rounded-xl border border-border bg-card p-4 shadow-sm"
         aria-label="Currency Converter"
       >
-        <h2 className="mb-4 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+        <h2 className="mb-4 text-sm font-semibold text-text-primary">
           Currency Converter
         </h2>
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
           <div className="flex-1 md:min-w-[22rem]">
             <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              <span className={labelClass}>
                 From
               </span>
               <div className="mt-1 flex gap-2">
@@ -248,12 +253,12 @@ export function AnalyticsClient({
                   value={conversionAmount}
                   onChange={(e) => setConversionAmount(e.target.value)}
                   placeholder="100"
-                  className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                  className={`${controlClass} flex-1`}
                 />
                 <select
                   value={fromCurrency}
                   onChange={(e) => setFromCurrency(e.target.value)}
-                  className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                  className={controlClass}
                 >
                   {currencyOptions.map((c) => (
                     <option key={c.code} value={c.code}>
@@ -265,11 +270,11 @@ export function AnalyticsClient({
             </label>
           </div>
 
-          <div className="text-2xl text-emerald-600 dark:text-emerald-400 hidden md:block">→</div>
+          <div className="hidden text-2xl text-text-tertiary md:block">→</div>
 
           <div className="flex-1 md:min-w-[22rem]">
             <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              <span className={labelClass}>
                 To
               </span>
               <div className="mt-1 flex gap-2">
@@ -278,12 +283,12 @@ export function AnalyticsClient({
                   value={convertedAmount}
                   readOnly
                   placeholder="120"
-                  className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                  className={`${controlClass} flex-1 bg-panel text-text-muted`}
                 />
                 <select
                   value={toCurrency}
                   onChange={(e) => setToCurrency(e.target.value)}
-                  className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                  className={controlClass}
                 >
                   {currencyOptions.map((c) => (
                     <option key={c.code} value={c.code}>
@@ -298,9 +303,9 @@ export function AnalyticsClient({
       </section>
 
       {/* Chart Section */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 dark:bg-emerald-950/30">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-emerald-100">
+          <h2 className="text-xl font-semibold text-text-primary">
             Exchange Rate Trends
           </h2>
           <div className="flex gap-2">
@@ -308,7 +313,7 @@ export function AnalyticsClient({
               <select
                 value={selectedType ?? availableTypes[0]}
                 onChange={(e) => setSelectedType(Number(e.target.value))}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 dark:bg-emerald-900/80 dark:border-emerald-600 dark:text-emerald-100"
+                className={controlClass}
               >
                 {availableTypes.map((type) => (
                   <option key={type} value={type}>
@@ -320,7 +325,7 @@ export function AnalyticsClient({
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as typeof timeRange)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 dark:bg-emerald-900/80 dark:border-emerald-600 dark:text-emerald-100"
+              className={controlClass}
             >
               {TIME_RANGES.map((range) => (
                 <option key={range} value={range}>
@@ -331,35 +336,39 @@ export function AnalyticsClient({
           </div>
         </div>
 
-        <div className="relative h-96 rounded-2xl border border-gray-200 bg-gray-50 dark:bg-emerald-900/20 dark:border-emerald-700">
+        <div className="relative h-96 rounded-lg border border-border bg-panel">
 
           <div className="w-full h-full flex items-center justify-center p-4">
           {isLoading ? (
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4 dark:border-emerald-400"></div>
-              <p className="text-gray-500 dark:text-emerald-300">Loading analytics data...</p>
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
+              <p className="text-text-muted">Loading analytics data...</p>
             </div>
           ) : chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1b5e4a" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis
                   dataKey="date"
-                  stroke="#10b981"
+                  stroke="var(--color-text-tertiary)"
                   style={{ fontSize: "12px" }}
                 />
                 <YAxis
-                  stroke="#10b981"
+                  stroke="var(--color-text-tertiary)"
                   style={{ fontSize: "12px" }}
                   domain={["dataMin - 0.5%", "dataMax + 0.5%"]}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#065f46",
-                    border: "1px solid #059669",
+                    backgroundColor: "var(--color-card)",
+                    border: "1px solid var(--color-border)",
                     borderRadius: "8px",
                   }}
-                  labelStyle={{ color: "#10b981", fontSize: "14px", fontWeight: "bold" }}
+                  labelStyle={{ 
+                    color: "var(--color-text-primary)", 
+                    fontSize: "14px", 
+                    fontWeight: "bold" 
+                  }}
                   formatter={(value) => {
                     if (typeof value === "number") {
                       return [value.toFixed(4), "Rate"];
@@ -370,9 +379,9 @@ export function AnalyticsClient({
                 <Line
                   type="monotone"
                   dataKey="rate"
-                  stroke="#10b981"
-                  dot={{ fill: "#10b981", r: 4 }}
-                  activeDot={{ r: 6 }}
+                  stroke="var(--color-primary)"
+                  dot={{ fill: "var(--color-primary)", r: 4 }}
+                  activeDot={{ r: 6, fill: "var(--color-primary)" }}
                   strokeWidth={2}
                   isAnimationActive={true}
                 />
@@ -381,7 +390,7 @@ export function AnalyticsClient({
           ) : (
             <div className="flex items-center justify-center h-full text-center">
               <div>
-                <p className="text-gray-400 font-medium">
+                <p className="font-medium text-text-muted">
                   No analytics data available
                 </p>
               </div>
