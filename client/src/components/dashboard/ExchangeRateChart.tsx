@@ -31,37 +31,33 @@ const defaultData: ExchangeRatePoint[] = [
 ];
 
 const rangePointCounts: Record<TimeRange, number> = {
-  "48h": 12,
-  "7D": 7,
-  "15D": 15,
-  "30D": 30,
-  "60D": 30,
-  "90D": 30,
-  "6M": 26,
-  "1Y": 12,
-  "2Y": 24,
-  "5Y": 20,
-  "10Y": 20,
-  MAX: 40,
+  "24h": 50,
+  "7d": 50,
+  "2w": 50,
+  "1m": 50,
+  "6m": 50,
+  "1y": 50,
+  "2y": 50,
+  "5y": 50,
+  "10y": 50,
+  "all": 50,
 };
 
 const rangeWindowDays: Record<TimeRange, number> = {
-  "48h": 2,
-  "7D": 7,
-  "15D": 15,
-  "30D": 30,
-  "60D": 60,
-  "90D": 90,
-  "6M": 180,
-  "1Y": 365,
-  "2Y": 730,
-  "5Y": 365 * 5,
-  "10Y": 365 * 10,
-  MAX: 365 * 15,
+  "24h": 1,
+  "7d": 7,
+  "2w": 14,
+  "1m": 30,
+  "6m": 180,
+  "1y": 365,
+  "2y": 730,
+  "5y": 1825,
+  "10y": 3650,
+  "all": 36500,
 };
 
 const formatXAxisDate = (date: Date, range: TimeRange): string => {
-  if (range === "48h") {
+  if (range === "24h") {
     const hour = date.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
@@ -74,14 +70,14 @@ const formatXAxisDate = (date: Date, range: TimeRange): string => {
     return `${hour} ${dayDate}`;
   }
 
-  if (range.endsWith("D")) {
+  if (range === "7d" || range === "2w" || range === "1m") {
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
     });
   }
 
-  if (range === "6M") {
+  if (range === "6m" || range === "1y" || range === "2y" || range === "5y" || range === "10y" || range === "all") {
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
