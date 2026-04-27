@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 export const alertVariants = cva("rounded-xl px-4 py-3 text-sm", {
   variants: {
     variant: {
-      error: "border border-status-danger/30 bg-status-danger/10 text-red-200",
-      dangerPanel: "rounded-2xl border border-status-danger/20 bg-status-danger/10 p-6",
+      error: "border border-status-danger/30 bg-status-danger/10 text-status-danger",
+      dangerPanel: "rounded-xl border border-status-danger/20 bg-status-danger/10 p-6",
     },
   },
   defaultVariants: {

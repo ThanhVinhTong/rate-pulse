@@ -67,16 +67,16 @@ export function Navbar({ session }: NavbarProps) {
   }, [auth.isAdmin, auth.isAuthenticated]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/95 text-text-primary shadow-sm backdrop-blur dark:bg-[#121826]/95 dark:text-text-primary dark:shadow-none">
+    <header className="sticky top-0 z-40 border-b border-[#1e2b3d] bg-[#0f1b2d] text-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <IconBox variant="brand">
             <ShieldCheck className="h-5 w-5" />
           </IconBox>
           <div>
-            <p className="text-lg font-semibold tracking-wide text-text-primary">Rate-pulse</p>
-            <Text variant="caption" className="text-text-tertiary">
-              Institutional-grade trading UI
+            <p className="text-lg font-semibold tracking-wide text-white">Rate-pulse</p>
+            <Text variant="caption" className="text-slate-400">
+              Exchange-rate comparison
             </Text>
           </div>
         </Link>
@@ -89,12 +89,16 @@ export function Navbar({ session }: NavbarProps) {
           <ThemeToggle />
           {auth.isAuthenticated ? (
             <>
-              <Panel variant="session">
-                <p className="text-sm font-medium text-text-primary">{auth.session?.name}</p>
-                <p className="text-xs uppercase tracking-wide text-text-tertiary">{auth.session?.role}</p>
+              <Panel variant="session" className="border-white/10 bg-white/5 shadow-none">
+                <p className="text-sm font-medium text-white">{auth.session?.name}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-400">{auth.session?.role}</p>
               </Panel>
               <form action={logoutAction}>
-                <Button type="submit" variant="outline">
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="border-white/15 text-slate-200 hover:bg-white/10 hover:text-white"
+                >
                   Log out
                 </Button>
               </form>
@@ -115,7 +119,7 @@ export function Navbar({ session }: NavbarProps) {
           type="button"
           aria-label="Open navigation"
           variant="icon"
-          className="lg:hidden"
+          className="border-white/15 bg-transparent text-slate-200 hover:bg-white/10 hover:text-white lg:hidden"
           onClick={() => setMobileOpen((current) => !current)}
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -123,7 +127,7 @@ export function Navbar({ session }: NavbarProps) {
       </div>
 
       {mobileOpen ? (
-        <Panel variant="mobileNav">
+        <Panel variant="mobileNav" className="border-[#1e2b3d] bg-[#0f1b2d]">
           <div className="flex flex-col gap-2">
             <NavLinks items={navItems} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             <div className="mt-2 flex items-center gap-3">

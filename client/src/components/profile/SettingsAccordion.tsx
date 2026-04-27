@@ -41,7 +41,7 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <div className="space-y-2">
           {sections.map((section) => {
@@ -55,8 +55,8 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
                 onClick={() => setActiveSectionId(section.id)}
                 className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${
                   active
-                    ? "bg-primary text-white"
-                    : "text-text-muted hover:bg-white/5 hover:text-white"
+                    ? "bg-primary text-text-primary"
+                    : "text-text-muted hover:bg-panel hover:text-text-primary"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -67,8 +67,8 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
         </div>
 
         <div>
-          <p className="text-sm uppercase tracking-[0.24em] text-accent">{activeSection.title}</p>
-          <h1 className="mt-3 text-2xl font-semibold text-white">Settings workspace</h1>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">{activeSection.title}</p>
+          <h1 className="mt-3 text-2xl font-semibold text-text-primary">Account settings</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted">
             {activeSection.description}
           </p>
@@ -86,7 +86,7 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
                 <input
                   name={`${activeSection.id}-primary`}
                   defaultValue="Enabled"
-                  className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
               <label className="space-y-2">
@@ -94,7 +94,7 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
                 <input
                   name={`${activeSection.id}-secondary`}
                   defaultValue="Review weekly"
-                  className="h-12 w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white outline-none transition focus:border-primary"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
               <label className="space-y-2 md:col-span-2">
@@ -103,7 +103,7 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
                   name={`${activeSection.id}-notes`}
                   rows={4}
                   defaultValue={`Rate-pulse mock configuration for ${activeSection.title.toLowerCase()}.`}
-                  className="w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 py-3 text-white outline-none transition focus:border-primary"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
 

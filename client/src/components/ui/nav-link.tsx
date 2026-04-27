@@ -6,12 +6,12 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const topNavLinkVariants = cva("rounded-lg px-3 py-2 text-sm font-medium transition", {
+export const topNavLinkVariants = cva("rounded-md px-3 py-2 text-sm font-medium transition", {
   variants: {
     active: {
-      true: "bg-primary/12 text-primary dark:bg-white/10 dark:text-white",
+      true: "bg-white/10 text-white",
       false:
-        "text-text-muted hover:bg-black/[0.04] hover:text-text-primary dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white",
+        "text-slate-300 hover:bg-white/10 hover:text-white",
     },
   },
   defaultVariants: {
@@ -20,12 +20,12 @@ export const topNavLinkVariants = cva("rounded-lg px-3 py-2 text-sm font-medium 
 });
 
 export const sidebarNavLinkVariants = cva(
-  "flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm transition",
+  "flex min-h-10 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
   {
     variants: {
       active: {
         true: "bg-primary text-white",
-        false: "text-text-muted hover:bg-white/5 hover:text-white",
+        false: "text-text-muted hover:bg-panel hover:text-text-primary",
       },
     },
     defaultVariants: {

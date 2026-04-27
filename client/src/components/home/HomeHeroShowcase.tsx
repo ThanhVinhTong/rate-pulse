@@ -16,8 +16,8 @@ export function HomeHeroShowcase() {
       </Text>
 
       <Panel variant="ticker">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-card to-transparent dark:from-[#242e44]" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-card to-transparent dark:from-[#242e44]" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-card to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-card to-transparent" />
         <div className="flex w-max animate-marquee font-mono text-sm text-text-muted">
           <div className="flex shrink-0 gap-10 px-4">
             {TICKER_PAIRS.map((pair) => (
@@ -51,8 +51,8 @@ export function HomeHeroShowcase() {
             <title>Decorative chart graphic</title>
             <defs>
               <linearGradient id="heroChartFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0069fe" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#0069fe" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path
@@ -62,7 +62,7 @@ export function HomeHeroShowcase() {
             <path
               d="M0,90 L40,82 L80,88 L120,55 L160,62 L200,38 L240,48 L280,32 L320,40 L360,25 L400,30"
               fill="none"
-              stroke="#00d3e5"
+              stroke="var(--color-primary)"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -73,13 +73,13 @@ export function HomeHeroShowcase() {
 
       <Panel variant="dashed" padding="md">
         <Text variant="labelUpper" className="mb-3">
-          Anonymous placeholders
+          Preview rows
         </Text>
         <div className="space-y-2">
           {["Row A", "Row B", "Row C"].map((label) => (
             <div
               key={label}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2 text-sm"
+              className="flex items-center justify-between gap-3 rounded-md border border-border bg-panel px-3 py-2 text-sm"
             >
               <span className="font-medium text-text-muted">{label}</span>
               <span className="font-mono text-text-tertiary">— / —</span>

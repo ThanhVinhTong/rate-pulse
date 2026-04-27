@@ -8,7 +8,7 @@ export const headingVariants = cva("font-semibold tracking-tight text-text-prima
   variants: {
     level: {
       display:
-        "max-w-xl text-4xl font-bold leading-[1.1] text-white sm:text-5xl lg:text-7xl",
+        "max-w-xl text-4xl font-bold leading-[1.1] text-text-primary sm:text-5xl lg:text-7xl",
       h1: "text-3xl font-semibold text-text-primary",
       h2: "text-3xl font-bold text-text-primary sm:text-4xl",
       h3: "text-lg font-semibold text-text-primary",
@@ -40,7 +40,7 @@ export const textVariants = cva("", {
       inverse: "text-text-inverse",
       stat: "mt-3 text-3xl font-semibold text-text-primary",
       footer: "text-sm text-text-muted",
-      error: "mt-3 max-w-2xl text-sm leading-6 text-red-100/90",
+      error: "mt-3 max-w-2xl text-sm leading-6 text-status-danger",
       monoMuted: "font-mono text-text-tertiary",
       onInset: "text-sm text-oninset-muted",
       onInsetMuted: "text-xs text-oninset-muted",

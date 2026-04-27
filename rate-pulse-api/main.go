@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net"
+	"time"
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
@@ -25,6 +26,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Cannot connect to database: ", err)
 	}
+
+	conn.SetMaxOpenConns(10)
+	conn.SetMaxIdleConns(10)
+	conn.SetConnMaxLifetime(30 * time.Minute)
+	conn.SetConnMaxIdleTime(5 * time.Minute)
+	if err := conn.Ping(); err != nil {
+		log.Fatal("Cannot ping database: ", err)
+	}
+
 	defer conn.Close()
 
 	store := db.NewStore(conn)

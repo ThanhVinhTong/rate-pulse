@@ -7,7 +7,7 @@ export function Table({ className, ...props }: TableHTMLAttributes<HTMLTableElem
 }
 
 export function TableHead({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("bg-white/5 text-text-tertiary", className)} {...props} />;
+  return <thead className={cn("bg-surface-elevated text-text-tertiary", className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
@@ -22,7 +22,7 @@ export function TableHeaderCell({
 }
 
 export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("border-t border-white/10 text-text-primary", className)} {...props} />;
+  return <tr className={cn("border-t border-border text-text-primary", className)} {...props} />;
 }
 
 export function TableCell({ className, ...props }: HTMLAttributes<HTMLTableCellElement>) {

@@ -64,6 +64,7 @@ type Props = {
   apiBase: string;
   initialSourceCurrencyId: number;
   initialRates: ExchangeRateLatest[];
+  initialTargetCurrencyCode: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
 };
@@ -103,10 +104,6 @@ function buildSourceMetaMap(
   return m;
 }
 
-/**
- * `variant="hero"` — text on tinted emerald panels (`bg-emerald-50/90`, `dark:bg-emerald-950/50`).
- * `variant="default"` — on neutral page backgrounds.
- */
 function SourceDetailsBlock({
   code,
   details,
@@ -124,19 +121,19 @@ function SourceDetailsBlock({
   const hero = variant === "hero";
 
   const codeClass = hero
-    ? "font-mono text-sm font-semibold text-emerald-900 dark:text-emerald-200"
-    : "font-mono font-semibold text-emerald-700 dark:text-emerald-300";
+    ? "font-mono text-sm font-semibold text-text-primary"
+    : "font-mono font-semibold text-primary";
 
   const nameClass = hero
-    ? "min-w-0 text-base font-medium leading-snug text-neutral-900 dark:text-neutral-100"
-    : "min-w-0 text-neutral-700 dark:text-neutral-300";
+    ? "min-w-0 text-base font-medium leading-snug text-text-primary"
+    : "min-w-0 text-text-muted";
 
   const linkClass = hero
-    ? "inline-flex items-center gap-1 font-medium text-emerald-700 no-underline underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600/50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400/40"
-    : "inline-flex items-center gap-1 font-medium text-emerald-600 no-underline underline-offset-2 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300";
+    ? "inline-flex items-center gap-1 font-medium text-primary no-underline underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/40"
+    : "inline-flex items-center gap-1 font-medium text-primary no-underline underline-offset-2 hover:underline";
 
   const iconClass = hero
-    ? "size-3 shrink-0 text-emerald-700 dark:text-emerald-400"
+    ? "size-3 shrink-0 text-primary"
     : "size-3 shrink-0 opacity-80";
 
   return (
@@ -171,6 +168,7 @@ function SourceDetailsBlock({
 export function ExchangeRatesClientTable({
   apiBase,
   initialSourceCurrencyId,
+  initialTargetCurrencyCode,
   initialRates,
   currencies,
   rateSources,
@@ -182,7 +180,9 @@ export function ExchangeRatesClientTable({
     initialSourceCurrencyId,
   );
   const [sourceFilter, setSourceFilter] = useState("");
-  const [targetFilter, setTargetFilter] = useState("");
+  const [targetFilter, setTargetFilter] = useState(
+    initialTargetCurrencyCode
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -287,53 +287,34 @@ export function ExchangeRatesClientTable({
     }
   }
 
-  const controlFocus =
-    "focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 " +
-    "dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25";
-
-  const baseCurrencySelectClass =
-    "mt-1 w-full min-w-[10rem] rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm " +
-    controlFocus +
-    " disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900";
-
-  const filterSelectClass = (active: boolean) =>
-    [
-      "mt-1 w-full min-w-[10rem] rounded-lg border bg-neutral-50 px-3 py-2 text-sm dark:bg-neutral-900",
-      controlFocus,
-      active
-        ? "border-emerald-500 ring-2 ring-emerald-500/25 dark:border-emerald-500"
-        : "border-neutral-200 dark:border-neutral-700",
-    ].join(" ");
-
-  const searchInputClass = (active: boolean) =>
-    [
-      "mt-1 w-full min-w-[10rem] rounded-lg border bg-neutral-50 py-2 pl-9 pr-3 text-sm dark:bg-neutral-900",
-      controlFocus,
-      active
-        ? "border-emerald-500 ring-2 ring-emerald-500/25 dark:border-emerald-500"
-        : "border-neutral-200 dark:border-neutral-700",
-    ].join(" ");
+  const controlClass =
+    "mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm " +
+    "focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
+  
+  const searchInputClass =
+    "mt-1 h-10 w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm text-text-primary shadow-sm " +
+    "placeholder:text-text-tertiary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
 
   const filterLabelClass = "block";
 
   return (
     <div className="space-y-8">
       <section
-        className="rounded-xl border border-emerald-700 bg-emerald-50/90 p-4 dark:border-emerald-700 dark:bg-emerald-950/50"
+        className="rounded-xl border border-border bg-card p-4 shadow-sm"
         aria-label="Filters"
       >
-        <h2 className="mb-4 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+        <h2 className="mb-4 text-sm font-semibold text-text-primary">
           Filters
         </h2>
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
           <label
             className={`${filterLabelClass} shrink-0 md:min-w-[11rem]`}
           >
-            <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs font-medium text-text-muted">
               Base currency
             </span>
             <select
-              className={baseCurrencySelectClass}
+              className={controlClass}
               value={sourceCurrencyId}
               disabled={loading}
               onChange={(e) => {
@@ -354,21 +335,17 @@ export function ExchangeRatesClientTable({
           <label
             className={`${filterLabelClass} min-w-0 flex-1 md:min-w-[12rem] md:max-w-xs`}
           >
-            <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs font-medium text-text-muted">
               Search
             </span>
             <span className="relative mt-1 block">
               <Search
-                className={`pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 ${
-                  searchQuery.trim()
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-emerald-600/40 dark:text-emerald-400/40"
-                }`}
+                className={`pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-tertiary`}
                 aria-hidden
               />
               <input
                 type="search"
-                className={searchInputClass(!!searchQuery)}
+                className={searchInputClass}
                 placeholder="Search pair, type, source…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -378,11 +355,11 @@ export function ExchangeRatesClientTable({
           </label>
 
           <label className={`${filterLabelClass} shrink-0 md:min-w-[11rem]`}>
-            <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs font-medium text-text-muted">
               Source
             </span>
             <select
-              className={filterSelectClass(!!sourceFilter)}
+              className={controlClass}
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
             >
@@ -396,11 +373,11 @@ export function ExchangeRatesClientTable({
           </label>
 
           <label className={`${filterLabelClass} shrink-0 md:min-w-[11rem]`}>
-            <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs font-medium text-text-muted">
               Target currency
             </span>
             <select
-              className={filterSelectClass(!!targetFilter)}
+              className={controlClass}
               value={targetFilter}
               onChange={(e) => setTargetFilter(e.target.value)}
             >
@@ -415,7 +392,7 @@ export function ExchangeRatesClientTable({
         </div>
 
         {loading ? (
-          <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">
+          <p className="mt-3 text-sm text-text-muted">
             Loading rates…
           </p>
         ) : null}
@@ -426,7 +403,7 @@ export function ExchangeRatesClientTable({
         ) : null}
       </section>
         
-      <p className="text-sm text-emerald-600 dark:text-emerald-400">
+      <p className="text-sm text-text-muted">
         Showing {filteredRates.length} of {rates.length} rates
         {loading ? "" : "."}
       </p>
@@ -438,11 +415,11 @@ export function ExchangeRatesClientTable({
           return (
             <section
               key={groupKey}
-              className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/80"
+              className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             >
               <div className="p-4 pb-3">
-                <div className="rounded-xl border border-emerald-700 bg-emerald-50/90 p-4 dark:border-emerald-700 dark:bg-emerald-950/50">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-800/85 dark:text-emerald-400/90">
+                <div className="rounded-lg border border-border bg-panel p-3">
+                  <p className="mb-1 text-[11px] font-medium text-text-muted">
                     Source
                   </p>
                   <SourceDetailsBlock
@@ -452,50 +429,50 @@ export function ExchangeRatesClientTable({
                   />
                 </div>
               </div>
-              <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+              <ul className="divide-y divide-border">
                 {rows.map((r) => (
                   <li key={r.RateID} className="space-y-2 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                        <p className="text-xs font-medium text-text-muted">
                           Pair
                         </p>
-                        <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                        <p className="font-medium text-text-primary">
                           {r.SourceCurrencyCode} →{" "}
                           {r.DestinationCurrencyCode}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                        <p className="text-xs font-medium text-text-muted">
                           Rate
                         </p>
-                        <p className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                        <p className="text-lg font-semibold tabular-nums text-primary">
                           {roundUp(Number(r.RateValue), 3)}
                         </p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div className="col-span-2 sm:col-span-1">
-                        <span className="text-neutral-500 dark:text-neutral-400">
+                        <span className="text-text-muted">
                           Type
                         </span>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium text-text-primary">
                           {nullString(r.TypeName)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-500 dark:text-neutral-400">
+                        <span className="text-text-muted">
                           Valid from
                         </span>
-                        <p className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium tabular-nums text-text-primary">
                           {formatDateTime(r.ValidFromDate)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-neutral-500 dark:text-neutral-400">
+                        <span className="text-text-muted">
                           Updated
                         </span>
-                        <p className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium tabular-nums text-text-primary">
                           {nullTime(r.UpdatedAt)}
                         </p>
                       </div>
@@ -510,7 +487,7 @@ export function ExchangeRatesClientTable({
 
       {/* Desktop: table — source only in group hero; fixed columns for alignment */}
       <div className="hidden md:block">
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950/50">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
               <col className="w-[22%]" />
@@ -520,7 +497,7 @@ export function ExchangeRatesClientTable({
               <col className="w-[18%]" />
             </colgroup>
             <thead>
-              <tr className="border-b-2 border-emerald-800/20 bg-neutral-100/95 dark:border-emerald-900/35 dark:bg-neutral-900">
+              <tr className="border-b border-border bg-panel">
                 {(
                   [
                     { label: "Pair", align: "left" },
@@ -533,11 +510,11 @@ export function ExchangeRatesClientTable({
                   <th
                     key={col.label}
                     scope="col"
-                    className={`border-l border-neutral-200 px-3 py-3 first:border-l-0 first:pl-4 dark:border-neutral-800 ${
+                    className={`border-l border-border px-3 py-3 first:border-l-0 first:pl-4 ${
                       col.align === "right" ? "text-right" : "text-left"
                     }`}
                   >
-                    <span className="inline-block rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-900 dark:bg-emerald-400/90 dark:text-emerald-950">
+                    <span className="text-xs font-medium text-text-muted">
                       {col.label}
                     </span>
                   </th>
@@ -551,7 +528,7 @@ export function ExchangeRatesClientTable({
                   <tr
                     className={
                       groupIndex > 0
-                        ? "border-t-2 border-neutral-200 dark:border-neutral-800"
+                        ? "border-t border-border"
                         : undefined
                     }
                   >
@@ -559,8 +536,8 @@ export function ExchangeRatesClientTable({
                       colSpan={5}
                       className={`border-0 bg-transparent px-3 pb-0 pt-1 ${groupIndex === 0 ? "pt-3" : "pt-5"}`}
                     >
-                      <div className="rounded-xl border border-emerald-700 bg-emerald-50/90 p-4 dark:border-emerald-700 dark:bg-emerald-950/50">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-800/85 dark:text-emerald-400/90">
+                      <div className="rounded-lg border border-border bg-panel p-3">
+                        <p className="mb-1 text-[11px] font-medium text-text-muted">
                           Source
                         </p>
                         <SourceDetailsBlock
@@ -574,28 +551,28 @@ export function ExchangeRatesClientTable({
                   {rows.map((r) => (
                     <tr
                       key={r.RateID}
-                      className="border-b border-neutral-200 transition-colors last:border-b-0 hover:bg-neutral-100/85 dark:border-neutral-800/90 dark:hover:bg-neutral-900/70"
+                      className="border-b border-border hover:bg-panel/70 transition-colors last:border-b-0"
                     >
-                      <td className="border-l-0 px-3 py-2.5 pl-4 align-middle font-medium text-neutral-900 dark:text-neutral-100">
+                      <td className="border-l-0 px-3 py-2.5 pl-4 align-middle font-medium text-text-primary">
                         <span className="tabular-nums">
                           {r.SourceCurrencyCode} ↔{" "}
                           {r.DestinationCurrencyCode}
                         </span>
                       </td>
-                      <td className="border-l border-neutral-200 px-3 py-2.5 text-right align-middle tabular-nums dark:border-neutral-800">
-                        <span className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                      <td className="border-l border-border px-3 py-2.5 text-right align-middle tabular-nums">
+                        <span className="text-md font-medium tabular-nums text-primary">
                           {roundUp(Number(r.RateValue), 3)}
                         </span>
                       </td>
-                      <td className="border-l border-neutral-200 px-3 py-2.5 align-middle text-neutral-800 dark:border-neutral-800 dark:text-neutral-200">
+                      <td className="border-l border-border px-3 py-2.5 align-middle text-text-primary">
                         <span className="line-clamp-2 leading-snug">
                           {nullString(r.TypeName)}
                         </span>
                       </td>
-                      <td className="border-l border-neutral-200 px-3 py-2.5 align-middle tabular-nums text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+                      <td className="border-l border-border px-3 py-2.5 align-middle tabular-nums text-text-muted">
                         {formatDateTime(r.ValidFromDate)}
                       </td>
-                      <td className="border-l border-neutral-200 px-3 py-2.5 pr-4 align-middle tabular-nums text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+                      <td className="border-l border-border px-3 py-2.5 pr-4 align-middle tabular-nums text-text-muted">
                         {nullTime(r.UpdatedAt)}
                       </td>
                     </tr>

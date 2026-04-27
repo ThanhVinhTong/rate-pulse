@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Panel } from "@/components/ui/panel";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   Table,
   TableBody,
@@ -26,40 +25,41 @@ export function AdminDashboard({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <p className="text-sm uppercase tracking-[0.24em] text-accent">Admin control room</p>
-          <CardTitle className="mt-3">Revenue, users, and platform health</CardTitle>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">Admin</p>
+          <CardTitle className="mt-3">Users and system health</CardTitle>
           <CardDescription className="mt-3 max-w-2xl">
-            This protected page combines revenue monitoring, account oversight, and system metrics for platform
-            administrators.
+            Review account status, system metrics, and operational details for the Rate-pulse service.
           </CardDescription>
         </CardHeader>
       </Card>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {systemMetrics.map((metric) => (
-          <Panel key={metric.label} variant="dark" padding="md">
-            <Text variant="muted" className="text-sm">
-              {metric.label}
-            </Text>
-            <Text variant="stat">{metric.value}</Text>
-            <Text variant="muted" className="mt-2 text-sm">
-              {metric.detail}
-            </Text>
-          </Panel>
+          <Card key={metric.label}>
+            <CardContent className="p-5">
+              <Text variant="muted" className="text-sm">
+                {metric.label}
+              </Text>
+              <Text variant="stat">{metric.value}</Text>
+              <Text variant="muted" className="mt-2 text-sm">
+                {metric.detail}
+              </Text>
+            </CardContent>
+          </Card>
         ))}
       </section>
 
-      <Panel variant="darkSection">
-        <div className="border-b border-white/10 px-5 py-4">
-          <h2 className="text-lg font-semibold text-white">User management</h2>
+      <Card>
+        <div className="border-b border-border px-5 py-4">
+          <h2 className="text-lg font-semibold text-text-primary">User management</h2>
           <Text variant="muted" className="mt-1">
-            Demo account registry for active and pending traders
+            Account registry for active and pending users
           </Text>
         </div>
 
         <div className="overflow-x-auto">
           <Table>
-            <TableHead>
+            <TableHead className="border-b border-border bg-panel">
               <tr>
                 <TableHeaderCell>User</TableHeaderCell>
                 <TableHeaderCell>Role</TableHeaderCell>
@@ -69,10 +69,10 @@ export function AdminDashboard({
             </TableHead>
             <TableBody>
               {userRows.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} className="hover:bg-panel/70">
                   <TableCell>
                     <div>
-                      <p className="font-medium text-white">{user.name}</p>
+                      <p className="font-medium text-text-primary">{user.name}</p>
                       <p className="text-text-muted">{user.email}</p>
                     </div>
                   </TableCell>
@@ -92,13 +92,13 @@ export function AdminDashboard({
                       {user.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-white">{formatCurrency(user.balance)}</TableCell>
+                  <TableCell className="text-text-primary">{formatCurrency(user.balance)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
-      </Panel>
+      </Card>
     </div>
   );
 }

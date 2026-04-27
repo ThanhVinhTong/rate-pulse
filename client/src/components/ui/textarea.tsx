@@ -4,7 +4,7 @@ import { forwardRef, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export const textareaVariants = cva(
-  "w-full rounded-xl border border-white/10 bg-[#0c1220] px-4 py-3 text-white outline-none transition focus:border-primary",
+  "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary shadow-sm outline-none transition placeholder:text-text-tertiary focus:border-primary focus:ring-2 focus:ring-primary/15",
 );
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {}

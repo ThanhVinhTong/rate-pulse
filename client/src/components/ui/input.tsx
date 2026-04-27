@@ -4,23 +4,23 @@ import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export const inputVariants = cva(
-  "w-full outline-none transition placeholder:text-text-tertiary focus:border-primary",
+  "w-full outline-none transition placeholder:text-text-tertiary focus:border-primary focus:ring-2 focus:ring-primary/15",
   {
     variants: {
       variant: {
         default:
-          "h-12 rounded-xl border border-white/10 bg-[#0c1220] px-4 text-white",
+          "h-10 rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm",
         search:
-          "w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 text-sm text-slate-900 focus:border-primary dark:border-white/10 dark:bg-white/5 dark:text-white",
+          "h-10 rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm text-text-primary shadow-sm",
         searchTransparent: "flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted",
         ghostNumber:
           "w-full bg-transparent text-2xl font-semibold text-oninset outline-none placeholder:text-oninset-muted",
         ghostReadonly:
-          "h-12 w-full cursor-not-allowed select-none rounded-xl border border-white/10 bg-[#0c1220] px-4 text-text-muted outline-none",
+          "h-10 w-full cursor-not-allowed select-none rounded-md border border-border bg-panel px-3 text-sm text-text-muted outline-none",
         nativeSelect:
-          "w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-primary dark:border-white/10 dark:bg-[#0c1220] dark:text-white",
+          "h-10 w-full appearance-none rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary shadow-sm",
         dropdownTrigger:
-          "w-full flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition hover:border-primary/60 focus:border-primary dark:border-white/10 dark:bg-[#0c1220] dark:text-white",
+          "flex h-10 w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary shadow-sm hover:border-primary/60",
       },
     },
     defaultVariants: {

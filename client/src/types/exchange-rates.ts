@@ -1,5 +1,6 @@
 export const EXCHANGE_RATES_LIMIT = 1000;
 export const DEFAULT_SOURCE_CURRENCY_ID = 150; // VND
+export const DEFAULT_TARGET_CURRENCY_CODE = "AUD"; // AUD
 
 export interface ExchangeRateLatest {
     RateID: number;

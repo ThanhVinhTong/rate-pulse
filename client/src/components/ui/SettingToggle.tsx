@@ -32,8 +32,8 @@ export function SettingToggle({
           <Icon className="h-5 w-5" />
         </IconBox>
         <div>
-          <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
-          <Text variant="muted" className="text-sm dark:text-text-muted">
+          <h3 className="font-semibold text-text-primary">{title}</h3>
+          <Text variant="muted" className="text-sm">
             {description}
           </Text>
         </div>
