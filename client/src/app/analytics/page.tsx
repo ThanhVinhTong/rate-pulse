@@ -1,27 +1,46 @@
-import type { Metadata } from "next";
+import { AnalyticsClient } from "@/components/dashboard/AnalyticsClient";
+import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 
-import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
-import {
-  AI_INSIGHTS,
-  NEWS_ARTICLES,
-  NEWS_CATEGORIES,
-  NEWS_REGIONS,
-  SECTOR_HEATMAP,
-} from "@/data/newsData";
+const apiBase = process.env.NEXT_PUBLIC_API_BASE || "https://api.rate-pulse.me";
 
-export const metadata: Metadata = {
-  title: "News & Analytics",
-  description: "Real-time market news, AI-powered insights, and sector intelligence.",
-};
+async function fetchData() {
+  try {
+    const [currenciesRes, rateSourcesRes] = await Promise.all([
+      fetch(`${apiBase}/currencies/codes-and-names`, { next: { revalidate: 3600 } }),
+      fetch(`${apiBase}/rate-sources/metadata`, { next: { revalidate: 3600 } }),
+    ]);
 
-export default function AnalyticsPage() {
+    if (!currenciesRes.ok || !rateSourcesRes.ok) {
+      throw new Error("Failed to fetch metadata");
+    }
+
+    const currencies: Currency[] = await currenciesRes.json();
+    const rateSources: RateSourceMetadata[] = await rateSourcesRes.json();
+
+    return { currencies, rateSources };
+  } catch (error) {
+    console.error("Failed to fetch analytics metadata:", error);
+    return { currencies: [], rateSources: [] };
+  }
+}
+
+export default async function AnalyticsPage() {
+  const { currencies, rateSources } = await fetchData();
+
   return (
-    <AnalyticsDashboard
-      insights={AI_INSIGHTS}
-      articles={NEWS_ARTICLES}
-      sectors={SECTOR_HEATMAP}
-      regions={NEWS_REGIONS}
-      categories={NEWS_CATEGORIES}
-    />
+    <div className="min-h-screen bg-gray-50 p-6 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-emerald-100">Analytics</h1>
+          <p className="text-gray-500 dark:text-emerald-400 mt-1">
+            Exchange Rate Trends & Analysis
+          </p>
+        </div>
+
+        {/* Analytics Client Component */}
+        <AnalyticsClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
+      </div>
+    </div>
   );
 }

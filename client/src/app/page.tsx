@@ -7,7 +7,8 @@ import { HomeHeroShowcase } from "@/components/home/HomeHeroShowcase";
 import { Panel } from "@/components/ui/panel";
 import { Heading, Text } from "@/components/ui/typography";
 import { TextLink } from "@/components/ui/text-link";
-import { NEWS_ARTICLES } from "@/data/newsData";
+import { fetchBreakingNews } from "@/lib/newsService";
+import type { NewsArticleRegion } from "@/types";
 
 export const metadata: Metadata = {
   title: "Home",
@@ -33,9 +34,16 @@ const valueProps = [
   },
 ] as const;
 
-const homeNews = NEWS_ARTICLES.slice(0, 3);
-
-export default function Home() {
+export default async function Home() {
+  const feedDocs = await fetchBreakingNews();
+  const homeNews: NewsArticleRegion[] = (feedDocs || []).map((doc) => ({
+    title: doc.title,
+    href: doc.href,
+    domain: doc.domain,
+    source: doc.source,
+    category: "World News",
+    timestamp: doc.time || null,
+  }));
   return (
     <div className="space-y-0 pb-6">
       <Panel variant="hero" className="relative" id="introduction" aria-labelledby="hero-heading">
@@ -135,7 +143,7 @@ export default function Home() {
         </div>
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
           {homeNews.map((article) => (
-            <NewsArticleCard key={article.id} article={article} />
+            <NewsArticleCard key={article.title} article={article} />
           ))}
         </div>
 

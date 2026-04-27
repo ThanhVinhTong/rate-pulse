@@ -47,26 +47,31 @@ func (q *Queries) DeleteCurrency(ctx context.Context, currencyID int32) error {
 }
 
 const getAllCurrencies = `-- name: GetAllCurrencies :many
-SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies
+SELECT currency_id, currency_code, currency_name, currency_symbol FROM currencies
 ORDER BY currency_id
 `
 
-func (q *Queries) GetAllCurrencies(ctx context.Context) ([]Currency, error) {
+type GetAllCurrenciesRow struct {
+	CurrencyID     int32
+	CurrencyCode   string
+	CurrencyName   string
+	CurrencySymbol sql.NullString
+}
+
+func (q *Queries) GetAllCurrencies(ctx context.Context) ([]GetAllCurrenciesRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllCurrencies)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Currency
+	var items []GetAllCurrenciesRow
 	for rows.Next() {
-		var i Currency
+		var i GetAllCurrenciesRow
 		if err := rows.Scan(
 			&i.CurrencyID,
 			&i.CurrencyCode,
 			&i.CurrencyName,
 			&i.CurrencySymbol,
-			&i.UpdatedAt,
-			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -81,40 +86,60 @@ func (q *Queries) GetAllCurrencies(ctx context.Context) ([]Currency, error) {
 	return items, nil
 }
 
-const getCurrencyByCode = `-- name: GetCurrencyByCode :one
-SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies 
-WHERE currency_code = $1 LIMIT 1
+const getAllCurrencyCodesAndNames = `-- name: GetAllCurrencyCodesAndNames :many
+SELECT currency_id, currency_code, currency_name FROM currencies 
+ORDER BY currency_id
 `
 
-func (q *Queries) GetCurrencyByCode(ctx context.Context, currencyCode string) (Currency, error) {
-	row := q.db.QueryRowContext(ctx, getCurrencyByCode, currencyCode)
-	var i Currency
-	err := row.Scan(
-		&i.CurrencyID,
-		&i.CurrencyCode,
-		&i.CurrencyName,
-		&i.CurrencySymbol,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+type GetAllCurrencyCodesAndNamesRow struct {
+	CurrencyID   int32
+	CurrencyCode string
+	CurrencyName string
+}
+
+func (q *Queries) GetAllCurrencyCodesAndNames(ctx context.Context) ([]GetAllCurrencyCodesAndNamesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllCurrencyCodesAndNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllCurrencyCodesAndNamesRow
+	for rows.Next() {
+		var i GetAllCurrencyCodesAndNamesRow
+		if err := rows.Scan(&i.CurrencyID, &i.CurrencyCode, &i.CurrencyName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getCurrencyByID = `-- name: GetCurrencyByID :one
-SELECT currency_id, currency_code, currency_name, currency_symbol, updated_at, created_at FROM currencies 
+SELECT currency_id, currency_code, currency_name, currency_symbol FROM currencies 
 WHERE currency_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetCurrencyByID(ctx context.Context, currencyID int32) (Currency, error) {
+type GetCurrencyByIDRow struct {
+	CurrencyID     int32
+	CurrencyCode   string
+	CurrencyName   string
+	CurrencySymbol sql.NullString
+}
+
+func (q *Queries) GetCurrencyByID(ctx context.Context, currencyID int32) (GetCurrencyByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getCurrencyByID, currencyID)
-	var i Currency
+	var i GetCurrencyByIDRow
 	err := row.Scan(
 		&i.CurrencyID,
 		&i.CurrencyCode,
 		&i.CurrencyName,
 		&i.CurrencySymbol,
-		&i.UpdatedAt,
-		&i.CreatedAt,
 	)
 	return i, err
 }

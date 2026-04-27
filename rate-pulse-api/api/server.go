@@ -3,10 +3,12 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,6 +38,16 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"https://www.rate-pulse.me",
+			"https://rate-pulse.me",
+		},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		MaxAge:       12 * time.Hour,
+	}))
 
 	// Public routes (no authentication required)
 	router.POST("/users/signup", server.createUser)
@@ -50,11 +62,14 @@ func (server *Server) setupRouter() {
 	// Public read-only market & reference data (no auth) — browse exchange-rates & analytics UIs while logged out.
 	// Register specific paths before /:id routes.
 	router.GET("/currencies", server.listCurrency)
+	router.GET("/currencies/codes-and-names", server.listCurrencyCodesAndNames)
 	router.GET("/currencies/:id", server.getCurrency)
 	router.GET("/exchange-rates/:id", server.getExchangeRate)
 	router.GET("/exchange-rates-latest", server.listExchangeRateToday)
+	router.GET("/exchange-rates/analytics", server.getAnalyticsData)
 	router.GET("/exchange-rate-types", server.listExchangeRateTypes)
 	router.GET("/rate-sources", server.listRateSource)
+	router.GET("/rate-sources/metadata", server.listRateSourceMetadata)
 	router.GET("/rate-sources/:id", server.getRateSource)
 	router.GET("/countries/code/:country_code", server.getCountryByCode)
 	router.GET("/countries/:id", server.getCountry)

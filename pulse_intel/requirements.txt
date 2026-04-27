@@ -1,2 +1,5 @@
 selenium
 openpyxl
+pymongo[srv]
+python-dotenv
+emoji

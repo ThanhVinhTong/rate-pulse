@@ -6,59 +6,43 @@ export const NEWS_REGIONS = [
   "Africa",
   "Latin America",
   "Asia Pacific",
-  "Energy & Resources",
 ] as const;
 
 export const NEWS_CATEGORIES = [
-  "Markets",
-  "Economic Indicators",
-  "Trade Policy",
-  "Supply Chain",
+  "Energy and Resources",
+  "Goverment",
+  "Think Tanks",
   "Financial",
-  "Technology",
-  "Crypto",
+  "Intel Feed",
 ] as const;
 
 export const AI_INSIGHT_CATEGORIES = [
-  "market_sentiment",
-  "trend_analysis",
-  "risk_alert",
-  "opportunity",
+  "geo_insights",
+  "break_news",
+  "world_brief"
 ] as const;
 
 export type NewsRegion = typeof NEWS_REGIONS[number];
 export type NewsCategory = typeof NEWS_CATEGORIES[number];
 export type AIInsightCategory = typeof AI_INSIGHT_CATEGORIES[number];
-export type AnalyticsTab = "ai-insights" | "news" | "heatmap";
+export type AnalyticsTab = "ai-insights" | "news" ;
 
-export interface AIInsight {
-  id: string;
+export interface NewsArticleRegion {
   title: string;
-  insight: string;
-  confidence: number;
-  category: AIInsightCategory;
-  timestamp: string;
-  relatedAssets: string[];
+  href: string;
+  domain: string;
+  timestamp: string | null;
+  source: string;
+  category: NewsRegion;
 }
 
-export interface NewsArticle {
-  id: string;
+export interface NewsArticleTypes {
   title: string;
-  summary: string;
+  href: string;
+  domain: string;
+  timestamp: string | null;
   source: string;
   category: NewsCategory;
-  region?: NewsRegion;
-  timestamp: string;
-  readTime: string;
-  sentiment: "positive" | "negative" | "neutral";
-  impact: "high" | "medium" | "low";
-  url: string;
 }
 
-export interface SectorData {
-  sector: string;
-  performance: number;
-  volume: string;
-  marketCap: string;
-  change24h: number;
-}
+export type NewsArticle = NewsArticleRegion | NewsArticleTypes;

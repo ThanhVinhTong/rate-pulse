@@ -145,7 +145,6 @@ WITH ranked AS (
     rs.source_code AS rate_source_code,
     ert.type_name   AS type_name,
     er.updated_at as updated_at,
-    er.created_at as created_at,
 
     ROW_NUMBER() OVER (
       PARTITION BY
@@ -153,7 +152,7 @@ WITH ranked AS (
         er.source_id,
         er.type_id
       ORDER BY
-        er.created_at DESC NULLS LAST
+        er.updated_at DESC NULLS LAST
     ) AS rn
   FROM exchange_rates er
   JOIN currencies sc
@@ -174,7 +173,6 @@ SELECT
   valid_from_date,
   rate_source_code,
   type_name,
-  created_at,
   updated_at
 FROM ranked
 WHERE rn = 1
@@ -195,7 +193,6 @@ type GetAllExchangeRatesTodayNormalisedRow struct {
 	ValidFromDate           time.Time
 	RateSourceCode          sql.NullString
 	TypeName                sql.NullString
-	CreatedAt               sql.NullTime
 	UpdatedAt               sql.NullTime
 }
 
@@ -217,9 +214,78 @@ func (q *Queries) GetAllExchangeRatesTodayNormalised(ctx context.Context, arg Ge
 			&i.ValidFromDate,
 			&i.RateSourceCode,
 			&i.TypeName,
-			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAnalyticsData = `-- name: GetAnalyticsData :many
+WITH bucketed AS (
+  SELECT 
+    er.rate_value,
+    er.updated_at,
+    er.type_id,
+    NTILE($5) OVER (ORDER BY er.updated_at) AS bucket
+  FROM exchange_rates er
+  WHERE er.source_currency_id = $1
+    AND er.destination_currency_id = $2
+    AND er.source_id = $3
+    AND er.updated_at >= $4
+)
+SELECT DISTINCT ON (bucket) rate_value, updated_at, type_id
+FROM bucketed
+ORDER BY bucket, updated_at DESC
+`
+
+type GetAnalyticsDataParams struct {
+	SourceCurrencyID      int32
+	DestinationCurrencyID int32
+	SourceID              sql.NullInt32
+	UpdatedAt             sql.NullTime
+	Ntile                 int32
+}
+
+type GetAnalyticsDataRow struct {
+	RateValue string
+	UpdatedAt sql.NullTime
+	TypeID    sql.NullInt32
+}
+
+// Fetches evenly distributed exchange rate data points across a time range.
+// Returns up to num_data_points evenly spaced samples from the time range [start_time, now).
+// Parameters:
+//
+//	$1: source_currency_id
+//	$2: destination_currency_id
+//	$3: source_id
+//	$4: start_time (UpdatedAt in struct)
+//	$5: num_data_points (Ntile in struct)
+func (q *Queries) GetAnalyticsData(ctx context.Context, arg GetAnalyticsDataParams) ([]GetAnalyticsDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAnalyticsData,
+		arg.SourceCurrencyID,
+		arg.DestinationCurrencyID,
+		arg.SourceID,
+		arg.UpdatedAt,
+		arg.Ntile,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAnalyticsDataRow
+	for rows.Next() {
+		var i GetAnalyticsDataRow
+		if err := rows.Scan(&i.RateValue, &i.UpdatedAt, &i.TypeID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

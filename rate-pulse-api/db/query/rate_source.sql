@@ -4,15 +4,19 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetRateSourceByID :one
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
+SELECT source_id, source_name, source_link, source_country, source_status, source_code FROM rate_sources
 WHERE source_id = $1 LIMIT 1;
 
 -- name: GetRateSourceByCode :one
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
+SELECT source_id, source_name, source_link, source_country, source_status, source_code FROM rate_sources
 WHERE source_code = $1 LIMIT 1;
 
--- name: GetAllRateSources :many
-SELECT source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code FROM rate_sources
+-- name: ListRateSourceMetadata :many
+SELECT source_id, source_name, source_code, source_link FROM rate_sources
+ORDER BY source_id;
+
+-- name: ListRateSources :many
+SELECT source_id, source_name, source_link, source_country, source_status, source_code FROM rate_sources
 ORDER BY source_id;
 
 -- name: UpdateRateSource :one
