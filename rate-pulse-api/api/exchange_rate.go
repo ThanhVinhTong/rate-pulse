@@ -145,6 +145,7 @@ func (server *Server) listExchangeRateToday(ctx *gin.Context) {
 		return
 	}
 	log.Printf("db query took %s", time.Since(dbStart))
+	log.Printf("total query took %s", time.Since(start))
 
 	ctx.JSON(http.StatusOK, exchangeRates)
 	log.Printf("handler total took %s", time.Since(start))
