@@ -59,14 +59,14 @@ func (server *Server) setupRouter() {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
 
-	// Public read-only market & reference data (no auth) — browse exchange-rates & analytics UIs while logged out.
+	// Public read-only market & reference data (no auth) — browse exchange-rates & historical UIs while logged out.
 	// Register specific paths before /:id routes.
 	router.GET("/currencies", server.listCurrency)
 	router.GET("/currencies/codes-and-names", server.listCurrencyCodesAndNames)
 	router.GET("/currencies/:id", server.getCurrency)
 	router.GET("/exchange-rates/:id", server.getExchangeRate)
 	router.GET("/exchange-rates-latest", server.listExchangeRateToday)
-	router.GET("/exchange-rates/analytics", server.getAnalyticsData)
+	router.GET("/exchange-rates/historical", server.getHistoricalData)
 	router.GET("/exchange-rate-types", server.listExchangeRateTypes)
 	router.GET("/rate-sources", server.listRateSource)
 	router.GET("/rate-sources/metadata", server.listRateSourceMetadata)

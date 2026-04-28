@@ -24,7 +24,7 @@ const valueProps = [
   },
   {
     title: "News in context",
-    body: "Headlines tagged by region and impact, alongside the rates view and analytics.",
+    body: "Headlines tagged by region and impact, alongside the rates view and historical.",
     icon: Newspaper,
   },
   {
@@ -159,11 +159,11 @@ export default function Home() {
               Headlines
             </Heading>
             <Text variant="muted" className="mt-2 max-w-lg">
-              Stories you can cross-check with moves on the board and in Analytics.
+              Stories you can cross-check with moves on the board and in Historical.
             </Text>
           </div>
-          <TextLink href="/analytics" variant="inline">
-            News &amp; charts in Analytics
+          <TextLink href="/historical" variant="inline">
+            News &amp; charts in Historical
             <ArrowRight className="h-4 w-4" aria-hidden />
           </TextLink>
         </div>
@@ -174,9 +174,9 @@ export default function Home() {
         </div>
 
         <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-border pt-8">
-          <TextLink href="/analytics" variant="pill">
+          <TextLink href="/historical" variant="pill">
             <BarChart3 className="h-4 w-4 text-[#00d3e5]" aria-hidden />
-            Analytics
+            Historical
           </TextLink>
           <TextLink href="/signup" variant="inlineMuted">
             Need an account? Sign up

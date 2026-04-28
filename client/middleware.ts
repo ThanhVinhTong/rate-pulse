@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
     }
 
     if (role !== "admin") {
-      return buildRedirectResponse(request, "/analytics");
+      return buildRedirectResponse(request, "/historical");
     }
   }
 

@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface AnalyticsDataPoint {
+interface HistoricalDataPoint {
   RateValue: string;
   UpdatedAt: {
     Time: string;
@@ -25,7 +25,7 @@ interface AnalyticsDataPoint {
   };
 }
 
-interface AnalyticsClientProps {
+interface HistoricalClientProps {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
@@ -41,11 +41,11 @@ interface ChartDataPoint {
   rate: number;
 }
 
-export function AnalyticsClient({
+export function HistoricalClient({
   apiBase,
   currencies,
   rateSources,
-}: AnalyticsClientProps) {
+}: HistoricalClientProps) {
   const [fromCurrency, setFromCurrency] = useState(
     currencies[0]?.CurrencyCode ?? "USD"
   );
@@ -59,7 +59,7 @@ export function AnalyticsClient({
   const [conversionAmount, setConversionAmount] = useState("100");
   const [selectedType, setSelectedType] = useState<number | null>(null);
   
-  const [analyticsRates, setAnalyticsRates] = useState<AnalyticsDataPoint[]>([]);
+  const [historicalRates, setHistoricalRates] = useState<HistoricalDataPoint[]>([]);
   const [exchangeRateTypes, setExchangeRateTypes] = useState<ExchangeRateType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,36 +83,36 @@ export function AnalyticsClient({
     return map;
   }, [exchangeRateTypes]);
 
-  // Extract unique types from analytics data
+  // Extract unique types from historical data
   const availableTypes = useMemo(() => {
     const types = new Map<number, number>();
-    analyticsRates.forEach((rate) => {
+    historicalRates.forEach((rate) => {
       if (rate.TypeID.Valid && rate.TypeID.Int32) {
         types.set(rate.TypeID.Int32, rate.TypeID.Int32);
       }
     });
     return Array.from(types.values()).sort((a, b) => a - b);
-  }, [analyticsRates]);
+  }, [historicalRates]);
 
   // Find the source currency ID from the code
   const sourceCurrencyId = useMemo(() => {
     return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? 150;
   }, [fromCurrency, currencies]);
 
-  // Fetch analytics data from API
+  // Fetch historical data from API
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchHistorical = async () => {
       setIsLoading(true);
       try {
         const dataPoints = ANALYTICS_DATA_POINTS[timeRange];
         const toCurrencyId = currencies.find((c) => c.CurrencyCode === toCurrency)?.CurrencyID;
         
         if (!toCurrencyId) {
-          setAnalyticsRates([]);
+          setHistoricalRates([]);
           return;
         }
 
-        const url = new URL(`${apiBase}/exchange-rates/analytics`);
+        const url = new URL(`${apiBase}/exchange-rates/historical`);
         url.searchParams.append("source_currency_id", String(sourceCurrencyId));
         url.searchParams.append("destination_currency_id", String(toCurrencyId));
         url.searchParams.append("source_id", String(selectedSource));
@@ -123,19 +123,19 @@ export function AnalyticsClient({
         if (res.ok) {
           const data = await res.json();
           const rates = Array.isArray(data) ? data : data?.data || [];
-          setAnalyticsRates(rates);
+          setHistoricalRates(rates);
         } else {
           console.error("API Error:", res.status, res.statusText);
         }
       } catch (error) {
-        console.error("Failed to fetch analytics:", error);
-        setAnalyticsRates([]);
+        console.error("Failed to fetch historical:", error);
+        setHistoricalRates([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAnalytics();
+    fetchHistorical();
   }, [apiBase, sourceCurrencyId, toCurrency, selectedSource, timeRange, currencies]);
 
   // Fetch exchange rate types
@@ -165,9 +165,9 @@ export function AnalyticsClient({
     }
   }, [availableTypes, selectedType]);
 
-  // Transform analytics data to chart format
+  // Transform historical data to chart format
   const chartData = useMemo(() => {
-    const transformed = analyticsRates
+    const transformed = historicalRates
       .filter((rate) => {
         // Filter by selected type
         if (selectedType !== null && rate.TypeID.Valid && rate.TypeID.Int32 !== selectedType) {
@@ -182,7 +182,7 @@ export function AnalyticsClient({
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return transformed;
-  }, [analyticsRates, selectedType]);
+  }, [historicalRates, selectedType]);
 
   // Get latest rate for conversion
   const baseRate = useMemo(() => {
@@ -342,7 +342,7 @@ export function AnalyticsClient({
           {isLoading ? (
             <div className="text-center">
               <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
-              <p className="text-text-muted">Loading analytics data...</p>
+              <p className="text-text-muted">Loading historical data...</p>
             </div>
           ) : chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -391,7 +391,7 @@ export function AnalyticsClient({
             <div className="flex items-center justify-center h-full text-center">
               <div>
                 <p className="font-medium text-text-muted">
-                  No analytics data available
+                  No historical data available
                 </p>
               </div>
             </div>

@@ -1,7 +1,7 @@
 export const APP_NAME = "Rate-pulse";
 export const AUTH_COOKIE = "rate-pulse_session";
 
-// Time ranges for analytics - must match backend values in util/helper.go
+// Time ranges for historical - must match backend values in util/helper.go
 export const TIME_RANGES = ["24h", "7d", "2w", "1m", "6m", "1y", "2y", "5y", "10y", "all"] as const;
 
 // Map time range to number of data points to fetch

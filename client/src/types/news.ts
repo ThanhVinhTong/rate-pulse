@@ -29,7 +29,7 @@ export const AI_INSIGHT_CATEGORIES = [
 export type NewsRegion = typeof NEWS_REGIONS[number];
 export type NewsCategory = typeof NEWS_CATEGORIES[number];
 export type AIInsightCategory = typeof AI_INSIGHT_CATEGORIES[number];
-export type AnalyticsTab = "ai-insights" | "news" | "heatmap";
+export type HistoricalTab = "ai-insights" | "news" | "heatmap";
 
 export interface AIInsight {
   id: string;

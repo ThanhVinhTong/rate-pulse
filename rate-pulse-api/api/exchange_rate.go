@@ -246,10 +246,10 @@ func (server *Server) deleteExchangeRate(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Exchange rate deleted successfully"})
 }
 
-// getAnalyticsRequest represents the query parameters for fetching analytics data.
+// getHistoricalRequest represents the query parameters for fetching historical data.
 // The API intelligently samples data points using NTILE bucketing to ensure
 // consistent data density regardless of time range.
-type getAnalyticsRequest struct {
+type getHistoricalRequest struct {
 	SourceCurrencyID      int32  `form:"source_currency_id" binding:"required,min=1"`
 	DestinationCurrencyID int32  `form:"destination_currency_id" binding:"required,min=1"`
 	SourceID              int32  `form:"source_id" binding:"required,min=1"`
@@ -257,11 +257,11 @@ type getAnalyticsRequest struct {
 	DataPoints            int32  `form:"data_points"`                   // Default: 50, max: 500
 }
 
-// getAnalyticsData returns exchange rate history with evenly distributed data points.
+// getHistoricalData returns exchange rate history with evenly distributed data points.
 // Uses NTILE window function to bucket data and select one representative rate per bucket,
 // ensuring consistent data density across all time ranges.
 //
-// GET /exchange-rates/analytics
+// GET /exchange-rates/historical
 //
 // Query parameters:
 //   - source_currency_id: The source currency ID (required, must be >= 1)
@@ -270,13 +270,13 @@ type getAnalyticsRequest struct {
 //   - time_range: Time range (required, e.g. "24h", "7d", "2w", "1m", "1y", "all")
 //   - data_points: Number of data points to return (optional, default: 50, max: 500)
 //
-// Response: Array of AnalyticsDataPoint objects
+// Response: Array of HistoricalDataPoint objects
 // Status codes:
-//   - 200 OK: Analytics data retrieved successfully
+//   - 200 OK: Historical data retrieved successfully
 //   - 400 Bad Request: Missing or invalid parameters
 //   - 500 Internal Server Error: Database or server error
-func (server *Server) getAnalyticsData(ctx *gin.Context) {
-	var req getAnalyticsRequest
+func (server *Server) getHistoricalData(ctx *gin.Context) {
+	var req getHistoricalRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -300,7 +300,7 @@ func (server *Server) getAnalyticsData(ctx *gin.Context) {
 	// Calculate start date by subtracting duration from now
 	startDate := time.Now().Add(-duration)
 
-	rows, err := server.store.GetAnalyticsData(ctx, db.GetAnalyticsDataParams{
+	rows, err := server.store.GetHistoricalData(ctx, db.GetHistoricalDataParams{
 		SourceCurrencyID:      req.SourceCurrencyID,
 		DestinationCurrencyID: req.DestinationCurrencyID,
 		SourceID:              sql.NullInt32{Int32: req.SourceID, Valid: true},
