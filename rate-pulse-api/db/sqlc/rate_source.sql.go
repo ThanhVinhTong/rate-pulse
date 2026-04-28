@@ -13,7 +13,7 @@ import (
 const createRateSource = `-- name: CreateRateSource :one
 INSERT INTO rate_sources (source_name, source_link, source_country, source_status, source_code)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code
+RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code, currency_id
 `
 
 type CreateRateSourceParams struct {
@@ -42,6 +42,7 @@ func (q *Queries) CreateRateSource(ctx context.Context, arg CreateRateSourcePara
 		&i.UpdatedAt,
 		&i.CreatedAt,
 		&i.SourceCode,
+		&i.CurrencyID,
 	)
 	return i, err
 }
@@ -113,7 +114,7 @@ func (q *Queries) GetRateSourceByID(ctx context.Context, sourceID int32) (GetRat
 }
 
 const listRateSourceMetadata = `-- name: ListRateSourceMetadata :many
-SELECT source_id, source_name, source_code, source_link FROM rate_sources
+SELECT source_id, source_name, source_code, source_link, currency_id FROM rate_sources
 ORDER BY source_id
 `
 
@@ -122,6 +123,7 @@ type ListRateSourceMetadataRow struct {
 	SourceName string
 	SourceCode sql.NullString
 	SourceLink sql.NullString
+	CurrencyID sql.NullInt32
 }
 
 func (q *Queries) ListRateSourceMetadata(ctx context.Context) ([]ListRateSourceMetadataRow, error) {
@@ -138,6 +140,7 @@ func (q *Queries) ListRateSourceMetadata(ctx context.Context) ([]ListRateSourceM
 			&i.SourceName,
 			&i.SourceCode,
 			&i.SourceLink,
+			&i.CurrencyID,
 		); err != nil {
 			return nil, err
 		}
@@ -205,7 +208,7 @@ SET
     source_status = COALESCE($5, source_status),
     source_code = COALESCE($6, source_code)
 WHERE source_id = $1
-RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code
+RETURNING source_id, source_name, source_link, source_country, source_status, updated_at, created_at, source_code, currency_id
 `
 
 type UpdateRateSourceParams struct {
@@ -236,6 +239,7 @@ func (q *Queries) UpdateRateSource(ctx context.Context, arg UpdateRateSourcePara
 		&i.UpdatedAt,
 		&i.CreatedAt,
 		&i.SourceCode,
+		&i.CurrencyID,
 	)
 	return i, err
 }

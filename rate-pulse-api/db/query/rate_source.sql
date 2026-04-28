@@ -12,7 +12,7 @@ SELECT source_id, source_name, source_link, source_country, source_status, sourc
 WHERE source_code = $1 LIMIT 1;
 
 -- name: ListRateSourceMetadata :many
-SELECT source_id, source_name, source_code, source_link FROM rate_sources
+SELECT source_id, source_name, source_code, source_link, currency_id FROM rate_sources
 ORDER BY source_id;
 
 -- name: ListRateSources :many

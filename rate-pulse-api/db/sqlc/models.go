@@ -70,6 +70,7 @@ type RateSource struct {
 	UpdatedAt     sql.NullTime
 	CreatedAt     sql.NullTime
 	SourceCode    sql.NullString
+	CurrencyID    sql.NullInt32
 }
 
 type Session struct {
