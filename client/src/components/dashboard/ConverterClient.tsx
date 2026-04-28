@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRightLeft, Copy, RotateCcw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRightLeft, Copy, ExternalLink, RotateCcw } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +9,18 @@ import { Input } from "@/components/ui/input";
 import { FieldCaption } from "@/components/ui/label";
 import { Panel } from "@/components/ui/panel";
 import { Heading, Text } from "@/components/ui/typography";
-import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import {
+  EXCHANGE_RATES_LIMIT,
+  type Currency,
+  type ExchangeRateLatest,
+  type RateSourceMetadata,
+} from "@/types/exchange-rates";
 
 type GoNullString = { String: string; Valid: boolean };
 type GoNullInt32 = { Int32: number; Valid: boolean };
 
 type ConverterClientProps = {
+  apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
 };
@@ -51,6 +57,48 @@ function wireInt32(v: unknown): number | null {
 function currencyLabel(currency: Currency): string {
   return `${currency.CurrencyCode} - ${currency.CurrencyName}`;
 }
+
+const BUY_TRANSFER_TYPES = new Set([
+  "buy transfer",
+  "receive imt",
+]);
+const SELL_TRANSFER_TYPES = new Set([
+  "sell transfer",
+  "sell cash/transfer",
+  "send imt",
+]);
+
+function rateSourceKey(rate: ExchangeRateLatest): string {
+  return rate.RateSourceCode?.Valid ? rate.RateSourceCode.String : "UNKNOWN";
+}
+
+function rateType(rate: ExchangeRateLatest): string {
+  return wireString(rate.TypeName).toLowerCase();
+}
+
+function formatRate(value: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+
+  return n.toLocaleString("en-US", {
+    maximumFractionDigits: 6,
+  });
+}
+
+function safeExternalHref(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "#";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  return `https://${trimmed}`;
+}
+
+type SnapshotBest = {
+  value: number;
+  displayValue: string;
+  bank: string;
+  sourceCode: string;
+  sourceLink: string;
+} | null;
 
 function ConverterCard({
   title,
@@ -128,11 +176,15 @@ function SnapshotTile({
   label,
   value,
   bank,
+  sourceCode,
+  sourceLink,
   tone,
 }: {
   label: string;
   value: string;
   bank: string;
+  sourceCode: string;
+  sourceLink: string;
   tone: "buy" | "sell";
 }) {
   return (
@@ -146,14 +198,32 @@ function SnapshotTile({
       <p className="mt-3 text-3xl font-semibold text-text-primary tabular-nums">
         {value}
       </p>
-      <Text variant="caption" className="mt-2">
-        Bank: {bank}
-      </Text>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Badge variant="muted">{sourceCode || "-"}</Badge>
+        <Text variant="caption" className="font-medium text-text-primary">
+          {bank}
+        </Text>
+      </div>
+      {sourceLink ? (
+        <a
+          href={safeExternalHref(sourceLink)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+        >
+          Visit source
+          <ExternalLink className="h-3 w-3" aria-hidden />
+        </a>
+      ) : (
+        <Text variant="caption" className="mt-2">
+          Source link: -
+        </Text>
+      )}
     </Panel>
   );
 }
 
-export function ConverterClient({ currencies, rateSources }: ConverterClientProps) {
+export function ConverterClient({ apiBase, currencies, rateSources }: ConverterClientProps) {
   const sortedCurrencies = useMemo(
     () =>
       [...currencies].sort((a, b) =>
@@ -175,12 +245,60 @@ export function ConverterClient({ currencies, rateSources }: ConverterClientProp
   const [buyAmount, setBuyAmount] = useState("");
   const [sellAmount, setSellAmount] = useState("");
 
+  const [latestRates, setLatestRates] = useState<ExchangeRateLatest[]>([]);
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
+
   const baseCurrency = useMemo(
     () => sortedCurrencies.find((currency) => currency.CurrencyID === baseCurrencyId),
     [baseCurrencyId, sortedCurrencies],
   );
 
   const baseCurrencyCode = baseCurrency?.CurrencyCode ?? "-";
+
+  useEffect(() => {
+    if (!baseCurrencyId) return;
+  
+    let cancelled = false;
+  
+    async function loadLatestRates() {
+      setSnapshotLoading(true);
+      setSnapshotError(null);
+  
+      try {
+        const res = await fetch(
+          `${apiBase}/exchange-rates-latest?source_currency_id=${baseCurrencyId}&limit=${EXCHANGE_RATES_LIMIT}`,
+          { cache: "no-store" },
+        );
+  
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || res.statusText);
+        }
+  
+        const data: unknown = await res.json();
+  
+        if (!cancelled) {
+          setLatestRates(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLatestRates([]);
+          setSnapshotError(error instanceof Error ? error.message : "Failed to load latest rates");
+        }
+      } finally {
+        if (!cancelled) {
+          setSnapshotLoading(false);
+        }
+      }
+    }
+  
+    void loadLatestRates();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase, baseCurrencyId]);
 
   const bankOptions = useMemo(() => {
     const options = rateSources
@@ -206,6 +324,82 @@ export function ConverterClient({ currencies, rateSources }: ConverterClientProp
       ),
     [baseCurrencyId, sortedCurrencies],
   );
+
+  const sourceMetaByCode = useMemo(() => {
+    const map = new Map<string, { name: string; link: string }>();
+  
+    for (const source of rateSources) {
+      const code = wireString(source.SourceCode);
+      if (!code) continue;
+  
+      map.set(code, {
+        name: source.SourceName,
+        link: wireString(source.SourceLink),
+      });
+    }
+  
+    return map;
+  }, [rateSources]);
+  
+  const snapshotRates = useMemo(
+    () =>
+      latestRates.filter((rate) => {
+        if (targetCurrencyCode && rate.DestinationCurrencyCode !== targetCurrencyCode) {
+          return false;
+        }
+  
+        return true;
+      }),
+    [latestRates, targetCurrencyCode],
+  );
+  
+  const bestBuy = useMemo<SnapshotBest>(() => {
+    let best: SnapshotBest = null;
+  
+    for (const rate of snapshotRates) {
+      if (!BUY_TRANSFER_TYPES.has(rateType(rate))) continue;
+  
+      const value = Number(rate.RateValue);
+      if (!Number.isFinite(value)) continue;
+  
+      if (!best || value > best.value) {
+        const sourceCode = rateSourceKey(rate);
+        best = {
+          value,
+          displayValue: formatRate(rate.RateValue),
+          bank: sourceMetaByCode.get(sourceCode)?.name ?? sourceCode,
+          sourceCode,
+          sourceLink: sourceMetaByCode.get(sourceCode)?.link ?? "",
+        };
+      }
+    }
+  
+    return best;
+  }, [snapshotRates, sourceMetaByCode]);
+  
+  const bestSell = useMemo<SnapshotBest>(() => {
+    let best: SnapshotBest = null;
+  
+    for (const rate of snapshotRates) {
+      if (!SELL_TRANSFER_TYPES.has(rateType(rate))) continue;
+  
+      const value = Number(rate.RateValue);
+      if (!Number.isFinite(value)) continue;
+  
+      if (!best || value < best.value) {
+        const sourceCode = rateSourceKey(rate);
+        best = {
+          value,
+          displayValue: formatRate(rate.RateValue),
+          bank: sourceMetaByCode.get(sourceCode)?.name ?? sourceCode,
+          sourceCode,
+          sourceLink: sourceMetaByCode.get(sourceCode)?.link ?? "",
+        };
+      }
+    }
+  
+    return best;
+  }, [snapshotRates, sourceMetaByCode]);
 
   const selectClass =
     "h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm transition " +
@@ -328,15 +522,38 @@ export function ConverterClient({ currencies, rateSources }: ConverterClientProp
           <div>
             <Heading level="h3">Latest snapshot</Heading>
             <Text variant="muted" className="mt-1">
-              TODO: Wire max buy and min sell later.
+              Best available buy and sell transfer rates across banks for{" "}
+              {baseCurrencyCode} to {targetCurrencyCode || "-"}.
             </Text>
+            {snapshotError ? (
+              <Text variant="error" className="mt-2">
+                {snapshotError}
+              </Text>
+            ) : null}
           </div>
-          <Text variant="caption">As of: -</Text>
+          <Text variant="caption">
+            {snapshotLoading ? "Refreshing..." : `${snapshotRates.length} latest quotes`}
+          </Text>
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <SnapshotTile label="Maximum buy among all banks" value="-" bank="-" tone="buy" />
-          <SnapshotTile label="Minimum sell among all banks" value="-" bank="-" tone="sell" />
+          <SnapshotTile
+            label="Maximum buy among all banks"
+            value={snapshotLoading ? "-" : bestBuy?.displayValue ?? "-"}
+            bank={snapshotLoading ? "-" : bestBuy?.bank ?? "-"}
+            sourceCode={snapshotLoading ? "" : bestBuy?.sourceCode ?? ""}
+            sourceLink={snapshotLoading ? "" : bestBuy?.sourceLink ?? ""}
+            tone="buy"
+          />
+
+          <SnapshotTile
+            label="Minimum sell among all banks"
+            value={snapshotLoading ? "-" : bestSell?.displayValue ?? "-"}
+            bank={snapshotLoading ? "-" : bestSell?.bank ?? "-"}
+            sourceCode={snapshotLoading ? "" : bestSell?.sourceCode ?? ""}
+            sourceLink={snapshotLoading ? "" : bestSell?.sourceLink ?? ""}
+            tone="sell"
+          />
         </div>
       </Panel>
     </div>
