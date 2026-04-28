@@ -33,4 +33,5 @@ export interface RateSourceMetadata {
     SourceName: string;
     SourceCode: string | { String: string; Valid: boolean } | null;
     SourceLink: string | { String: string; Valid: boolean } | null;
+    CurrencyID: number | null;
 }
