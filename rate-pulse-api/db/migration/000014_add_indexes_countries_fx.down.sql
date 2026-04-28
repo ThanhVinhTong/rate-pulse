@@ -8,4 +8,4 @@ DROP INDEX IF EXISTS idx_exchange_rates_source_created_rate;
 DROP INDEX IF EXISTS idx_exchange_rates_source_created_rate;
 
 -- For the concurrent index
-DROP INDEX CONCURRENTLY IF EXISTS idx_exchange_rates_latest_normalised;
+DROP INDEX IF EXISTS idx_exchange_rates_latest_normalised;

@@ -11,7 +11,7 @@ ON exchange_rates(source_currency_id, created_at DESC, rate_id DESC);
 CREATE INDEX IF NOT EXISTS idx_exchange_rates_source_created_rate
 ON exchange_rates(source_currency_id, created_at DESC, rate_id DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_exchange_rates_latest_normalised
+CREATE INDEX IF NOT EXISTS idx_exchange_rates_latest_normalised
 ON exchange_rates (
   source_currency_id,
   destination_currency_id,
