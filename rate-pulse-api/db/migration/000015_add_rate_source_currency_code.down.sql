@@ -1,0 +1,1 @@
+ALTER TABLE rate_sources DROP COLUMN IF EXISTS currency_code;
