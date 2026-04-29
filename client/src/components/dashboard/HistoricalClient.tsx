@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import { DEFAULT_SOURCE_CURRENCY_ID, DEFAULT_TARGET_CURRENCY_CODE } from "@/types/exchange-rates";
 import { TIME_RANGES, ANALYTICS_DATA_POINTS } from "@/lib/constants";
 import {
   LineChart,
@@ -47,16 +48,15 @@ export function HistoricalClient({
   rateSources,
 }: HistoricalClientProps) {
   const [fromCurrency, setFromCurrency] = useState(
-    currencies[0]?.CurrencyCode ?? "USD"
+    currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyCode ?? "VND"
   );
   const [toCurrency, setToCurrency] = useState(
-    currencies[1]?.CurrencyCode ?? "USD"
+    currencies.find((c) => c.CurrencyCode === DEFAULT_TARGET_CURRENCY_CODE)?.CurrencyCode ?? DEFAULT_TARGET_CURRENCY_CODE
   );
   const [selectedSource, setSelectedSource] = useState(
     rateSources[0]?.SourceID ?? 1
   );
   const [timeRange, setTimeRange] = useState<(typeof TIME_RANGES)[number]>("24h");
-  const [conversionAmount, setConversionAmount] = useState("100");
   const [selectedType, setSelectedType] = useState<number | null>(null);
   
   const [historicalRates, setHistoricalRates] = useState<HistoricalDataPoint[]>([]);
@@ -96,7 +96,7 @@ export function HistoricalClient({
 
   // Find the source currency ID from the code
   const sourceCurrencyId = useMemo(() => {
-    return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? 150;
+    return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? DEFAULT_SOURCE_CURRENCY_ID;
   }, [fromCurrency, currencies]);
 
   // Fetch historical data from API
@@ -160,8 +160,11 @@ export function HistoricalClient({
 
   // Set selectedType to first available type when availableTypes changes
   useEffect(() => {
-    if (availableTypes.length > 0 && selectedType === null) {
-      setSelectedType(availableTypes[0]);
+    if (availableTypes.length > 0) {
+      // If selectedType is null or not in availableTypes, set to first available
+      if (selectedType === null || !availableTypes.includes(selectedType)) {
+        setSelectedType(availableTypes[0]);
+      }
     }
   }, [availableTypes, selectedType]);
 
@@ -184,19 +187,7 @@ export function HistoricalClient({
     return transformed;
   }, [historicalRates, selectedType]);
 
-  // Get latest rate for conversion
-  const baseRate = useMemo(() => {
-    if (chartData.length === 0) return 1.2;
-    return chartData[chartData.length - 1]?.rate ?? 1.2;
-  }, [chartData]);
 
-  const convertedAmount = useMemo(() => {
-    const amount = parseFloat(conversionAmount) || 0;
-    return (amount * baseRate).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }, [conversionAmount, baseRate]);
 
   const labelClass = "text-xs font-medium text-text-muted";
   const controlClass =
@@ -230,90 +221,53 @@ export function HistoricalClient({
               ))}
             </select>
           </label>
-        </div>
-      </section>
-
-      {/* Converter Section */}
-      <section
-        className="rounded-xl border border-border bg-card p-4 shadow-sm"
-        aria-label="Currency Converter"
-      >
-        <h2 className="mb-4 text-sm font-semibold text-text-primary">
-          Currency Converter
-        </h2>
-        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
-          <div className="flex-1 md:min-w-[22rem]">
-            <label className="block">
-              <span className={labelClass}>
-                From
-              </span>
-              <div className="mt-1 flex gap-2">
-                <input
-                  type="number"
-                  value={conversionAmount}
-                  onChange={(e) => setConversionAmount(e.target.value)}
-                  placeholder="100"
-                  className={`${controlClass} flex-1`}
-                />
-                <select
-                  value={fromCurrency}
-                  onChange={(e) => setFromCurrency(e.target.value)}
-                  className={controlClass}
-                >
-                  {currencyOptions.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </label>
-          </div>
-
-          <div className="hidden text-2xl text-text-tertiary md:block">→</div>
-
-          <div className="flex-1 md:min-w-[22rem]">
-            <label className="block">
-              <span className={labelClass}>
-                To
-              </span>
-              <div className="mt-1 flex gap-2">
-                <input
-                  type="number"
-                  value={convertedAmount}
-                  readOnly
-                  placeholder="120"
-                  className={`${controlClass} flex-1 bg-panel text-text-muted`}
-                />
-                <select
-                  value={toCurrency}
-                  onChange={(e) => setToCurrency(e.target.value)}
-                  className={controlClass}
-                >
-                  {currencyOptions.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </label>
-          </div>
+          <label className="block shrink-0 md:min-w-[8rem]">
+            <span className={labelClass}>
+              From Currency
+            </span>
+            <select
+              value={fromCurrency}
+              onChange={(e) => setFromCurrency(e.target.value)}
+              className={`${controlClass} w-full`}
+            >
+              {currencyOptions.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block shrink-0 md:min-w-[8rem]">
+            <span className={labelClass}>
+              To Currency
+            </span>
+            <select
+              value={toCurrency}
+              onChange={(e) => setToCurrency(e.target.value)}
+              className={`${controlClass} w-full`}
+            >
+              {currencyOptions.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
       {/* Chart Section */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <h2 className="text-xl font-semibold text-text-primary">
             Exchange Rate Trends
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             {availableTypes.length > 0 && (
               <select
                 value={selectedType ?? availableTypes[0]}
                 onChange={(e) => setSelectedType(Number(e.target.value))}
-                className={controlClass}
+                className={`${controlClass} flex-1`}
               >
                 {availableTypes.map((type) => (
                   <option key={type} value={type}>
@@ -325,7 +279,7 @@ export function HistoricalClient({
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as typeof timeRange)}
-              className={controlClass}
+              className={`${controlClass} flex-1`}
             >
               {TIME_RANGES.map((range) => (
                 <option key={range} value={range}>
