@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRightLeft, Copy, ExternalLink, RotateCcw } from "lucide-react";
+import { Copy, ExternalLink, RotateCcw } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,8 @@ import { Panel } from "@/components/ui/panel";
 import { Heading, Text } from "@/components/ui/typography";
 import {
   EXCHANGE_RATES_LIMIT,
+  DEFAULT_SOURCE_CURRENCY_ID,
+  DEFAULT_TARGET_CURRENCY_CODE,
   type Currency,
   type ExchangeRateLatest,
   type RateSourceMetadata,
@@ -33,6 +35,8 @@ type ConverterCardProps = {
   inputCurrency: string;
   outputCurrency: string;
   resultLabel: string;
+  rateData: SnapshotBest;
+  type: "buy" | "sell";
 };
 
 function wireString(v: string | GoNullString | null | undefined): string {
@@ -108,8 +112,44 @@ function ConverterCard({
   inputCurrency,
   outputCurrency,
   resultLabel,
+  rateData,
+  type,
 }: ConverterCardProps) {
   const hasAmount = amount.trim().length > 0;
+  const [copyFeedback, setCopyFeedback] = useState(false);
+  
+  const convertedAmount = (() => {
+    if (!hasAmount || !rateData) return "-";
+    const numAmount = parseFloat(amount);
+    if (!Number.isFinite(numAmount)) return "-";
+    
+    const result = type === "buy" 
+      ? numAmount * rateData.value 
+      : numAmount / rateData.value;
+    
+    if (result < 1) {
+      return result.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumSignificantDigits: 2,
+      });
+    }
+    return result.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  })();
+
+  const handleCopyResult = async () => {
+    if (convertedAmount === "-") return;
+    
+    try {
+      await navigator.clipboard.writeText(convertedAmount);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
 
   return (
     <Panel variant="sheet" padding="md" className="space-y-5">
@@ -145,23 +185,26 @@ function ConverterCard({
         <Text variant="caption">{resultLabel}</Text>
         <div className="mt-2 flex items-end justify-between gap-3">
           <p className="text-2xl font-semibold text-primary tabular-nums">
-            {hasAmount ? "-" : "-"}
+            {convertedAmount}
           </p>
           <Badge>{outputCurrency}</Badge>
         </div>
         <Text variant="caption" className="mt-2">
-          {hasAmount ? "Rate used: - · Bank: -" : "Enter an amount to preview the conversion."}
+          {hasAmount && rateData
+            ? `Rate used: ${rateData.displayValue} · Bank: ${rateData.sourceCode}`
+            : "Enter an amount to preview the conversion."}
         </Text>
       </Panel>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="converterButton" disabled>
-          <ArrowRightLeft className="h-4 w-4" aria-hidden />
-          Swap
-        </Button>
-        <Button variant="converterButton" disabled>
+        <Button 
+          variant="converterButton" 
+          onClick={handleCopyResult}
+          disabled={convertedAmount === "-"}
+          title={copyFeedback ? "Copied!" : "Copy result to clipboard"}
+        >
           <Copy className="h-4 w-4" aria-hidden />
-          Copy result
+          {copyFeedback ? "Copied!" : "Copy result"}
         </Button>
       </div>
 
@@ -232,10 +275,14 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
     [currencies],
   );
 
-  const initialBaseCurrencyId = sortedCurrencies[0]?.CurrencyID ?? 0;
+  const initialBaseCurrencyId =
+    sortedCurrencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
+    sortedCurrencies[0]?.CurrencyID ??
+    0;
   const initialTargetCurrencyCode =
-    sortedCurrencies.find((currency) => currency.CurrencyID !== initialBaseCurrencyId)
+    sortedCurrencies.find((c) => c.CurrencyCode === DEFAULT_TARGET_CURRENCY_CODE && c.CurrencyID !== initialBaseCurrencyId)
       ?.CurrencyCode ??
+    sortedCurrencies.find((c) => c.CurrencyID !== initialBaseCurrencyId)?.CurrencyCode ??
     sortedCurrencies[0]?.CurrencyCode ??
     "";
 
@@ -352,17 +399,22 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
       }),
     [latestRates, targetCurrencyCode],
   );
-  
-  const bestBuy = useMemo<SnapshotBest>(() => {
+
+  const findBestRate = (
+    typeSet: Set<string>,
+    compareFunc: (current: number, best: number) => boolean,
+    bankCode?: string,
+  ): SnapshotBest => {
     let best: SnapshotBest = null;
-  
+
     for (const rate of snapshotRates) {
-      if (!BUY_TRANSFER_TYPES.has(rateType(rate))) continue;
-  
+      if (!typeSet.has(rateType(rate))) continue;
+      if (bankCode && rateSourceKey(rate) !== bankCode) continue;
+
       const value = Number(rate.RateValue);
       if (!Number.isFinite(value)) continue;
-  
-      if (!best || value > best.value) {
+
+      if (!best || compareFunc(value, best.value)) {
         const sourceCode = rateSourceKey(rate);
         best = {
           value,
@@ -373,33 +425,29 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
         };
       }
     }
-  
+
     return best;
-  }, [snapshotRates, sourceMetaByCode]);
+  };
   
-  const bestSell = useMemo<SnapshotBest>(() => {
-    let best: SnapshotBest = null;
+  const bestBuy = useMemo<SnapshotBest>(
+    () => findBestRate(BUY_TRANSFER_TYPES, (current, best) => current > best, selectedBankCode),
+    [snapshotRates, sourceMetaByCode, selectedBankCode],
+  );
   
-    for (const rate of snapshotRates) {
-      if (!SELL_TRANSFER_TYPES.has(rateType(rate))) continue;
-  
-      const value = Number(rate.RateValue);
-      if (!Number.isFinite(value)) continue;
-  
-      if (!best || value < best.value) {
-        const sourceCode = rateSourceKey(rate);
-        best = {
-          value,
-          displayValue: formatRate(rate.RateValue),
-          bank: sourceMetaByCode.get(sourceCode)?.name ?? sourceCode,
-          sourceCode,
-          sourceLink: sourceMetaByCode.get(sourceCode)?.link ?? "",
-        };
-      }
-    }
-  
-    return best;
-  }, [snapshotRates, sourceMetaByCode]);
+  const bestSell = useMemo<SnapshotBest>(
+    () => findBestRate(SELL_TRANSFER_TYPES, (current, best) => current < best, selectedBankCode),
+    [snapshotRates, sourceMetaByCode, selectedBankCode],
+  );
+
+  const bestBuyAllBanks = useMemo<SnapshotBest>(
+    () => findBestRate(BUY_TRANSFER_TYPES, (current, best) => current > best),
+    [snapshotRates, sourceMetaByCode],
+  );
+
+  const bestSellAllBanks = useMemo<SnapshotBest>(
+    () => findBestRate(SELL_TRANSFER_TYPES, (current, best) => current < best),
+    [snapshotRates, sourceMetaByCode],
+  );
 
   const selectClass =
     "h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm transition " +
@@ -498,22 +546,27 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ConverterCard
           title="Buy transfer"
-          subtitle="You pay with the base currency and receive the target currency."
+          subtitle="You pay with the target currency and receive the base currency."
           amount={buyAmount}
           onAmountChange={setBuyAmount}
-          inputCurrency={baseCurrencyCode}
-          outputCurrency={targetCurrencyCode || "-"}
+          inputCurrency={targetCurrencyCode || "-"}
+          outputCurrency={baseCurrencyCode}
+
           resultLabel="Estimated target amount"
+          rateData={bestBuy}
+          type="buy"
         />
 
         <ConverterCard
           title="Sell transfer"
-          subtitle="You sell the target currency and receive the base currency."
+          subtitle="You sell the base currency and receive the target currency."
           amount={sellAmount}
           onAmountChange={setSellAmount}
-          inputCurrency={targetCurrencyCode || "-"}
-          outputCurrency={baseCurrencyCode}
+          inputCurrency={baseCurrencyCode}
+          outputCurrency={targetCurrencyCode || "-"}
           resultLabel="Estimated base amount"
+          rateData={bestSell}
+          type="sell"
         />
       </div>
 
@@ -539,19 +592,19 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SnapshotTile
             label="Maximum buy among all banks"
-            value={snapshotLoading ? "-" : bestBuy?.displayValue ?? "-"}
-            bank={snapshotLoading ? "-" : bestBuy?.bank ?? "-"}
-            sourceCode={snapshotLoading ? "" : bestBuy?.sourceCode ?? ""}
-            sourceLink={snapshotLoading ? "" : bestBuy?.sourceLink ?? ""}
+            value={snapshotLoading ? "-" : bestBuyAllBanks?.displayValue ?? "-"}
+            bank={snapshotLoading ? "-" : bestBuyAllBanks?.bank ?? "-"}
+            sourceCode={snapshotLoading ? "" : bestBuyAllBanks?.sourceCode ?? ""}
+            sourceLink={snapshotLoading ? "" : bestBuyAllBanks?.sourceLink ?? ""}
             tone="buy"
           />
 
           <SnapshotTile
             label="Minimum sell among all banks"
-            value={snapshotLoading ? "-" : bestSell?.displayValue ?? "-"}
-            bank={snapshotLoading ? "-" : bestSell?.bank ?? "-"}
-            sourceCode={snapshotLoading ? "" : bestSell?.sourceCode ?? ""}
-            sourceLink={snapshotLoading ? "" : bestSell?.sourceLink ?? ""}
+            value={snapshotLoading ? "-" : bestSellAllBanks?.displayValue ?? "-"}
+            bank={snapshotLoading ? "-" : bestSellAllBanks?.bank ?? "-"}
+            sourceCode={snapshotLoading ? "" : bestSellAllBanks?.sourceCode ?? ""}
+            sourceLink={snapshotLoading ? "" : bestSellAllBanks?.sourceLink ?? ""}
             tone="sell"
           />
         </div>
