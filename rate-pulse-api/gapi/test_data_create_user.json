@@ -1,0 +1,11 @@
+{
+    "username": "test1123123",
+    "email": "test1@example.com",
+    "password": "Secret1234512312312!",
+    "time_zone": "UTC",
+    "language_preference": "en",
+    "country_of_residence": "US",
+    "country_of_birth": "US",
+    "first_name": "Test",
+    "last_name": "One"
+  }

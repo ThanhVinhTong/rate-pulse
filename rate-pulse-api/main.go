@@ -37,9 +37,10 @@ func main() {
 
 	defer conn.Close()
 
+	// Run both servers in separate goroutines
 	store := db.NewStore(conn)
+	go runGrpcServer(config, store)
 	runGinServer(config, store)
-	// runGrpcServer(config, store)
 }
 
 func runGinServer(config util.Config, store *db.Store) {
