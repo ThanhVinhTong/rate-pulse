@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -136,19 +135,14 @@ func (server *Server) listExchangeRateToday(ctx *gin.Context) {
 		SourceCurrencyID: req.SourceCurrencyID,
 		Limit:            req.Limit,
 	}
-	start := time.Now()
 
-	dbStart := time.Now()
 	exchangeRates, err := server.store.GetAllExchangeRatesTodayNormalised(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	log.Printf("db query took %s", time.Since(dbStart))
-	log.Printf("total query took %s", time.Since(start))
 
 	ctx.JSON(http.StatusOK, exchangeRates)
-	log.Printf("handler total took %s", time.Since(start))
 }
 
 // updateExchangeRateRequest represents the request body for updating an exchange rate.
