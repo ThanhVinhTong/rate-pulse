@@ -34,8 +34,8 @@ class Script:
         bank_classes = [VCB, BIDV, ACB, VTB, MBB]
         # bank_classes = [VTB] # for debugging only
 
+        conn = engine.connect()
         for cls in bank_classes:
-            conn = engine.connect()
             label = cls.__name__
             try:
                 logger.info("--- Starting %s ---", label)
@@ -47,13 +47,6 @@ class Script:
                     conn.rollback()
                 except SQLAlchemyError:
                     logger.warning("%s: rollback after failure also failed", label)
-            finally:
-                try:
-                    conn.close()
-                except SQLAlchemyError as e:
-                    logger.warning("%s: error closing DB connection: %s", label, e)
 
-        try:
-            engine.dispose()
-        except SQLAlchemyError as e:
-            logger.warning("Engine dispose: %s", e)
+        conn.close()
+        engine.dispose()
