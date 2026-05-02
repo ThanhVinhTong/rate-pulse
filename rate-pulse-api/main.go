@@ -62,7 +62,8 @@ func runGrpcServer(config util.Config, store *db.Store) {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterRatePulseServiceServer(grpcServer, server)
+	pb.RegisterRatePulseAuthenticationServiceServer(grpcServer, server)
+	pb.RegisterRatePulseExchangeRateServiceServer(grpcServer, server)
 	reflection.Register(grpcServer) // Freely explore what RPC methods are available
 
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)

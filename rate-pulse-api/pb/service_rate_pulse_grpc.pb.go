@@ -19,139 +19,243 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RatePulseService_CreateUser_FullMethodName = "/pb.RatePulseService/CreateUser"
-	RatePulseService_SignInUser_FullMethodName = "/pb.RatePulseService/SignInUser"
+	RatePulseAuthenticationService_CreateUser_FullMethodName = "/pb.RatePulseAuthenticationService/CreateUser"
+	RatePulseAuthenticationService_SignInUser_FullMethodName = "/pb.RatePulseAuthenticationService/SignInUser"
 )
 
-// RatePulseServiceClient is the client API for RatePulseService service.
+// RatePulseAuthenticationServiceClient is the client API for RatePulseAuthenticationService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type RatePulseServiceClient interface {
+type RatePulseAuthenticationServiceClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	SignInUser(ctx context.Context, in *SignInUserRequest, opts ...grpc.CallOption) (*SignInUserResponse, error)
 }
 
-type ratePulseServiceClient struct {
+type ratePulseAuthenticationServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewRatePulseServiceClient(cc grpc.ClientConnInterface) RatePulseServiceClient {
-	return &ratePulseServiceClient{cc}
+func NewRatePulseAuthenticationServiceClient(cc grpc.ClientConnInterface) RatePulseAuthenticationServiceClient {
+	return &ratePulseAuthenticationServiceClient{cc}
 }
 
-func (c *ratePulseServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error) {
+func (c *ratePulseAuthenticationServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateUserResponse)
-	err := c.cc.Invoke(ctx, RatePulseService_CreateUser_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, RatePulseAuthenticationService_CreateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ratePulseServiceClient) SignInUser(ctx context.Context, in *SignInUserRequest, opts ...grpc.CallOption) (*SignInUserResponse, error) {
+func (c *ratePulseAuthenticationServiceClient) SignInUser(ctx context.Context, in *SignInUserRequest, opts ...grpc.CallOption) (*SignInUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SignInUserResponse)
-	err := c.cc.Invoke(ctx, RatePulseService_SignInUser_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, RatePulseAuthenticationService_SignInUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// RatePulseServiceServer is the server API for RatePulseService service.
-// All implementations must embed UnimplementedRatePulseServiceServer
+// RatePulseAuthenticationServiceServer is the server API for RatePulseAuthenticationService service.
+// All implementations must embed UnimplementedRatePulseAuthenticationServiceServer
 // for forward compatibility.
-type RatePulseServiceServer interface {
+type RatePulseAuthenticationServiceServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
 	SignInUser(context.Context, *SignInUserRequest) (*SignInUserResponse, error)
-	mustEmbedUnimplementedRatePulseServiceServer()
+	mustEmbedUnimplementedRatePulseAuthenticationServiceServer()
 }
 
-// UnimplementedRatePulseServiceServer must be embedded to have
+// UnimplementedRatePulseAuthenticationServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedRatePulseServiceServer struct{}
+type UnimplementedRatePulseAuthenticationServiceServer struct{}
 
-func (UnimplementedRatePulseServiceServer) CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error) {
+func (UnimplementedRatePulseAuthenticationServiceServer) CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
 }
-func (UnimplementedRatePulseServiceServer) SignInUser(context.Context, *SignInUserRequest) (*SignInUserResponse, error) {
+func (UnimplementedRatePulseAuthenticationServiceServer) SignInUser(context.Context, *SignInUserRequest) (*SignInUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignInUser not implemented")
 }
-func (UnimplementedRatePulseServiceServer) mustEmbedUnimplementedRatePulseServiceServer() {}
-func (UnimplementedRatePulseServiceServer) testEmbeddedByValue()                          {}
+func (UnimplementedRatePulseAuthenticationServiceServer) mustEmbedUnimplementedRatePulseAuthenticationServiceServer() {
+}
+func (UnimplementedRatePulseAuthenticationServiceServer) testEmbeddedByValue() {}
 
-// UnsafeRatePulseServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to RatePulseServiceServer will
+// UnsafeRatePulseAuthenticationServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RatePulseAuthenticationServiceServer will
 // result in compilation errors.
-type UnsafeRatePulseServiceServer interface {
-	mustEmbedUnimplementedRatePulseServiceServer()
+type UnsafeRatePulseAuthenticationServiceServer interface {
+	mustEmbedUnimplementedRatePulseAuthenticationServiceServer()
 }
 
-func RegisterRatePulseServiceServer(s grpc.ServiceRegistrar, srv RatePulseServiceServer) {
-	// If the following call panics, it indicates UnimplementedRatePulseServiceServer was
+func RegisterRatePulseAuthenticationServiceServer(s grpc.ServiceRegistrar, srv RatePulseAuthenticationServiceServer) {
+	// If the following call panics, it indicates UnimplementedRatePulseAuthenticationServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&RatePulseService_ServiceDesc, srv)
+	s.RegisterService(&RatePulseAuthenticationService_ServiceDesc, srv)
 }
 
-func _RatePulseService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RatePulseAuthenticationService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RatePulseServiceServer).CreateUser(ctx, in)
+		return srv.(RatePulseAuthenticationServiceServer).CreateUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RatePulseService_CreateUser_FullMethodName,
+		FullMethod: RatePulseAuthenticationService_CreateUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RatePulseServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
+		return srv.(RatePulseAuthenticationServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RatePulseService_SignInUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RatePulseAuthenticationService_SignInUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SignInUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RatePulseServiceServer).SignInUser(ctx, in)
+		return srv.(RatePulseAuthenticationServiceServer).SignInUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RatePulseService_SignInUser_FullMethodName,
+		FullMethod: RatePulseAuthenticationService_SignInUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RatePulseServiceServer).SignInUser(ctx, req.(*SignInUserRequest))
+		return srv.(RatePulseAuthenticationServiceServer).SignInUser(ctx, req.(*SignInUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// RatePulseService_ServiceDesc is the grpc.ServiceDesc for RatePulseService service.
+// RatePulseAuthenticationService_ServiceDesc is the grpc.ServiceDesc for RatePulseAuthenticationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var RatePulseService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "pb.RatePulseService",
-	HandlerType: (*RatePulseServiceServer)(nil),
+var RatePulseAuthenticationService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.RatePulseAuthenticationService",
+	HandlerType: (*RatePulseAuthenticationServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "CreateUser",
-			Handler:    _RatePulseService_CreateUser_Handler,
+			Handler:    _RatePulseAuthenticationService_CreateUser_Handler,
 		},
 		{
 			MethodName: "SignInUser",
-			Handler:    _RatePulseService_SignInUser_Handler,
+			Handler:    _RatePulseAuthenticationService_SignInUser_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "service_rate_pulse.proto",
+}
+
+const (
+	RatePulseExchangeRateService_GetLatestExchangeRates_FullMethodName = "/pb.RatePulseExchangeRateService/GetLatestExchangeRates"
+)
+
+// RatePulseExchangeRateServiceClient is the client API for RatePulseExchangeRateService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RatePulseExchangeRateServiceClient interface {
+	GetLatestExchangeRates(ctx context.Context, in *GetLatestExchangeRatesRequest, opts ...grpc.CallOption) (*GetLatestExchangeRatesResponse, error)
+}
+
+type ratePulseExchangeRateServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRatePulseExchangeRateServiceClient(cc grpc.ClientConnInterface) RatePulseExchangeRateServiceClient {
+	return &ratePulseExchangeRateServiceClient{cc}
+}
+
+func (c *ratePulseExchangeRateServiceClient) GetLatestExchangeRates(ctx context.Context, in *GetLatestExchangeRatesRequest, opts ...grpc.CallOption) (*GetLatestExchangeRatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLatestExchangeRatesResponse)
+	err := c.cc.Invoke(ctx, RatePulseExchangeRateService_GetLatestExchangeRates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RatePulseExchangeRateServiceServer is the server API for RatePulseExchangeRateService service.
+// All implementations must embed UnimplementedRatePulseExchangeRateServiceServer
+// for forward compatibility.
+type RatePulseExchangeRateServiceServer interface {
+	GetLatestExchangeRates(context.Context, *GetLatestExchangeRatesRequest) (*GetLatestExchangeRatesResponse, error)
+	mustEmbedUnimplementedRatePulseExchangeRateServiceServer()
+}
+
+// UnimplementedRatePulseExchangeRateServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedRatePulseExchangeRateServiceServer struct{}
+
+func (UnimplementedRatePulseExchangeRateServiceServer) GetLatestExchangeRates(context.Context, *GetLatestExchangeRatesRequest) (*GetLatestExchangeRatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLatestExchangeRates not implemented")
+}
+func (UnimplementedRatePulseExchangeRateServiceServer) mustEmbedUnimplementedRatePulseExchangeRateServiceServer() {
+}
+func (UnimplementedRatePulseExchangeRateServiceServer) testEmbeddedByValue() {}
+
+// UnsafeRatePulseExchangeRateServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RatePulseExchangeRateServiceServer will
+// result in compilation errors.
+type UnsafeRatePulseExchangeRateServiceServer interface {
+	mustEmbedUnimplementedRatePulseExchangeRateServiceServer()
+}
+
+func RegisterRatePulseExchangeRateServiceServer(s grpc.ServiceRegistrar, srv RatePulseExchangeRateServiceServer) {
+	// If the following call panics, it indicates UnimplementedRatePulseExchangeRateServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&RatePulseExchangeRateService_ServiceDesc, srv)
+}
+
+func _RatePulseExchangeRateService_GetLatestExchangeRates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestExchangeRatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RatePulseExchangeRateServiceServer).GetLatestExchangeRates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RatePulseExchangeRateService_GetLatestExchangeRates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RatePulseExchangeRateServiceServer).GetLatestExchangeRates(ctx, req.(*GetLatestExchangeRatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// RatePulseExchangeRateService_ServiceDesc is the grpc.ServiceDesc for RatePulseExchangeRateService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var RatePulseExchangeRateService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.RatePulseExchangeRateService",
+	HandlerType: (*RatePulseExchangeRateServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetLatestExchangeRates",
+			Handler:    _RatePulseExchangeRateService_GetLatestExchangeRates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

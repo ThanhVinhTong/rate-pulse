@@ -7,6 +7,7 @@
 package pb
 
 import (
+	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -24,26 +25,34 @@ var File_service_rate_pulse_proto protoreflect.FileDescriptor
 
 const file_service_rate_pulse_proto_rawDesc = "" +
 	"\n" +
-	"\x18service_rate_pulse.proto\x12\x02pb\x1a\x15rpc_create_user.proto\x1a\x15rpc_signin_user.proto2\x90\x01\n" +
-	"\x10RatePulseService\x12=\n" +
+	"\x18service_rate_pulse.proto\x12\x02pb\x1a\x15rpc_create_user.proto\x1a\x15rpc_signin_user.proto\x1a#rpc_get_latest_exchange_rates.proto\x1a.protoc-gen-openapiv2/options/annotations.proto2\x9e\x01\n" +
+	"\x1eRatePulseAuthenticationService\x12=\n" +
 	"\n" +
 	"CreateUser\x12\x15.pb.CreateUserRequest\x1a\x16.pb.CreateUserResponse\"\x00\x12=\n" +
 	"\n" +
-	"SignInUser\x12\x15.pb.SignInUserRequest\x1a\x16.pb.SignInUserResponse\"\x00B(Z&github.com/ThanhVinhTong/rate-pulse/pbb\x06proto3"
+	"SignInUser\x12\x15.pb.SignInUserRequest\x1a\x16.pb.SignInUserResponse\"\x002\x81\x01\n" +
+	"\x1cRatePulseExchangeRateService\x12a\n" +
+	"\x16GetLatestExchangeRates\x12!.pb.GetLatestExchangeRatesRequest\x1a\".pb.GetLatestExchangeRatesResponse\"\x00B\x95\x01\x92Aj\x12h\n" +
+	"\x15Rate Pulse API - GRPC\"J\n" +
+	"\x12Rate Pulse project\x12\x19https://www.rate-pulse.me\x1a\x19vinhtongthanh57@gmail.com2\x031.0Z&github.com/ThanhVinhTong/rate-pulse/pbb\x06proto3"
 
 var file_service_rate_pulse_proto_goTypes = []any{
-	(*CreateUserRequest)(nil),  // 0: pb.CreateUserRequest
-	(*SignInUserRequest)(nil),  // 1: pb.SignInUserRequest
-	(*CreateUserResponse)(nil), // 2: pb.CreateUserResponse
-	(*SignInUserResponse)(nil), // 3: pb.SignInUserResponse
+	(*CreateUserRequest)(nil),              // 0: pb.CreateUserRequest
+	(*SignInUserRequest)(nil),              // 1: pb.SignInUserRequest
+	(*GetLatestExchangeRatesRequest)(nil),  // 2: pb.GetLatestExchangeRatesRequest
+	(*CreateUserResponse)(nil),             // 3: pb.CreateUserResponse
+	(*SignInUserResponse)(nil),             // 4: pb.SignInUserResponse
+	(*GetLatestExchangeRatesResponse)(nil), // 5: pb.GetLatestExchangeRatesResponse
 }
 var file_service_rate_pulse_proto_depIdxs = []int32{
-	0, // 0: pb.RatePulseService.CreateUser:input_type -> pb.CreateUserRequest
-	1, // 1: pb.RatePulseService.SignInUser:input_type -> pb.SignInUserRequest
-	2, // 2: pb.RatePulseService.CreateUser:output_type -> pb.CreateUserResponse
-	3, // 3: pb.RatePulseService.SignInUser:output_type -> pb.SignInUserResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	0, // 0: pb.RatePulseAuthenticationService.CreateUser:input_type -> pb.CreateUserRequest
+	1, // 1: pb.RatePulseAuthenticationService.SignInUser:input_type -> pb.SignInUserRequest
+	2, // 2: pb.RatePulseExchangeRateService.GetLatestExchangeRates:input_type -> pb.GetLatestExchangeRatesRequest
+	3, // 3: pb.RatePulseAuthenticationService.CreateUser:output_type -> pb.CreateUserResponse
+	4, // 4: pb.RatePulseAuthenticationService.SignInUser:output_type -> pb.SignInUserResponse
+	5, // 5: pb.RatePulseExchangeRateService.GetLatestExchangeRates:output_type -> pb.GetLatestExchangeRatesResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -56,6 +65,7 @@ func file_service_rate_pulse_proto_init() {
 	}
 	file_rpc_create_user_proto_init()
 	file_rpc_signin_user_proto_init()
+	file_rpc_get_latest_exchange_rates_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
@@ -64,7 +74,7 @@ func file_service_rate_pulse_proto_init() {
 			NumEnums:      0,
 			NumMessages:   0,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_service_rate_pulse_proto_goTypes,
 		DependencyIndexes: file_service_rate_pulse_proto_depIdxs,

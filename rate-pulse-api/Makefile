@@ -36,8 +36,10 @@ server:
 
 protoc:
 	if exist pb\*.go del /Q pb\*.go
+	if exist docs\*.json del /Q docs\*.json
 	protoc --proto_path=proto --go_out=pb --go_opt=paths=source_relative \
     --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+	--openapiv2_out=docs --openapiv2_opt=allow_merge=true,merge_file_name=api \
     proto/*.proto
 
 .PHONY: postgres createdb dropdb migrateup migratedown sqlc test server protoc

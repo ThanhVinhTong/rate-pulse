@@ -4,10 +4,24 @@ package pb;
 
 import "rpc_create_user.proto";
 import "rpc_signin_user.proto";
+import "rpc_get_latest_exchange_rates.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/ThanhVinhTong/rate-pulse/pb";
 
-service RatePulseService {
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Rate Pulse API - GRPC"
+    version: "1.0"
+    contact: {
+      name: "Rate Pulse project"
+      url: "https://www.rate-pulse.me"
+      email: "vinhtongthanh57@gmail.com"
+    }
+  }
+};
+
+service RatePulseAuthenticationService {
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse){
         
     };
@@ -15,4 +29,12 @@ service RatePulseService {
     rpc SignInUser(SignInUserRequest) returns (SignInUserResponse){
 
     }
+}
+
+service RatePulseExchangeRateService {
+
+    rpc GetLatestExchangeRates(GetLatestExchangeRatesRequest) 
+        returns (GetLatestExchangeRatesResponse){
+
+        }
 }

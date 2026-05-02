@@ -6,6 +6,36 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func convertLatestExchangeRate(exchangeRate db.GetAllExchangeRatesTodayNormalisedRow) *pb.LatestExchangeRate {
+	validFromDate := timestamppb.New(exchangeRate.ValidFromDate)
+
+	rateSourceCode := ""
+	if exchangeRate.RateSourceCode.Valid {
+		rateSourceCode = exchangeRate.RateSourceCode.String
+	}
+
+	typeName := ""
+	if exchangeRate.TypeName.Valid {
+		typeName = exchangeRate.TypeName.String
+	}
+
+	var updatedAt *timestamppb.Timestamp
+	if exchangeRate.UpdatedAt.Valid {
+		updatedAt = timestamppb.New(exchangeRate.UpdatedAt.Time)
+	}
+
+	return &pb.LatestExchangeRate{
+		RateId:                  exchangeRate.RateID,
+		RateValue:               exchangeRate.RateValue,
+		SourceCurrencyCode:      exchangeRate.SourceCurrencyCode,
+		DestinationCurrencyCode: exchangeRate.DestinationCurrencyCode,
+		ValidFromDate:           validFromDate,
+		RateSourceCode:          rateSourceCode,
+		TypeName:                typeName,
+		UpdatedAt:               updatedAt,
+	}
+}
+
 func convertUser(user db.User) *pb.User {
 	var createdAt = timestamppb.New(user.CreatedAt.Time)
 	var updatedAt = timestamppb.New(user.UpdatedAt.Time)

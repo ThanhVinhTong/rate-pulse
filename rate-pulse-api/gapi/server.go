@@ -13,7 +13,8 @@ import (
 type Server struct {
 	// Embeds default unimplemented handlers for RatePulseService RPCs.
 	// Any RPC method that is not overridden will return an "unimplemented" gRPC error.
-	pb.UnimplementedRatePulseServiceServer
+	pb.UnimplementedRatePulseAuthenticationServiceServer
+	pb.UnimplementedRatePulseExchangeRateServiceServer
 	config     util.Config
 	store      *db.Store
 	tokenMaker token.Maker
