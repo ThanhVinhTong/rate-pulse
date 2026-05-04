@@ -73,7 +73,7 @@ export interface CurrencyPair {
   sparkline: number[];
 }
 
-export interface AnalyticsSeriesPoint {
+export interface HistoricalSeriesPoint {
   label: string;
   value: number;
   volume: number;

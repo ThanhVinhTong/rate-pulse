@@ -80,6 +80,18 @@ function wireString(v: string | GoNullString | null | undefined): string {
   return "";
 }
 
+type GoNullInt32 = { Int32: number; Valid: boolean };
+
+function wireInt32(v: unknown): number | null {
+  if (v == null) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "object") {
+    const o = v as Partial<GoNullInt32>;
+    if (typeof o.Int32 === "number" && o.Valid === true) return o.Int32;
+  }
+  return null;
+}
+
 type SourceDetails = { name: string; link: string };
 
 function safeExternalHref(url: string): string {
@@ -202,6 +214,7 @@ export function ExchangeRatesClientTable({
 
   const sourceOptions = useMemo(() => {
     const fromApi = rateSources
+      .filter((rs) => wireInt32((rs as any).CurrencyID) === sourceCurrencyId)
       .map((rs) => {
         const code = wireString(rs.SourceCode);
         if (!code) return null;
@@ -269,6 +282,7 @@ export function ExchangeRatesClientTable({
     setFetchError(null);
     setLoading(true);
     try {
+      console.log("handleBaseCurrencyChange", id);
       const res = await fetch(
         `${apiBase}/exchange-rates-latest?source_currency_id=${id}&limit=${EXCHANGE_RATES_LIMIT}`,
         { cache: "no-store" },
@@ -280,6 +294,7 @@ export function ExchangeRatesClientTable({
       const data: unknown = await res.json();
       setRates(asRateArray(data));
       setTargetFilter("");
+      setSourceFilter("");
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : "Failed to load rates");
     } finally {

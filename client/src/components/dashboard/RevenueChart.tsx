@@ -10,10 +10,10 @@ import {
   YAxis,
 } from "recharts";
 
-import type { AnalyticsSeriesPoint } from "@/types";
+import type { HistoricalSeriesPoint } from "@/types";
 
 interface RevenueChartProps {
-  data: AnalyticsSeriesPoint[];
+  data: HistoricalSeriesPoint[];
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {

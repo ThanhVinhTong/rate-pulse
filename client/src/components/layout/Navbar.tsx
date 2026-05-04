@@ -20,7 +20,8 @@ import { ThemeToggle } from "./ThemeToggle";
 const publicItems = [
   { href: "/", label: "Home" },
   { href: "/exchange-rates", label: "Exchange Rates" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/converter", label: "Converter" },
+  { href: "/historical", label: "Historical" },
 ] as const;
 
 interface NavbarProps {

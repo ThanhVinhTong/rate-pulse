@@ -7,7 +7,7 @@ https://www.rate-pulse.me/
 
 Rate Pulse is a platform for faster, data-driven FX work. It pulls exchange rates, market context, and headlines into one place instead of scattering them across tabs and tools.
 
-The **web app and API** (`client/`, `rate-pulse-api/`) cover live-style rates, conversion, charts, analytics (insights, news hub, sector heatmap), and account flows.
+The **web app and API** (`client/`, `rate-pulse-api/`) cover latest exchange-rate comparison, a dedicated converter experience, historical charts, market context, and account flows.
 
 Alongside that, two Python projects extend what you can collect:
 
@@ -73,9 +73,10 @@ UI is built from reusable primitives under `client/src/components/ui/` (panels, 
 
 ### Web app
 
-- Public home, exchange rates, and analytics
-- Exchange rates dashboard: filters, per-source breakdown, converter, chart, refresh action
-- Analytics: AI insight cards, news feed with region/category/search, sector heatmap
+- Public home, exchange rates, converter, and historical pages
+- Exchange rates dashboard: base-currency filtering, source filtering, target filtering, search, and per-source latest-rate breakdowns
+- Converter: UI for bank/base/target filters, buy-transfer and sell-transfer converters, plus latest max-buy/min-sell market snapshot placeholders
+- Historical: source-specific exchange-rate trends, chart controls, and historical market context
 - Auth flows (login/signup), protected profile/settings/admin layouts
 - Sticky footer layout and theme-aware contrast for light and dark modes
 
@@ -141,18 +142,13 @@ npm run lint    # ESLint
 
 ### Public
 
-- `POST /users`
-- `POST /users/login`
-
-### Protected
-
-- Users: `GET/PUT/DELETE /users/:id`, `GET /users`
-- Currencies: `POST /currencies`, `GET /currencies/:id`, `GET /currencies`
-- Countries: `POST /countries`, `GET /countries/:id`, `GET /countries`
-- Rate sources: `POST /rate-sources`, `GET /rate-sources/:id`, `GET /rate-sources`
-- Exchange rates: `POST /exchange-rates`, `GET /exchange-rates/:id`, `GET /exchange-rates`, `GET /exchange-rates/type`
-- Currency preferences: `POST /currency-preference`, `GET /currency-preferences`, `PUT/DELETE /currency-preference/:currency_id`
-- Rate source preferences: `POST /rate-source-preferences`, `GET /rate-source-preferences`, `PUT/DELETE /rate-source-preferences/:source_id`
+- Auth: `POST /users/signup`, `POST /users/signin`, `POST /users/signout`, `POST /users/renew-access-token`
+- Health: `GET /health`
+- Currencies: `GET /currencies`, `GET /currencies/codes-and-names`, `GET /currencies/:id`
+- Exchange rates: `GET /exchange-rates/:id`, `GET /exchange-rates-latest`, `GET /exchange-rates/analytics`
+- Exchange rate types: `GET /exchange-rate-types`
+- Rate sources: `GET /rate-sources`, `GET /rate-sources/metadata`, `GET /rate-sources/:id`
+- Countries: `GET /countries`, `GET /countries/:id`, `GET /countries/code/:country_code`
 
 ## CI/CD and deployment
 

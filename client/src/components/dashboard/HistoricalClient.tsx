@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import { DEFAULT_SOURCE_CURRENCY_ID, DEFAULT_TARGET_CURRENCY_CODE } from "@/types/exchange-rates";
 import { TIME_RANGES, ANALYTICS_DATA_POINTS } from "@/lib/constants";
 import {
   LineChart,
@@ -13,7 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface AnalyticsDataPoint {
+interface HistoricalDataPoint {
   RateValue: string;
   UpdatedAt: {
     Time: string;
@@ -25,7 +26,7 @@ interface AnalyticsDataPoint {
   };
 }
 
-interface AnalyticsClientProps {
+interface HistoricalClientProps {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
@@ -41,25 +42,24 @@ interface ChartDataPoint {
   rate: number;
 }
 
-export function AnalyticsClient({
+export function HistoricalClient({
   apiBase,
   currencies,
   rateSources,
-}: AnalyticsClientProps) {
+}: HistoricalClientProps) {
   const [fromCurrency, setFromCurrency] = useState(
-    currencies[0]?.CurrencyCode ?? "USD"
+    currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyCode ?? "VND"
   );
   const [toCurrency, setToCurrency] = useState(
-    currencies[1]?.CurrencyCode ?? "USD"
+    currencies.find((c) => c.CurrencyCode === DEFAULT_TARGET_CURRENCY_CODE)?.CurrencyCode ?? DEFAULT_TARGET_CURRENCY_CODE
   );
   const [selectedSource, setSelectedSource] = useState(
     rateSources[0]?.SourceID ?? 1
   );
   const [timeRange, setTimeRange] = useState<(typeof TIME_RANGES)[number]>("24h");
-  const [conversionAmount, setConversionAmount] = useState("100");
   const [selectedType, setSelectedType] = useState<number | null>(null);
   
-  const [analyticsRates, setAnalyticsRates] = useState<AnalyticsDataPoint[]>([]);
+  const [historicalRates, setHistoricalRates] = useState<HistoricalDataPoint[]>([]);
   const [exchangeRateTypes, setExchangeRateTypes] = useState<ExchangeRateType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,36 +83,36 @@ export function AnalyticsClient({
     return map;
   }, [exchangeRateTypes]);
 
-  // Extract unique types from analytics data
+  // Extract unique types from historical data
   const availableTypes = useMemo(() => {
     const types = new Map<number, number>();
-    analyticsRates.forEach((rate) => {
+    historicalRates.forEach((rate) => {
       if (rate.TypeID.Valid && rate.TypeID.Int32) {
         types.set(rate.TypeID.Int32, rate.TypeID.Int32);
       }
     });
     return Array.from(types.values()).sort((a, b) => a - b);
-  }, [analyticsRates]);
+  }, [historicalRates]);
 
   // Find the source currency ID from the code
   const sourceCurrencyId = useMemo(() => {
-    return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? 150;
+    return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? DEFAULT_SOURCE_CURRENCY_ID;
   }, [fromCurrency, currencies]);
 
-  // Fetch analytics data from API
+  // Fetch historical data from API
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchHistorical = async () => {
       setIsLoading(true);
       try {
         const dataPoints = ANALYTICS_DATA_POINTS[timeRange];
         const toCurrencyId = currencies.find((c) => c.CurrencyCode === toCurrency)?.CurrencyID;
         
         if (!toCurrencyId) {
-          setAnalyticsRates([]);
+          setHistoricalRates([]);
           return;
         }
 
-        const url = new URL(`${apiBase}/exchange-rates/analytics`);
+        const url = new URL(`${apiBase}/exchange-rates/historical`);
         url.searchParams.append("source_currency_id", String(sourceCurrencyId));
         url.searchParams.append("destination_currency_id", String(toCurrencyId));
         url.searchParams.append("source_id", String(selectedSource));
@@ -123,19 +123,19 @@ export function AnalyticsClient({
         if (res.ok) {
           const data = await res.json();
           const rates = Array.isArray(data) ? data : data?.data || [];
-          setAnalyticsRates(rates);
+          setHistoricalRates(rates);
         } else {
           console.error("API Error:", res.status, res.statusText);
         }
       } catch (error) {
-        console.error("Failed to fetch analytics:", error);
-        setAnalyticsRates([]);
+        console.error("Failed to fetch historical:", error);
+        setHistoricalRates([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAnalytics();
+    fetchHistorical();
   }, [apiBase, sourceCurrencyId, toCurrency, selectedSource, timeRange, currencies]);
 
   // Fetch exchange rate types
@@ -160,14 +160,17 @@ export function AnalyticsClient({
 
   // Set selectedType to first available type when availableTypes changes
   useEffect(() => {
-    if (availableTypes.length > 0 && selectedType === null) {
-      setSelectedType(availableTypes[0]);
+    if (availableTypes.length > 0) {
+      // If selectedType is null or not in availableTypes, set to first available
+      if (selectedType === null || !availableTypes.includes(selectedType)) {
+        setSelectedType(availableTypes[0]);
+      }
     }
   }, [availableTypes, selectedType]);
 
-  // Transform analytics data to chart format
+  // Transform historical data to chart format
   const chartData = useMemo(() => {
-    const transformed = analyticsRates
+    const transformed = historicalRates
       .filter((rate) => {
         // Filter by selected type
         if (selectedType !== null && rate.TypeID.Valid && rate.TypeID.Int32 !== selectedType) {
@@ -182,21 +185,9 @@ export function AnalyticsClient({
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return transformed;
-  }, [analyticsRates, selectedType]);
+  }, [historicalRates, selectedType]);
 
-  // Get latest rate for conversion
-  const baseRate = useMemo(() => {
-    if (chartData.length === 0) return 1.2;
-    return chartData[chartData.length - 1]?.rate ?? 1.2;
-  }, [chartData]);
 
-  const convertedAmount = useMemo(() => {
-    const amount = parseFloat(conversionAmount) || 0;
-    return (amount * baseRate).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }, [conversionAmount, baseRate]);
 
   const labelClass = "text-xs font-medium text-text-muted";
   const controlClass =
@@ -230,90 +221,53 @@ export function AnalyticsClient({
               ))}
             </select>
           </label>
-        </div>
-      </section>
-
-      {/* Converter Section */}
-      <section
-        className="rounded-xl border border-border bg-card p-4 shadow-sm"
-        aria-label="Currency Converter"
-      >
-        <h2 className="mb-4 text-sm font-semibold text-text-primary">
-          Currency Converter
-        </h2>
-        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
-          <div className="flex-1 md:min-w-[22rem]">
-            <label className="block">
-              <span className={labelClass}>
-                From
-              </span>
-              <div className="mt-1 flex gap-2">
-                <input
-                  type="number"
-                  value={conversionAmount}
-                  onChange={(e) => setConversionAmount(e.target.value)}
-                  placeholder="100"
-                  className={`${controlClass} flex-1`}
-                />
-                <select
-                  value={fromCurrency}
-                  onChange={(e) => setFromCurrency(e.target.value)}
-                  className={controlClass}
-                >
-                  {currencyOptions.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </label>
-          </div>
-
-          <div className="hidden text-2xl text-text-tertiary md:block">→</div>
-
-          <div className="flex-1 md:min-w-[22rem]">
-            <label className="block">
-              <span className={labelClass}>
-                To
-              </span>
-              <div className="mt-1 flex gap-2">
-                <input
-                  type="number"
-                  value={convertedAmount}
-                  readOnly
-                  placeholder="120"
-                  className={`${controlClass} flex-1 bg-panel text-text-muted`}
-                />
-                <select
-                  value={toCurrency}
-                  onChange={(e) => setToCurrency(e.target.value)}
-                  className={controlClass}
-                >
-                  {currencyOptions.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </label>
-          </div>
+          <label className="block shrink-0 md:min-w-[8rem]">
+            <span className={labelClass}>
+              From Currency
+            </span>
+            <select
+              value={fromCurrency}
+              onChange={(e) => setFromCurrency(e.target.value)}
+              className={`${controlClass} w-full`}
+            >
+              {currencyOptions.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block shrink-0 md:min-w-[8rem]">
+            <span className={labelClass}>
+              To Currency
+            </span>
+            <select
+              value={toCurrency}
+              onChange={(e) => setToCurrency(e.target.value)}
+              className={`${controlClass} w-full`}
+            >
+              {currencyOptions.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
       {/* Chart Section */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <h2 className="text-xl font-semibold text-text-primary">
             Exchange Rate Trends
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             {availableTypes.length > 0 && (
               <select
                 value={selectedType ?? availableTypes[0]}
                 onChange={(e) => setSelectedType(Number(e.target.value))}
-                className={controlClass}
+                className={`${controlClass} flex-1`}
               >
                 {availableTypes.map((type) => (
                   <option key={type} value={type}>
@@ -325,7 +279,7 @@ export function AnalyticsClient({
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as typeof timeRange)}
-              className={controlClass}
+              className={`${controlClass} flex-1`}
             >
               {TIME_RANGES.map((range) => (
                 <option key={range} value={range}>
@@ -342,7 +296,7 @@ export function AnalyticsClient({
           {isLoading ? (
             <div className="text-center">
               <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
-              <p className="text-text-muted">Loading analytics data...</p>
+              <p className="text-text-muted">Loading historical data...</p>
             </div>
           ) : chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -391,7 +345,7 @@ export function AnalyticsClient({
             <div className="flex items-center justify-center h-full text-center">
               <div>
                 <p className="font-medium text-text-muted">
-                  No analytics data available
+                  No historical data available
                 </p>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { AnalyticsClient } from "@/components/dashboard/AnalyticsClient";
+import { HistoricalClient } from "@/components/dashboard/HistoricalClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE || "https://api.rate-pulse.me";
@@ -19,19 +19,19 @@ async function fetchData() {
 
     return { currencies, rateSources };
   } catch (error) {
-    console.error("Failed to fetch analytics metadata:", error);
+    console.error("Failed to fetch historical metadata:", error);
     return { currencies: [], rateSources: [] };
   }
 }
 
-export default async function AnalyticsPage() {
+export default async function HistoricalPage() {
   const { currencies, rateSources } = await fetchData();
 
   return (
     <div className="space-y-6">
       <div>
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
-          Analytics
+          Historical
         </p>
         <h1 className="mt-2 text-3xl font-semibold text-text-primary">
           Exchange rate trends
@@ -41,7 +41,7 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <AnalyticsClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
+      <HistoricalClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
     </div>
   );
 }

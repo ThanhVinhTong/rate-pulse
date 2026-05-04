@@ -1,0 +1,1 @@
+ALTER TABLE rate_sources ADD COLUMN IF NOT EXISTS currency_id INT;

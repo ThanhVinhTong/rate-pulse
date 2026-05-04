@@ -9,6 +9,8 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-primary text-white shadow-sm hover:bg-primary-muted",
+        converterButton: 
+          "border border-border bg-card text-text-primary shadow-sm hover:border-primary/50 hover:bg-panel",
         secondary:
           "border border-border bg-card text-white shadow-sm hover:border-primary/50 hover:bg-panel",
         ghost:

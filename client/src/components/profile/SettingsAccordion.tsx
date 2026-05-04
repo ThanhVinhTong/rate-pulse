@@ -55,7 +55,7 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
                 onClick={() => setActiveSectionId(section.id)}
                 className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${
                   active
-                    ? "bg-primary text-text-primary"
+                    ? "bg-primary text-white"
                     : "text-text-muted hover:bg-panel hover:text-text-primary"
                 }`}
               >

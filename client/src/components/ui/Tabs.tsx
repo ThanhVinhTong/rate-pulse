@@ -11,7 +11,7 @@ export const tabsTriggerVariants = cva(
   {
     variants: {
       active: {
-        true: "bg-primary text-text-primary shadow-sm",
+        true: "bg-primary text-white shadow-sm",
         false: "text-text-muted hover:text-text-primary",
       },
     },
