@@ -23,6 +23,7 @@ export const NewsArticleCard = memo(function NewsArticleCard({ article }: NewsAr
       target="_blank"
       rel="noreferrer"
       aria-label={`Open article: ${article.title}`}
+      className="transition-transform duration-200 hover:scale-[1.02] hover:shadow-lg border-[color:var(--color-border-strong)] hover:border-primary/80"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
