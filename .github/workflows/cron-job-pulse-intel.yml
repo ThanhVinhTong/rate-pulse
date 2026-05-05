@@ -1,0 +1,39 @@
+# Scheduled news gathering (pulse_intel) on GitHub-hosted runners.
+
+name: pulse_intel scheduled gathering
+
+on:
+  schedule:
+    # Eight times daily UTC (every 3 hours).
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+
+jobs:
+  gather_feeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    defaults:
+      run:
+        working-directory: pulse_intel
+
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      MONGO_DB: ${{ secrets.MONGO_DB }}
+      MONGO_COLLECTION: ${{ secrets.MONGO_COLLECTION }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pulse_intel
+        run: python main.py
