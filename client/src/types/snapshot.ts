@@ -38,3 +38,7 @@ export interface SnapshotDocument {
   feeds: Record<string, FeedArticleDoc[]>;        // keyed by category slug
   meta: SnapshotMeta;
 }
+
+export interface NewsFeedsClientProps {
+  feeds: Record<string, FeedArticleDoc[]>;
+}

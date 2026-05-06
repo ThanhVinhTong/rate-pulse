@@ -1,32 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Globe2, Landmark, Building2, TrendingUp, Zap, RadioTower, Flame, Map } from "lucide-react";
 import { UnderlineTabs } from "@/components/ui/underline-tabs";
 import { NewsArticleCard } from "@/components/dashboard/NewsArticleCard";
-import type { FeedArticleDoc, NewsArticle } from "@/types";
-
-interface NewsFeedsClientProps {
-  feeds: Record<string, FeedArticleDoc[]>;
-}
-
-const REGION_TABS = [
-  { id: "world_news", label: "World", icon: Globe2 },
-  { id: "united_states", label: "United States", icon: Landmark },
-  { id: "europe", label: "Europe", icon: Map },
-  { id: "middle_east", label: "Middle East", icon: Flame },
-  { id: "asia_pacific", label: "Asia Pacific", icon: Map },
-  { id: "africa", label: "Africa", icon: Map },
-  { id: "latin_america", label: "Latin America", icon: Map },
-];
-
-const SECTOR_TABS = [
-  { id: "intel_feed", label: "Intel Feed", icon: RadioTower },
-  { id: "government", label: "Government", icon: Landmark },
-  { id: "think_tanks", label: "Think Tanks", icon: Building2 },
-  { id: "financial", label: "Financial", icon: TrendingUp },
-  { id: "energy_and_resources", label: "Energy & Resources", icon: Zap },
-];
+import type { NewsArticle, NewsFeedsClientProps } from "@/types";
+import { REGION_TABS, SECTOR_TABS } from "@/types";
 
 type TabId = string;
 
