@@ -21,8 +21,8 @@ if __name__ == "__main__":
     news_data = wms.scrape_news(ids)
 
     # Save to MongoDB or excel or both
-    mongodb_path = export_news_to_mongodb(news_data, root)
-    print(f"MongoDB report saved: {mongodb_path}")
+    mongodb_id = export_news_to_mongodb(news_data, root)
+    print(f"MongoDB snapshot ID: {mongodb_id}")
 
     excel_path = export_news_to_excel(news_data, root)
     print(f"Excel report saved: {excel_path}")
