@@ -53,6 +53,25 @@ def ping() -> bool:
 # Internal helpers  (mirrors excel_export.py logic)
 # ---------------------------------------------------------------------------
 
+_IGNORED_TITLE_SUBSTRINGS = [
+    "login.gov",
+    "state.gov",
+    "treasury.gov",
+]
+
+def _is_valid_article(title: str) -> bool:
+    """Check if the article title indicates a valid news source, excluding login portals."""
+    if not title:
+        return False
+        
+    # Remove if starts with non-alphabet character or uncapitalized word
+    if not title[0].isalpha() or not title[0].isupper():
+        return False
+        
+    title_lower = title.lower()
+    return not any(ignored in title_lower for ignored in _IGNORED_TITLE_SUBSTRINGS)
+
+
 def _normalise_feed_section(section_data: dict) -> list[dict]:
     """
     Convert a feed section dict  { title: {href, time, source?} }
@@ -63,6 +82,12 @@ def _normalise_feed_section(section_data: dict) -> list[dict]:
         return articles
 
     for title, payload in section_data.items():
+        title_str = str(title)
+        
+        # Skip known problematic links (e.g., login portals, non-news .gov pages)
+        if not _is_valid_article(title_str):
+            continue
+
         href = ""
         published = ""
         source = ""
@@ -73,7 +98,7 @@ def _normalise_feed_section(section_data: dict) -> list[dict]:
 
         articles.append(
             {
-                "title": str(title),
+                "title": title_str,
                 "href": href,
                 "domain": urlparse(href).netloc if href else "",
                 "time": published,
