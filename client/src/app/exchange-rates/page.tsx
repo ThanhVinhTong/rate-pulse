@@ -4,6 +4,13 @@ import {
   DEFAULT_TARGET_CURRENCY_CODE,
   EXCHANGE_RATES_LIMIT 
 } from "@/types/exchange-rates";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Exchange Rates",
+  description:
+    "Access comprehensive exchange rate comparisons across financial institutions. Evaluate buy and sell margins to optimize your currency transfers.",
+};
 
 async function fetchJson(url: string, options: RequestInit, label: string) {
   const res = await fetch(url, options)
