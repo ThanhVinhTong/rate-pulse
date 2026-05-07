@@ -24,7 +24,7 @@ async function fetchJson(url: string, options: RequestInit, label: string) {
 }
 
 export default async function ExchangeRatesPage() {
-  const base = process.env.API_BASE_URL ?? "https://api.rate-pulse.me";
+  const base = process.env.RATE_PULSE_API_BASE_URL ?? "https://localhost:3000";
 
   const [currencies, rateSources, exchangeRatesLatest] =
   await Promise.all([

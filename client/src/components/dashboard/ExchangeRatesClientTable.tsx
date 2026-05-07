@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Search } from "lucide-react";
+import { CurrencyPairBadge } from "@/components/currency/currency-flag";
 import { 
   ExchangeRateLatest, 
   Currency,
@@ -59,6 +60,11 @@ function rateSourceKey(r: ExchangeRateLatest): string {
 function currencyLabel(c: Currency): string {
   return `${c.CurrencyCode} — ${c.CurrencyName}`;
 }
+
+const DESKTOP_SOURCES_PER_PAGE = 5;
+const DESKTOP_RATE_PREVIEW_LIMIT = 4;
+const MOBILE_SOURCES_PER_PAGE = 3;
+const MOBILE_RATE_PREVIEW_LIMIT = 2;
 
 type Props = {
   apiBase: string;
@@ -177,6 +183,88 @@ function SourceDetailsBlock({
   );
 }
 
+function sourcePageNumbers(currentPage: number, totalPages: number) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  return [...new Set([
+    1,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    totalPages,
+  ])]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+}
+
+function SourcePaginationControls({
+  currentPage,
+  totalPages,
+  onPageChange,
+  className,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}) {
+  const canGoPrevious = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+  const pageNumbers = sourcePageNumbers(currentPage, totalPages);
+  const buttonClass =
+    "h-8 rounded-md border border-border px-3 text-xs font-medium text-text-primary transition " +
+    "hover:bg-panel disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent";
+  const pageButtonClass =
+    "size-8 rounded-md border border-border text-xs font-semibold transition hover:bg-panel";
+
+  return (
+    <div className={`flex justify-end ${className ?? ""}`}>
+      <div className="flex flex-wrap items-center justify-end gap-1 rounded-xl border border-border bg-card px-3 py-2 text-xs text-text-muted shadow-sm">
+          <button
+            type="button"
+            className={buttonClass}
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={!canGoPrevious}
+          >
+            Prev sources
+          </button>
+          {pageNumbers.map((page, index) => {
+            const previousPage = pageNumbers[index - 1];
+            const hasGap = previousPage != null && page - previousPage > 1;
+
+            return (
+              <span key={page} className="flex items-center gap-1">
+                {hasGap ? <span className="px-1 text-text-tertiary">...</span> : null}
+                <button
+                  type="button"
+                  className={`${pageButtonClass} ${
+                    page === currentPage
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "text-text-primary"
+                  }`}
+                  onClick={() => onPageChange(page)}
+                  aria-current={page === currentPage ? "page" : undefined}
+                >
+                  {page}
+                </button>
+              </span>
+            );
+          })}
+          <button
+            type="button"
+            className={buttonClass}
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!canGoNext}
+          >
+            Next sources
+          </button>
+      </div>
+    </div>
+  );
+}
+
 export function ExchangeRatesClientTable({
   apiBase,
   initialSourceCurrencyId,
@@ -196,6 +284,11 @@ export function ExchangeRatesClientTable({
     initialTargetCurrencyCode
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentDesktopSourcePage, setCurrentDesktopSourcePage] = useState(1);
+  const [currentMobileSourcePage, setCurrentMobileSourcePage] = useState(1);
+  const [expandedSourceKeys, setExpandedSourceKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -231,7 +324,7 @@ export function ExchangeRatesClientTable({
       }
     }
     return fromApi.sort((a, b) => a.code.localeCompare(b.code));
-  }, [rateSources, rates]);
+  }, [sourceCurrencyId, rateSources, rates]);
 
   const targetOptions = useMemo(() => {
     const set = new Set<string>();
@@ -267,15 +360,84 @@ export function ExchangeRatesClientTable({
     return out;
   }, [rates, sourceFilter, targetFilter, searchQuery]);
 
-  const groups = useMemo(() => {
+  const sourceGroups = useMemo(() => {
     const m = new Map<string, ExchangeRateLatest[]>();
     for (const r of filteredRates) {
       const key = rateSourceKey(r);
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(r);
     }
-    return m;
+    return [...m.entries()];
   }, [filteredRates]);
+
+  const totalDesktopSourcePages = Math.max(
+    1,
+    Math.ceil(sourceGroups.length / DESKTOP_SOURCES_PER_PAGE),
+  );
+  const safeDesktopSourcePage = Math.min(
+    currentDesktopSourcePage,
+    totalDesktopSourcePages,
+  );
+  const desktopSourceStartIndex =
+    (safeDesktopSourcePage - 1) * DESKTOP_SOURCES_PER_PAGE;
+  const desktopSourceEndIndex =
+    desktopSourceStartIndex + DESKTOP_SOURCES_PER_PAGE;
+  const desktopSourceGroups = useMemo(
+    () => sourceGroups.slice(desktopSourceStartIndex, desktopSourceEndIndex),
+    [sourceGroups, desktopSourceStartIndex, desktopSourceEndIndex],
+  );
+  const desktopStartSource =
+    sourceGroups.length === 0 ? 0 : desktopSourceStartIndex + 1;
+  const desktopEndSource = Math.min(desktopSourceEndIndex, sourceGroups.length);
+
+  const totalMobileSourcePages = Math.max(
+    1,
+    Math.ceil(sourceGroups.length / MOBILE_SOURCES_PER_PAGE),
+  );
+  const safeMobileSourcePage = Math.min(
+    currentMobileSourcePage,
+    totalMobileSourcePages,
+  );
+  const mobileSourceStartIndex =
+    (safeMobileSourcePage - 1) * MOBILE_SOURCES_PER_PAGE;
+  const mobileSourceEndIndex = mobileSourceStartIndex + MOBILE_SOURCES_PER_PAGE;
+  const mobileSourceGroups = useMemo(
+    () => sourceGroups.slice(mobileSourceStartIndex, mobileSourceEndIndex),
+    [sourceGroups, mobileSourceStartIndex, mobileSourceEndIndex],
+  );
+  const mobileStartSource =
+    sourceGroups.length === 0 ? 0 : mobileSourceStartIndex + 1;
+  const mobileEndSource = Math.min(mobileSourceEndIndex, sourceGroups.length);
+
+  useEffect(() => {
+    setCurrentDesktopSourcePage(1);
+    setCurrentMobileSourcePage(1);
+    setExpandedSourceKeys(new Set());
+  }, [sourceCurrencyId, sourceFilter, targetFilter, searchQuery]);
+
+  useEffect(() => {
+    setCurrentDesktopSourcePage((page) =>
+      Math.min(page, totalDesktopSourcePages),
+    );
+  }, [totalDesktopSourcePages]);
+
+  useEffect(() => {
+    setCurrentMobileSourcePage((page) =>
+      Math.min(page, totalMobileSourcePages),
+    );
+  }, [totalMobileSourcePages]);
+
+  function toggleSourceExpansion(sourceKey: string) {
+    setExpandedSourceKeys((current) => {
+      const next = new Set(current);
+      if (next.has(sourceKey)) {
+        next.delete(sourceKey);
+      } else {
+        next.add(sourceKey);
+      }
+      return next;
+    });
+  }
 
   async function handleBaseCurrencyChange(id: number) {
     setSourceCurrencyId(id);
@@ -418,15 +580,32 @@ export function ExchangeRatesClientTable({
         ) : null}
       </section>
         
-      <p className="text-sm text-text-muted">
-        Showing {filteredRates.length} of {rates.length} rates
-        {loading ? "" : "."}
-      </p>
+      <div className="text-xs text-text-muted">
+        <p className="md:hidden">
+          {sourceGroups.length > 0
+            ? `Showing sources ${mobileStartSource}-${mobileEndSource} of ${sourceGroups.length}`
+            : "No sources match the current filters"}
+        </p>
+        <p className="hidden md:block">
+          {sourceGroups.length > 0
+            ? `Showing sources ${desktopStartSource}-${desktopEndSource} of ${sourceGroups.length}`
+            : "No sources match the current filters"}
+        </p>
+      </div>
 
       {/* Mobile: box / card layout */}
       <div className="space-y-5 md:hidden">
-        {[...groups.entries()].map(([groupKey, rows]) => {
+        {mobileSourceGroups.map(([groupKey, rows]) => {
           const meta = sourceMetaByCode.get(groupKey);
+          const isExpanded = expandedSourceKeys.has(groupKey);
+          const visibleRows = isExpanded
+            ? rows
+            : rows.slice(0, MOBILE_RATE_PREVIEW_LIMIT);
+          const hiddenRateCount = Math.max(
+            0,
+            rows.length - MOBILE_RATE_PREVIEW_LIMIT,
+          );
+
           return (
             <section
               key={groupKey}
@@ -442,10 +621,13 @@ export function ExchangeRatesClientTable({
                     details={meta}
                     variant="hero"
                   />
+                  <p className="mt-1 text-xs text-text-muted">
+                    {rows.length} rates available
+                  </p>
                 </div>
               </div>
               <ul className="divide-y divide-border">
-                {rows.map((r) => (
+                {visibleRows.map((r) => (
                   <li key={r.RateID} className="space-y-2 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -453,8 +635,11 @@ export function ExchangeRatesClientTable({
                           Pair
                         </p>
                         <p className="font-medium text-text-primary">
-                          {r.SourceCurrencyCode} →{" "}
-                          {r.DestinationCurrencyCode}
+                          <CurrencyPairBadge
+                            sourceCode={r.SourceCurrencyCode}
+                            destinationCode={r.DestinationCurrencyCode}
+                            separator="→"
+                          />
                         </p>
                       </div>
                       <div className="text-right">
@@ -495,6 +680,19 @@ export function ExchangeRatesClientTable({
                   </li>
                 ))}
               </ul>
+              {hiddenRateCount > 0 ? (
+                <div className="border-t border-border px-4 py-3">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-primary underline-offset-2 hover:underline"
+                    onClick={() => toggleSourceExpansion(groupKey)}
+                  >
+                    {isExpanded
+                      ? "Show fewer rates"
+                      : `View all ${rows.length} rates`}
+                  </button>
+                </div>
+              ) : null}
             </section>
           );
         })}
@@ -536,8 +734,17 @@ export function ExchangeRatesClientTable({
                 ))}
               </tr>
             </thead>
-            {[...groups.entries()].map(([groupKey, rows], groupIndex) => {
+            {desktopSourceGroups.map(([groupKey, rows], groupIndex) => {
               const meta = sourceMetaByCode.get(groupKey);
+              const isExpanded = expandedSourceKeys.has(groupKey);
+              const visibleRows = isExpanded
+                ? rows
+                : rows.slice(0, DESKTOP_RATE_PREVIEW_LIMIT);
+              const hiddenRateCount = Math.max(
+                0,
+                rows.length - DESKTOP_RATE_PREVIEW_LIMIT,
+              );
+
               return (
                 <tbody key={groupKey}>
                   <tr
@@ -560,19 +767,22 @@ export function ExchangeRatesClientTable({
                           details={meta}
                           variant="hero"
                         />
+                        <p className="mt-1 text-xs text-text-muted">
+                          {rows.length} rates available
+                        </p>
                       </div>
                     </td>
                   </tr>
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr
                       key={r.RateID}
                       className="border-b border-border hover:bg-panel/70 transition-colors last:border-b-0"
                     >
                       <td className="border-l-0 px-3 py-2.5 pl-4 align-middle font-medium text-text-primary">
-                        <span className="tabular-nums">
-                          {r.SourceCurrencyCode} ↔{" "}
-                          {r.DestinationCurrencyCode}
-                        </span>
+                        <CurrencyPairBadge
+                          sourceCode={r.SourceCurrencyCode}
+                          destinationCode={r.DestinationCurrencyCode}
+                        />
                       </td>
                       <td className="border-l border-border px-3 py-2.5 text-right align-middle tabular-nums">
                         <span className="text-md font-medium tabular-nums text-primary">
@@ -592,12 +802,48 @@ export function ExchangeRatesClientTable({
                       </td>
                     </tr>
                   ))}
+                  {hiddenRateCount > 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="border-t border-border bg-card px-4 py-2 text-center"
+                      >
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-primary underline-offset-2 hover:underline"
+                          onClick={() => toggleSourceExpansion(groupKey)}
+                        >
+                          {isExpanded
+                            ? "Show fewer rates"
+                            : `View all ${rows.length} rates`}
+                        </button>
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               );
             })}
           </table>
         </div>
       </div>
+
+      {sourceGroups.length > 0 ? (
+        <SourcePaginationControls
+          currentPage={safeMobileSourcePage}
+          totalPages={totalMobileSourcePages}
+          onPageChange={setCurrentMobileSourcePage}
+          className="md:hidden"
+        />
+      ) : null}
+
+      {sourceGroups.length > 0 ? (
+        <SourcePaginationControls
+          currentPage={safeDesktopSourcePage}
+          totalPages={totalDesktopSourcePages}
+          onPageChange={setCurrentDesktopSourcePage}
+          className="hidden md:flex"
+        />
+      ) : null}
     </div>
   );
 }

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "Track and visualize historical currency exchange data. Analyze long-term trends and past performance across multiple banks to inform your financial decisions.",
 };
 
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "https://api.rate-pulse.me";
+const apiBase = process.env.RATE_PULSE_API_BASE_URL || "https://localhost:3000";
 
 async function fetchData() {
   try {

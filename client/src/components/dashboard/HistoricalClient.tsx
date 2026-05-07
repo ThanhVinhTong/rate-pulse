@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { CurrencyPairBadge } from "@/components/currency/currency-flag";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 import { DEFAULT_SOURCE_CURRENCY_ID, DEFAULT_TARGET_CURRENCY_CODE } from "@/types/exchange-rates";
 import { TIME_RANGES, ANALYTICS_DATA_POINTS } from "@/lib/constants";
@@ -262,6 +263,12 @@ export function HistoricalClient({
           <h2 className="text-xl font-semibold text-text-primary">
             Exchange Rate Trends
           </h2>
+          <CurrencyPairBadge
+            sourceCode={fromCurrency}
+            destinationCode={toCurrency}
+            separator="→"
+            className="text-sm"
+          />
           <div className="flex flex-col gap-2 sm:flex-row">
             {availableTypes.length > 0 && (
               <select
