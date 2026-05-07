@@ -1,5 +1,12 @@
 import { HistoricalClient } from "@/components/dashboard/HistoricalClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Historical Rates",
+  description:
+    "Track and visualize historical currency exchange data. Analyze long-term trends and past performance across multiple banks to inform your financial decisions.",
+};
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE || "https://api.rate-pulse.me";
 
