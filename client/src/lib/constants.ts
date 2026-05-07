@@ -19,3 +19,17 @@ export const ANALYTICS_DATA_POINTS: Record<(typeof TIME_RANGES)[number], number>
   "10y": 40,
   "all": 50,
 };
+
+export const TIME_RANGE_WINDOW_DAYS: Record<(typeof TIME_RANGES)[number], number> = {
+  "24h": 1,
+  "48h": 2,
+  "7d": 7,
+  "15d": 15,
+  "1m": 30,
+  "6m": 180,
+  "1y": 365,
+  "2y": 730,
+  "5y": 1825,
+  "10y": 3650,
+  "all": 36500,
+};
