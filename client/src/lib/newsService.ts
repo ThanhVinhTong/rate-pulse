@@ -12,7 +12,7 @@ import type { SnapshotDocument, FeedArticleDoc } from "@/types";
  */
 export async function fetchLatestSnapshot(): Promise<SnapshotDocument | null> {
   try {
-    const baseUrl = typeof window === "undefined" ? "http://localhost:3000" : "";
+    const baseUrl = "https://www.rate-pulse.me/";
     const res = await fetch(`${baseUrl}/api/news/latest`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
@@ -32,7 +32,7 @@ export async function fetchLatestSnapshot(): Promise<SnapshotDocument | null> {
 
 export async function fetchBreakingNews(): Promise<FeedArticleDoc[] | null> {
   try {
-    const baseUrl = typeof window === "undefined" ? "http://localhost:3000" : "";
+    const baseUrl = "https://www.rate-pulse.me/";
     const res = await fetch(`${baseUrl}/api/news/latest`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
