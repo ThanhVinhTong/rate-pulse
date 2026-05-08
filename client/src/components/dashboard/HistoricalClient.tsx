@@ -166,16 +166,13 @@ export function HistoricalClient({
     return map;
   }, [exchangeRateTypes]);
 
-  // Extract unique types from historical data
+  // Type selection must not depend on historical data, because historical fetches
+  // are already scoped to the selected type.
   const availableTypes = useMemo(() => {
-    const types = new Map<number, number>();
-    historicalRates.forEach((rate) => {
-      if (rate.TypeID.Valid && rate.TypeID.Int32) {
-        types.set(rate.TypeID.Int32, rate.TypeID.Int32);
-      }
-    });
-    return Array.from(types.values()).sort((a, b) => a - b);
-  }, [historicalRates]);
+    return exchangeRateTypes
+      .map((type) => type.type_id)
+      .sort((a, b) => a - b);
+  }, [exchangeRateTypes]);
 
   useEffect(() => {
     if (!sourceOptions.length) return;
@@ -196,7 +193,7 @@ export function HistoricalClient({
         const dataPoints = ANALYTICS_DATA_POINTS[timeRange];
         const toCurrencyId = currencies.find((c) => c.CurrencyCode === toCurrency)?.CurrencyID;
         
-        if (!toCurrencyId) {
+        if (!toCurrencyId || selectedType === null) {
           setHistoricalRates([]);
           return;
         }
@@ -207,6 +204,7 @@ export function HistoricalClient({
         url.searchParams.append("source_id", String(selectedSource));
         url.searchParams.append("time_range", timeRange);
         url.searchParams.append("data_points", String(dataPoints));
+        url.searchParams.append("type_id", String(selectedType));
 
         const res = await fetch(url.toString());
         if (res.ok) {
@@ -225,7 +223,7 @@ export function HistoricalClient({
     };
 
     fetchHistorical();
-  }, [apiBase, sourceCurrencyId, toCurrency, selectedSource, timeRange, currencies]);
+  }, [apiBase, sourceCurrencyId, toCurrency, selectedSource, timeRange, currencies, selectedType]);
 
   // Fetch exchange rate types
   useEffect(() => {
@@ -247,23 +245,26 @@ export function HistoricalClient({
     fetchTypes();
   }, [apiBase]);
 
-  // Prefer the business-default trend type when that data is available.
+  // Prefer the business-default trend type when metadata is available.
   useEffect(() => {
-    if (availableTypes.length > 0) {
-      const buyTransferType = availableTypes.find(
-        (type) => typeNameMap.get(type)?.trim().toLowerCase() === "buy transfer",
-      );
-      const nextType = buyTransferType ?? availableTypes[0];
+    if (exchangeRateTypes.length === 0) return;
 
-      if (
-        selectedType === null ||
-        !availableTypes.includes(selectedType) ||
-        (!hasUserSelectedType && buyTransferType != null && selectedType !== buyTransferType)
-      ) {
-        setSelectedType(nextType);
-      }
+    const buyTransferType = exchangeRateTypes.find(
+      (type) => type.type_name.trim().toLowerCase() === "buy transfer",
+    )?.type_id;
+    const nextType = buyTransferType ?? exchangeRateTypes[0].type_id;
+    const selectedTypeExists = exchangeRateTypes.some(
+      (type) => type.type_id === selectedType,
+    );
+
+    if (
+      selectedType === null ||
+      !selectedTypeExists ||
+      (!hasUserSelectedType && buyTransferType != null && selectedType !== buyTransferType)
+    ) {
+      setSelectedType(nextType);
     }
-  }, [availableTypes, hasUserSelectedType, selectedType, typeNameMap]);
+  }, [exchangeRateTypes, hasUserSelectedType, selectedType]);
 
   // Transform historical data to chart format
   const chartData = useMemo(() => {
