@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertTriangle, Globe2, RadioTower, ShieldCheck, Zap } from "lucide-react";
+import { AlertTriangle, Globe2, ShieldCheck, Zap, Radar, RadioTower } from "lucide-react";
 
 import { Panel } from "@/components/ui/panel";
 import { Heading, Text } from "@/components/ui/typography";
@@ -54,7 +54,7 @@ export default async function NewsPage() {
             <AlertTriangle className="h-5 w-5 text-status-danger" />
             <Heading level="h2" id="breaking-news-heading">Breaking News</Heading>
           </div>
-          <span className="text-sm text-text-muted">Summary of the most breaking news</span>
+          <span className="text-sm text-text-muted">Preview only</span>
         </div>
         
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -130,13 +130,12 @@ export default async function NewsPage() {
 
       {/* 4. Categorized News Feeds */}
       <section className="px-5 sm:px-8 lg:px-12" aria-labelledby="feeds-heading">
-        <div className="mb-8 flex flex-col justify-between gap-4 border-b border-border pb-4 sm:flex-row sm:items-end">
-          <div>
+        <div className="mb-8 flex flex-col justify-between gap-2 border-b border-border pb-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <Radar className="h-5 w-5 text-primary" />
             <Heading level="h2" id="feeds-heading">Intelligence Feeds</Heading>
-            <Text variant="muted" className="mt-2">
-              Raw updates organized by region and sector.
-            </Text>
           </div>
+          <span className="text-sm text-text-muted">Condensed news briefings</span>
         </div>
 
         <NewsFeedsClient feeds={feeds} />

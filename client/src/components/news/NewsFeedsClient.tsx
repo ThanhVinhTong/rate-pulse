@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Search } from "lucide-react";
 import { UnderlineTabs } from "@/components/ui/underline-tabs";
 import { NewsArticleCard } from "@/components/dashboard/NewsArticleCard";
 import type { NewsArticle, NewsFeedsClientProps } from "@/types";
@@ -10,24 +11,25 @@ type TabId = string;
 
 export function NewsFeedsClient({ feeds }: NewsFeedsClientProps) {
   const [activeTab, setActiveTab] = useState<TabId>("world_news");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(9);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab]);
+  }, [activeTab, searchQuery]);
 
   useEffect(() => {
     // lg breakpoint in tailwind is 1024px
     const mediaQuery = window.matchMedia("(max-width: 1023px)");
-    
+
     const handleResize = () => {
       // 5 items for mobile/tablet, 9 for desktop (which fits cleanly into 3 columns)
       setItemsPerPage(mediaQuery.matches ? 5 : 9);
     };
-    
+
     handleResize();
-    
+
     // Add event listener (fallback support for older browsers included)
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener("change", handleResize);
@@ -44,9 +46,37 @@ export function NewsFeedsClient({ feeds }: NewsFeedsClientProps) {
   };
 
   const currentFeed = feeds[activeTab] || [];
-  const totalPages = Math.ceil(currentFeed.length / itemsPerPage);
-  
-  const paginatedFeed = currentFeed.slice(
+
+  const filteredFeed = useMemo(() => {
+    let out = currentFeed;
+    const q = searchQuery.trim();
+    if (q) {
+      let isRegex = false;
+      let regex: RegExp | null = null;
+      try {
+        // Try parsing as a regex pattern
+        regex = new RegExp(q, "i");
+        isRegex = true;
+      } catch (e) {
+        // Fallback to substring match if regex is invalid (e.g., unmatched brackets)
+      }
+
+      const lowerQ = q.toLowerCase();
+
+      out = out.filter((doc) => {
+        const hay = [doc.title, doc.domain, doc.source].filter(Boolean).join(" ");
+        if (isRegex && regex) {
+          return regex.test(hay);
+        }
+        return hay.toLowerCase().includes(lowerQ);
+      });
+    }
+    return out;
+  }, [currentFeed, searchQuery]);
+
+  const totalPages = Math.ceil(filteredFeed.length / itemsPerPage);
+
+  const paginatedFeed = filteredFeed.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -72,6 +102,18 @@ export function NewsFeedsClient({ feeds }: NewsFeedsClientProps) {
           onChange={setActiveTab}
           className="border-none"
         />
+        <div className="mt-3 border-t border-white/10 px-2 pb-2 pt-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search feeds (Regex supported)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border border-border bg-surface px-9 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -91,7 +133,7 @@ export function NewsFeedsClient({ feeds }: NewsFeedsClientProps) {
           })
         ) : (
           <div className="col-span-full py-12 text-center text-text-muted">
-            No articles found for this category.
+            No articles found matching your criteria.
           </div>
         )}
       </div>
@@ -105,11 +147,11 @@ export function NewsFeedsClient({ feeds }: NewsFeedsClientProps) {
           >
             Previous
           </button>
-          
+
           <div className="text-sm font-medium text-text-muted">
             Page <span className="text-text-primary">{currentPage}</span> of <span className="text-text-primary">{totalPages}</span>
           </div>
-          
+
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
