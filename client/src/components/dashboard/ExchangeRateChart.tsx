@@ -8,7 +8,7 @@ import { IconBox } from "@/components/ui/icon-box";
 import { Panel } from "@/components/ui/panel";
 import { SegmentedControl, SegmentedItem } from "@/components/ui/segmented-control";
 import { Heading, Text } from "@/components/ui/typography";
-import { TIME_RANGES } from "@/lib/constants";
+import { ANALYTICS_DATA_POINTS, TIME_RANGES, TIME_RANGE_WINDOW_DAYS } from "@/lib/constants";
 import type { TimeRange } from "@/types";
 
 interface ExchangeRatePoint {
@@ -30,34 +30,8 @@ const defaultData: ExchangeRatePoint[] = [
   { date: "P4", rate: 1 },
 ];
 
-const rangePointCounts: Record<TimeRange, number> = {
-  "24h": 50,
-  "7d": 50,
-  "2w": 50,
-  "1m": 50,
-  "6m": 50,
-  "1y": 50,
-  "2y": 50,
-  "5y": 50,
-  "10y": 50,
-  "all": 50,
-};
-
-const rangeWindowDays: Record<TimeRange, number> = {
-  "24h": 1,
-  "7d": 7,
-  "2w": 14,
-  "1m": 30,
-  "6m": 180,
-  "1y": 365,
-  "2y": 730,
-  "5y": 1825,
-  "10y": 3650,
-  "all": 36500,
-};
-
 const formatXAxisDate = (date: Date, range: TimeRange): string => {
-  if (range === "24h") {
+  if (range === "24h" || range === "48h") {
     const hour = date.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
@@ -70,7 +44,7 @@ const formatXAxisDate = (date: Date, range: TimeRange): string => {
     return `${hour} ${dayDate}`;
   }
 
-  if (range === "7d" || range === "2w" || range === "1m") {
+  if (range === "7d" || range === "15d" || range === "1m") {
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
@@ -93,8 +67,8 @@ const formatXAxisDate = (date: Date, range: TimeRange): string => {
 
 const buildRangeSeries = (seedData: ExchangeRatePoint[], range: TimeRange): ExchangeRatePoint[] => {
   const baseSeed = seedData.length > 0 ? seedData : defaultData;
-  const count = rangePointCounts[range];
-  const windowDays = rangeWindowDays[range];
+  const count = ANALYTICS_DATA_POINTS[range];
+  const windowDays = TIME_RANGE_WINDOW_DAYS[range];
   const now = Date.now();
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
   const lastRate = baseSeed[baseSeed.length - 1]?.rate ?? 1;

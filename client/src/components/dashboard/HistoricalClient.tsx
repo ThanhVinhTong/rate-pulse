@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { CurrencyPairBadge } from "@/components/currency/currency-flag";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 import { DEFAULT_SOURCE_CURRENCY_ID, DEFAULT_TARGET_CURRENCY_CODE } from "@/types/exchange-rates";
 import { TIME_RANGES, ANALYTICS_DATA_POINTS } from "@/lib/constants";
@@ -39,7 +40,65 @@ interface ExchangeRateType {
 
 interface ChartDataPoint {
   date: string;
+  timestamp: number;
   rate: number;
+}
+
+type GoNullString = { String: string; Valid: boolean };
+type GoNullInt32 = { Int32: number; Valid: boolean };
+
+function wireString(v: string | GoNullString | null | undefined): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "object" && v.Valid && typeof v.String === "string") {
+    return v.String.trim();
+  }
+  return "";
+}
+
+function wireInt32(v: unknown): number | null {
+  if (v == null) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "object") {
+    const o = v as Partial<GoNullInt32>;
+    if (o.Valid === true && typeof o.Int32 === "number") return o.Int32;
+  }
+  return null;
+}
+
+function formatChartLabel(iso: string, timeRange: (typeof TIME_RANGES)[number]): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  if (timeRange === "24h" || timeRange === "48h") {
+    const day = date.toLocaleDateString("en-GB", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      day: "2-digit",
+      month: "short",
+    });
+    const time = date.toLocaleTimeString("en-GB", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    return `${day} ${time}`;
+  }
+
+  if (timeRange === "7d" || timeRange === "15d" || timeRange === "1m") {
+    return date.toLocaleDateString("en-GB", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      day: "2-digit",
+      month: "short",
+    });
+  }
+
+  return date.toLocaleDateString("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    month: "short",
+    year: "2-digit",
+  });
 }
 
 export function HistoricalClient({
@@ -47,17 +106,28 @@ export function HistoricalClient({
   currencies,
   rateSources,
 }: HistoricalClientProps) {
+  const initialSourceCurrencyId =
+    currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
+    currencies[0]?.CurrencyID ??
+    DEFAULT_SOURCE_CURRENCY_ID;
+
+  const initialSourceId =
+    rateSources.find(
+      (source) => wireInt32(source.CurrencyID) === initialSourceCurrencyId,
+    )?.SourceID ??
+    rateSources[0]?.SourceID ??
+    1;
+
   const [fromCurrency, setFromCurrency] = useState(
-    currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyCode ?? "VND"
+    currencies.find((c) => c.CurrencyID === initialSourceCurrencyId)?.CurrencyCode ?? "VND"
   );
   const [toCurrency, setToCurrency] = useState(
     currencies.find((c) => c.CurrencyCode === DEFAULT_TARGET_CURRENCY_CODE)?.CurrencyCode ?? DEFAULT_TARGET_CURRENCY_CODE
   );
-  const [selectedSource, setSelectedSource] = useState(
-    rateSources[0]?.SourceID ?? 1
-  );
+  const [selectedSource, setSelectedSource] = useState(initialSourceId);
   const [timeRange, setTimeRange] = useState<(typeof TIME_RANGES)[number]>("24h");
   const [selectedType, setSelectedType] = useState<number | null>(null);
+  const [hasUserSelectedType, setHasUserSelectedType] = useState(false);
   
   const [historicalRates, setHistoricalRates] = useState<HistoricalDataPoint[]>([]);
   const [exchangeRateTypes, setExchangeRateTypes] = useState<ExchangeRateType[]>([]);
@@ -68,11 +138,24 @@ export function HistoricalClient({
     [currencies]
   );
 
-  const sourceOptions = useMemo(
-    () =>
-      rateSources.map((s) => ({ id: s.SourceID, name: s.SourceName, code: s.SourceCode })),
-    [rateSources]
-  );
+  const sourceCurrencyId = useMemo(() => {
+    return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? initialSourceCurrencyId;
+  }, [fromCurrency, currencies, initialSourceCurrencyId]);
+
+  const sourceOptions = useMemo(() => {
+    const options = rateSources
+      .filter((source) => wireInt32(source.CurrencyID) === sourceCurrencyId)
+      .map((source) => {
+        const code = wireString(source.SourceCode);
+        return {
+          id: source.SourceID,
+          code,
+          label: code ? `${code} - ${source.SourceName}` : source.SourceName,
+        };
+      });
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [rateSources, sourceCurrencyId]);
 
   // Create mapping from type ID to type name
   const typeNameMap = useMemo(() => {
@@ -94,10 +177,16 @@ export function HistoricalClient({
     return Array.from(types.values()).sort((a, b) => a - b);
   }, [historicalRates]);
 
-  // Find the source currency ID from the code
-  const sourceCurrencyId = useMemo(() => {
-    return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? DEFAULT_SOURCE_CURRENCY_ID;
-  }, [fromCurrency, currencies]);
+  useEffect(() => {
+    if (!sourceOptions.length) return;
+    if (!sourceOptions.some((source) => source.id === selectedSource)) {
+      setSelectedSource(sourceOptions[0].id);
+    }
+  }, [sourceOptions, selectedSource]);
+
+  useEffect(() => {
+    setHasUserSelectedType(false);
+  }, [fromCurrency, toCurrency, selectedSource, timeRange]);
 
   // Fetch historical data from API
   useEffect(() => {
@@ -158,15 +247,23 @@ export function HistoricalClient({
     fetchTypes();
   }, [apiBase]);
 
-  // Set selectedType to first available type when availableTypes changes
+  // Prefer the business-default trend type when that data is available.
   useEffect(() => {
     if (availableTypes.length > 0) {
-      // If selectedType is null or not in availableTypes, set to first available
-      if (selectedType === null || !availableTypes.includes(selectedType)) {
-        setSelectedType(availableTypes[0]);
+      const buyTransferType = availableTypes.find(
+        (type) => typeNameMap.get(type)?.trim().toLowerCase() === "buy transfer",
+      );
+      const nextType = buyTransferType ?? availableTypes[0];
+
+      if (
+        selectedType === null ||
+        !availableTypes.includes(selectedType) ||
+        (!hasUserSelectedType && buyTransferType != null && selectedType !== buyTransferType)
+      ) {
+        setSelectedType(nextType);
       }
     }
-  }, [availableTypes, selectedType]);
+  }, [availableTypes, hasUserSelectedType, selectedType, typeNameMap]);
 
   // Transform historical data to chart format
   const chartData = useMemo(() => {
@@ -178,14 +275,18 @@ export function HistoricalClient({
         }
         return rate.UpdatedAt.Valid && rate.RateValue;
       })
-      .map((rate) => ({
-        date: rate.UpdatedAt.Time.split("T")[0],
-        rate: parseFloat(rate.RateValue),
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .map((rate) => {
+        const timestamp = new Date(rate.UpdatedAt.Time).getTime();
+        return {
+          date: formatChartLabel(rate.UpdatedAt.Time, timeRange),
+          timestamp,
+          rate: parseFloat(rate.RateValue),
+        };
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
 
     return transformed;
-  }, [historicalRates, selectedType]);
+  }, [historicalRates, selectedType, timeRange]);
 
 
 
@@ -216,7 +317,7 @@ export function HistoricalClient({
             >
               {sourceOptions.map((source) => (
                 <option key={source.id} value={source.id}>
-                  {source.name}
+                  {source.label}
                 </option>
               ))}
             </select>
@@ -262,11 +363,20 @@ export function HistoricalClient({
           <h2 className="text-xl font-semibold text-text-primary">
             Exchange Rate Trends
           </h2>
+          <CurrencyPairBadge
+            sourceCode={fromCurrency}
+            destinationCode={toCurrency}
+            separator="→"
+            className="text-sm"
+          />
           <div className="flex flex-col gap-2 sm:flex-row">
             {availableTypes.length > 0 && (
               <select
                 value={selectedType ?? availableTypes[0]}
-                onChange={(e) => setSelectedType(Number(e.target.value))}
+                onChange={(e) => {
+                  setHasUserSelectedType(true);
+                  setSelectedType(Number(e.target.value));
+                }}
                 className={`${controlClass} flex-1`}
               >
                 {availableTypes.map((type) => (

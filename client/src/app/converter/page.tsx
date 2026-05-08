@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ConverterClient } from "@/components/dashboard/ConverterClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "https://api.rate-pulse.me";
+const apiBase = process.env.RATE_PULSE_API_BASE_URL || "https://localhost:3000";
 
 export const metadata: Metadata = {
   title: "Converter",
