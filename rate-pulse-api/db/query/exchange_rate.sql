@@ -69,18 +69,20 @@ DELETE FROM exchange_rates;
 --   $2: destination_currency_id
 --   $3: source_id
 --   $4: start_time (UpdatedAt in struct)
---   $5: num_data_points (Ntile in struct)
+--   $5: type_id
+--   $6: num_data_points
 WITH bucketed AS (
   SELECT 
     er.rate_value,
     er.updated_at,
     er.type_id,
-    NTILE($5) OVER (ORDER BY er.updated_at) AS bucket
+    NTILE($6) OVER (ORDER BY er.updated_at) AS bucket
   FROM exchange_rates er
   WHERE er.source_currency_id = $1
     AND er.destination_currency_id = $2
     AND er.source_id = $3
     AND er.updated_at >= $4
+    AND er.type_id = $5
 )
 SELECT DISTINCT ON (bucket) rate_value, updated_at, type_id
 FROM bucketed

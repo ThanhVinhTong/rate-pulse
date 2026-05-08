@@ -247,8 +247,9 @@ type getHistoricalRequest struct {
 	SourceCurrencyID      int32  `form:"source_currency_id" binding:"required,min=1"`
 	DestinationCurrencyID int32  `form:"destination_currency_id" binding:"required,min=1"`
 	SourceID              int32  `form:"source_id" binding:"required,min=1"`
-	TimeRange             string `form:"time_range" binding:"required"` // e.g., "24h", "7d", "2w", "1m", "1y", "all"
-	DataPoints            int32  `form:"data_points"`                   // Default: 50, max: 500
+	TypeID                int32  `form:"type_id" binding:"required,min=1"`
+	TimeRange             string `form:"time_range" binding:"required"`
+	DataPoints            int32  `form:"data_points"`
 }
 
 // getHistoricalData returns exchange rate history with evenly distributed data points.
@@ -299,6 +300,7 @@ func (server *Server) getHistoricalData(ctx *gin.Context) {
 		DestinationCurrencyID: req.DestinationCurrencyID,
 		SourceID:              sql.NullInt32{Int32: req.SourceID, Valid: true},
 		UpdatedAt:             sql.NullTime{Time: startDate, Valid: true},
+		TypeID:                sql.NullInt32{Int32: req.TypeID, Valid: true},
 		Ntile:                 req.DataPoints,
 	})
 
