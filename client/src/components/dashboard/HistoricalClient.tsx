@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { CurrencyPairBadge } from "@/components/currency/currency-flag";
-import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
-import { DEFAULT_SOURCE_CURRENCY_ID, DEFAULT_TARGET_CURRENCY_CODE } from "@/types/exchange-rates";
+import type { Currency, ExchangeRateLatest, RateSourceMetadata } from "@/types/exchange-rates";
+import { DEFAULT_SOURCE_CURRENCY_ID, DEFAULT_TARGET_CURRENCY_CODE, EXCHANGE_RATES_LIMIT } from "@/types/exchange-rates";
 import { TIME_RANGES, ANALYTICS_DATA_POINTS } from "@/lib/constants";
 import {
   LineChart,
@@ -131,6 +131,7 @@ export function HistoricalClient({
   
   const [historicalRates, setHistoricalRates] = useState<HistoricalDataPoint[]>([]);
   const [exchangeRateTypes, setExchangeRateTypes] = useState<ExchangeRateType[]>([]);
+  const [latestRates, setLatestRates] = useState<ExchangeRateLatest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const currencyOptions = useMemo(
@@ -166,13 +167,39 @@ export function HistoricalClient({
     return map;
   }, [exchangeRateTypes]);
 
-  // Type selection must not depend on historical data, because historical fetches
-  // are already scoped to the selected type.
-  const availableTypes = useMemo(() => {
-    return exchangeRateTypes
-      .map((type) => type.type_id)
-      .sort((a, b) => a - b);
+  const typeIdByName = useMemo(() => {
+    const map = new Map<string, number>();
+    exchangeRateTypes.forEach((type) => {
+      map.set(type.type_name.trim().toLowerCase(), type.type_id);
+    });
+    return map;
   }, [exchangeRateTypes]);
+
+  const selectedSourceCode = useMemo(() => {
+    return sourceOptions.find((source) => source.id === selectedSource)?.code ?? "";
+  }, [sourceOptions, selectedSource]);
+
+  // Limit the chart type dropdown to types available for the selected source/pair.
+  const availableTypes = useMemo(() => {
+    const typeIds = new Set<number>();
+
+    for (const rate of latestRates) {
+      const sourceCode = wireString(rate.RateSourceCode);
+      const typeName = wireString(rate.TypeName).trim().toLowerCase();
+      const typeId = typeIdByName.get(typeName);
+
+      if (
+        typeId != null &&
+        sourceCode === selectedSourceCode &&
+        rate.SourceCurrencyCode === fromCurrency &&
+        rate.DestinationCurrencyCode === toCurrency
+      ) {
+        typeIds.add(typeId);
+      }
+    }
+
+    return Array.from(typeIds).sort((a, b) => a - b);
+  }, [latestRates, selectedSourceCode, fromCurrency, toCurrency, typeIdByName]);
 
   useEffect(() => {
     if (!sourceOptions.length) return;
@@ -184,6 +211,37 @@ export function HistoricalClient({
   useEffect(() => {
     setHasUserSelectedType(false);
   }, [fromCurrency, toCurrency, selectedSource, timeRange]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchLatestRates = async () => {
+      try {
+        const url = new URL(`${apiBase}/exchange-rates-latest`);
+        url.searchParams.append("source_currency_id", String(sourceCurrencyId));
+        url.searchParams.append("limit", String(EXCHANGE_RATES_LIMIT));
+
+        const res = await fetch(url.toString(), { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setLatestRates([]);
+          return;
+        }
+
+        const data: unknown = await res.json();
+        const rates = Array.isArray(data) ? data : [];
+        if (!cancelled) setLatestRates(rates);
+      } catch (error) {
+        console.error("Failed to fetch latest rates:", error);
+        if (!cancelled) setLatestRates([]);
+      }
+    };
+
+    fetchLatestRates();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase, sourceCurrencyId]);
 
   // Fetch historical data from API
   useEffect(() => {
@@ -245,26 +303,28 @@ export function HistoricalClient({
     fetchTypes();
   }, [apiBase]);
 
-  // Prefer the business-default trend type when metadata is available.
+  // Prefer the business-default trend type when it exists for the selected source/pair.
   useEffect(() => {
-    if (exchangeRateTypes.length === 0) return;
+    if (availableTypes.length === 0) {
+      if (selectedType !== null) {
+        setSelectedType(null);
+      }
+      return;
+    }
 
-    const buyTransferType = exchangeRateTypes.find(
-      (type) => type.type_name.trim().toLowerCase() === "buy transfer",
-    )?.type_id;
-    const nextType = buyTransferType ?? exchangeRateTypes[0].type_id;
-    const selectedTypeExists = exchangeRateTypes.some(
-      (type) => type.type_id === selectedType,
+    const buyTransferType = availableTypes.find(
+      (type) => typeNameMap.get(type)?.trim().toLowerCase() === "buy transfer",
     );
+    const nextType = buyTransferType ?? availableTypes[0];
 
     if (
       selectedType === null ||
-      !selectedTypeExists ||
+      !availableTypes.includes(selectedType) ||
       (!hasUserSelectedType && buyTransferType != null && selectedType !== buyTransferType)
     ) {
       setSelectedType(nextType);
     }
-  }, [exchangeRateTypes, hasUserSelectedType, selectedType]);
+  }, [availableTypes, hasUserSelectedType, selectedType, typeNameMap]);
 
   // Transform historical data to chart format
   const chartData = useMemo(() => {
