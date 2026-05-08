@@ -7,7 +7,11 @@ import {
   ExchangeRateLatest, 
   Currency,
   RateSourceMetadata,
-  EXCHANGE_RATES_LIMIT 
+  EXCHANGE_RATES_LIMIT,
+  DESKTOP_SOURCES_PER_PAGE,
+  DESKTOP_RATE_PREVIEW_LIMIT,
+  MOBILE_SOURCES_PER_PAGE,
+  MOBILE_RATE_PREVIEW_LIMIT
 } from "@/types/exchange-rates";
 
 function nullString(
@@ -60,11 +64,6 @@ function rateSourceKey(r: ExchangeRateLatest): string {
 function currencyLabel(c: Currency): string {
   return `${c.CurrencyCode} — ${c.CurrencyName}`;
 }
-
-const DESKTOP_SOURCES_PER_PAGE = 5;
-const DESKTOP_RATE_PREVIEW_LIMIT = 4;
-const MOBILE_SOURCES_PER_PAGE = 3;
-const MOBILE_RATE_PREVIEW_LIMIT = 2;
 
 type Props = {
   apiBase: string;
