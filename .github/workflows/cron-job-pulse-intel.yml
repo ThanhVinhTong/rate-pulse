@@ -22,6 +22,9 @@ jobs:
       MONGO_URI: ${{ secrets.MONGO_URI }}
       MONGO_DB: ${{ secrets.MONGO_DB }}
       MONGO_COLLECTION: ${{ secrets.MONGO_COLLECTION }}
+      GMAIL_SMTP_USER_INTEL: ${{ secrets.GMAIL_SMTP_USER_INTEL }}
+      GMAIL_APP_PASSWORD_INTEL: ${{ secrets.GMAIL_APP_PASSWORD_INTEL }}
+      GMAIL_NOTIFY_TO_INTEL: ${{ secrets.GMAIL_NOTIFY_TO_INTEL }}
 
     steps:
       - uses: actions/checkout@v6
