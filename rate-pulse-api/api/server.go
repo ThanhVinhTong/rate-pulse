@@ -6,6 +6,7 @@ import (
 	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-contrib/cors"
@@ -17,6 +18,7 @@ type Server struct {
 	config     util.Config
 	store      *db.Store
 	tokenMaker token.Maker
+	services   *service.Services
 	router     *gin.Engine
 }
 
@@ -30,6 +32,7 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 		config:     config,
 		store:      store,
 		tokenMaker: tokenMaker,
+		services:   service.NewServices(config, store, tokenMaker),
 	}
 
 	server.setupRouter()
