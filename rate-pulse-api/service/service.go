@@ -8,11 +8,13 @@ import (
 
 // Services groups application use cases behind transport layers such as REST and gRPC.
 type Services struct {
-	Auth *AuthService
+	Auth  *AuthService
+	Users *UserService
 }
 
 func NewServices(config util.Config, store *db.Store, tokenMaker token.Maker) *Services {
 	return &Services{
-		Auth: NewAuthService(config, store, tokenMaker),
+		Auth:  NewAuthService(config, store, tokenMaker),
+		Users: NewUserService(store),
 	}
 }

@@ -21,6 +21,9 @@ var (
 	ErrSessionBlocked     = NewError("SESSION_BLOCKED", "session is blocked")            // 401
 	ErrSessionExpired     = NewError("SESSION_EXPIRED", "session expired")               // 401
 
+	// Not found errors (4xx)
+	ErrNotFound = NewError("NOT_FOUND", "not found") // 404
+
 	// Conflict errors (4xx)
 	ErrDuplicateEmail = NewError("DUPLICATE_EMAIL", "email already exists") // 409
 

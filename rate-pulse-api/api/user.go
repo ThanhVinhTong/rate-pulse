@@ -1,13 +1,11 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/service"
-	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -71,8 +69,8 @@ func newUserResponse(user db.User) userResponse {
 	}
 }
 
-// mapper from AuthUser to userResponse
-func newUserResponseFromAuthUser(user service.AuthUser) userResponse {
+// mapper from User to userResponse
+func newUserResponseFromServiceUser(user service.User) userResponse {
 	return userResponse{
 		UserID:             user.UserID,
 		Username:           user.Username,
@@ -126,7 +124,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponseFromAuthUser(user))
+	ctx.JSON(http.StatusOK, newUserResponseFromServiceUser(user))
 }
 
 // getUserRequest represents the URI parameters for fetching a single user.
@@ -155,13 +153,15 @@ func (server *Server) getUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserByID(ctx, req.ID)
+	user, err := server.services.Users.GetUser(ctx, service.GetUserInput{
+		UserID: req.ID,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user))
+	ctx.JSON(http.StatusOK, newUserResponseFromServiceUser(user))
 }
 
 // listUserRequest represents the query parameters for listing users with pagination.
@@ -192,20 +192,18 @@ func (server *Server) listUser(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListUsersParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	users, err := server.store.ListUsers(ctx, arg)
+	users, err := server.services.Users.ListUsers(ctx, service.ListUsersInput{
+		PageID:   req.PageID,
+		PageSize: req.PageSize,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
 	responses := make([]userResponse, len(users))
 	for i, user := range users {
-		responses[i] = newUserResponse(user)
+		responses[i] = newUserResponseFromServiceUser(user)
 	}
 
 	ctx.JSON(http.StatusOK, responses)
@@ -270,37 +268,24 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	// Hash password if provided
-	var hashedPassword *string
-	if req.Password != nil {
-		hashed, err := util.HashPassword(*req.Password)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-		hashedPassword = &hashed
-	}
-
-	arg := db.UpdateUserParams{
-		Username:           sql.NullString{String: util.Value(req.Username), Valid: req.Username != nil},
-		Email:              sql.NullString{String: util.Value(req.Email), Valid: req.Email != nil},
-		Password:           sql.NullString{String: util.Value(hashedPassword), Valid: hashedPassword != nil},
-		TimeZone:           sql.NullString{String: util.Value(req.TimeZone), Valid: req.TimeZone != nil},
-		LanguagePreference: sql.NullString{String: util.Value(req.LanguagePreference), Valid: req.LanguagePreference != nil},
-		CountryOfResidence: sql.NullString{String: util.Value(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
-		CountryOfBirth:     sql.NullString{String: util.Value(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
-		FirstName:          sql.NullString{String: util.Value(req.FirstName), Valid: req.FirstName != nil},
-		LastName:           sql.NullString{String: util.Value(req.LastName), Valid: req.LastName != nil},
+	user, err := server.services.Users.UpdateUser(ctx, service.UpdateUserInput{
 		UserID:             uriReq.ID,
-	}
-
-	user, err := server.store.UpdateUser(ctx, arg)
+		Username:           req.Username,
+		Email:              req.Email,
+		Password:           req.Password,
+		TimeZone:           req.TimeZone,
+		LanguagePreference: req.LanguagePreference,
+		CountryOfResidence: req.CountryOfResidence,
+		CountryOfBirth:     req.CountryOfBirth,
+		FirstName:          req.FirstName,
+		LastName:           req.LastName,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user))
+	ctx.JSON(http.StatusOK, newUserResponseFromServiceUser(user))
 }
 
 // adminUpdateUser handles admin-only updates to an existing user.
@@ -327,40 +312,27 @@ func (server *Server) adminUpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	// Hash password if provided
-	var hashedPassword *string
-	if req.Password != nil {
-		hashed, err := util.HashPassword(*req.Password)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-		hashedPassword = &hashed
-	}
-
-	arg := db.UpdateUserParams{
-		Username:           sql.NullString{String: util.Value(req.Username), Valid: req.Username != nil},
-		Email:              sql.NullString{String: util.Value(req.Email), Valid: req.Email != nil},
-		Password:           sql.NullString{String: util.Value(hashedPassword), Valid: hashedPassword != nil},
-		UserType:           sql.NullString{String: util.Value(req.UserType), Valid: req.UserType != nil},
-		EmailVerified:      sql.NullBool{Bool: util.Value(req.EmailVerified), Valid: req.EmailVerified != nil},
-		TimeZone:           sql.NullString{String: util.Value(req.TimeZone), Valid: req.TimeZone != nil},
-		LanguagePreference: sql.NullString{String: util.Value(req.LanguagePreference), Valid: req.LanguagePreference != nil},
-		CountryOfResidence: sql.NullString{String: util.Value(req.CountryOfResidence), Valid: req.CountryOfResidence != nil},
-		CountryOfBirth:     sql.NullString{String: util.Value(req.CountryOfBirth), Valid: req.CountryOfBirth != nil},
-		FirstName:          sql.NullString{String: util.Value(req.FirstName), Valid: req.FirstName != nil},
-		LastName:           sql.NullString{String: util.Value(req.LastName), Valid: req.LastName != nil},
-		IsActive:           sql.NullBool{Bool: util.Value(req.IsActive), Valid: req.IsActive != nil},
+	user, err := server.services.Users.AdminUpdateUser(ctx, service.AdminUpdateUserInput{
 		UserID:             uriReq.ID,
-	}
-
-	user, err := server.store.UpdateUser(ctx, arg)
+		Username:           req.Username,
+		Email:              req.Email,
+		Password:           req.Password,
+		UserType:           req.UserType,
+		EmailVerified:      req.EmailVerified,
+		TimeZone:           req.TimeZone,
+		LanguagePreference: req.LanguagePreference,
+		CountryOfResidence: req.CountryOfResidence,
+		CountryOfBirth:     req.CountryOfBirth,
+		FirstName:          req.FirstName,
+		LastName:           req.LastName,
+		IsActive:           req.IsActive,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user))
+	ctx.JSON(http.StatusOK, newUserResponseFromServiceUser(user))
 }
 
 // deleteUserRequest represents the URI parameters for deleting a single user.
@@ -389,9 +361,11 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	err := server.store.DeleteUserByID(ctx, req.ID)
+	err := server.services.Users.DeleteUser(ctx, service.DeleteUserInput{
+		UserID: req.ID,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
@@ -437,7 +411,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		AccessTokenExpiresAt:  args.AccessTokenExpiresAt,
 		RefreshToken:          args.RefreshToken,
 		RefreshTokenExpiresAt: args.RefreshTokenExpiresAt,
-		User:                  newUserResponseFromAuthUser(args.User),
+		User:                  newUserResponseFromServiceUser(args.User),
 	}
 	ctx.JSON(http.StatusOK, res)
 }

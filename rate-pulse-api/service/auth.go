@@ -1,3 +1,7 @@
+/*
+auth service is responsible for handling all authentication related operations.
+It provides methods for creating users, signing in users, renewing access tokens, and signing out users.
+*/
 package service
 
 import (
@@ -26,19 +30,19 @@ func NewAuthService(config util.Config, store *db.Store, tokenMaker token.Maker)
 	}
 }
 
-func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (AuthUser, error) {
+func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (User, error) {
 	// Normalize the email address
 	email := util.NormalizeEmail(input.Email)
 
 	// Check if the password is weak or not
 	if err := util.ValidatePassword(input.Password); err != nil {
-		return AuthUser{}, Wrap(err, ErrInvalidInput.Code, "weak password")
+		return User{}, Wrap(err, ErrInvalidInput.Code, "weak password")
 	}
 
 	// Hash the password before storing
 	hashedPassword, err := util.HashPassword(input.Password)
 	if err != nil {
-		return AuthUser{}, Wrap(err, ErrInternal.Code, "failed to hash password")
+		return User{}, Wrap(err, ErrInternal.Code, "failed to hash password")
 	}
 
 	user, err := s.store.CreateUser(ctx, db.CreateUserParams{
@@ -58,11 +62,11 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Au
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code.Name() == "unique_violation" {
-			return AuthUser{}, Wrap(err, ErrDuplicateEmail.Code, ErrDuplicateEmail.Message)
+			return User{}, Wrap(err, ErrDuplicateEmail.Code, ErrDuplicateEmail.Message)
 		}
-		return AuthUser{}, Wrap(err, ErrInternal.Code, "failed to create user")
+		return User{}, Wrap(err, ErrInternal.Code, "failed to create user")
 	}
-	return newAuthUser(user), nil
+	return NewUser(user), nil
 }
 
 func (s *AuthService) SignIn(ctx context.Context, input SignInInput) (SignInResult, error) {
@@ -143,7 +147,7 @@ func (s *AuthService) SignIn(ctx context.Context, input SignInInput) (SignInResu
 		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
 		RefreshToken:          refreshToken,
 		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
-		User:                  newAuthUser(user),
+		User:                  NewUser(user),
 	}
 	return res, nil
 }
@@ -205,23 +209,4 @@ func (s *AuthService) SignOut(ctx context.Context, refreshToken string) error {
 		return Wrap(errors.New("refresh token is required"), ErrInvalidInput.Code, "refresh token is required")
 	}
 	return nil
-}
-
-func newAuthUser(user db.User) AuthUser {
-	return AuthUser{
-		UserID:             user.UserID,
-		Username:           user.Username,
-		Email:              user.Email,
-		UserType:           user.UserType.String,
-		EmailVerified:      user.EmailVerified.Bool,
-		TimeZone:           user.TimeZone.String,
-		LanguagePreference: user.LanguagePreference.String,
-		CountryOfResidence: user.CountryOfResidence.String,
-		CountryOfBirth:     user.CountryOfBirth.String,
-		FirstName:          user.FirstName.String,
-		LastName:           user.LastName.String,
-		IsActive:           user.IsActive.Bool,
-		CreatedAt:          user.CreatedAt.Time,
-		UpdatedAt:          user.UpdatedAt.Time,
-	}
 }
