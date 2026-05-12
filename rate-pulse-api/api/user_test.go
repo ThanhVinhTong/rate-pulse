@@ -6,12 +6,30 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateUser(t *testing.T) {
+func makeJSONRequest(t *testing.T, method, path string, payload map[string]any) *http.Request {
+	t.Helper()
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(method, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
+func serveRequest(server *Server, req *http.Request) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	server.router.ServeHTTP(w, req)
+	return w
+}
+
+func TestCreateUserValidation(t *testing.T) {
 	tests := []struct {
 		name         string
 		payload      map[string]any
@@ -20,26 +38,42 @@ func TestCreateUser(t *testing.T) {
 		{
 			name: "missing username",
 			payload: map[string]any{
-				"email":    "test@example.com",
-				"password": "StrongPass123!xyz",
+				"email":      "test@example.com",
+				"password":   "StrongPass123!xyz",
+				"first_name": "Test",
+				"last_name":  "User",
+			},
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "missing first name",
+			payload: map[string]any{
+				"username":  "testuser",
+				"email":     "test@example.com",
+				"password":  "StrongPass123!xyz",
+				"last_name": "User",
 			},
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			name: "invalid email",
 			payload: map[string]any{
-				"username": "testuser",
-				"email":    "not-an-email",
-				"password": "StrongPass123!xyz",
+				"username":   "testuser",
+				"email":      "not-an-email",
+				"password":   "StrongPass123!xyz",
+				"first_name": "Test",
+				"last_name":  "User",
 			},
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			name: "weak password",
 			payload: map[string]any{
-				"username": "testuser",
-				"email":    "test@example.com",
-				"password": "123",
+				"username":   "testuser",
+				"email":      "test@example.com",
+				"password":   "123",
+				"first_name": "Test",
+				"last_name":  "User",
 			},
 			expectedCode: http.StatusBadRequest,
 		},
@@ -48,72 +82,180 @@ func TestCreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := newTestServer(t, &db.Store{})
+			req := makeJSONRequest(t, http.MethodPost, "/users/signup", tt.payload)
+			w := serveRequest(server, req)
 
-			body, _ := json.Marshal(tt.payload)
-			req := httptest.NewRequest(http.MethodPost, "/users/signup", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
-
-			w := httptest.NewRecorder()
-			server.router.ServeHTTP(w, req)
-
-			require.Equal(t, tt.expectedCode, w.Code, "Wrong status code for test: "+tt.name)
+			require.Equal(t, tt.expectedCode, w.Code)
 		})
 	}
 }
 
-func TestLoginUser(t *testing.T) {
+func TestLoginUserValidation(t *testing.T) {
 	tests := []struct {
 		name         string
 		payload      map[string]any
 		expectedCode int
-		description  string
 	}{
 		{
-			name:         "missing_email",
+			name:         "missing email",
 			payload:      map[string]any{"password": "StrongPass123!xyz"},
 			expectedCode: http.StatusBadRequest,
-			description:  "should fail when email is missing",
 		},
 		{
-			name:         "missing_password",
+			name:         "missing password",
 			payload:      map[string]any{"email": "test@example.com"},
 			expectedCode: http.StatusBadRequest,
-			description:  "should fail when password is missing",
 		},
 		{
-			name:         "empty_email",
+			name:         "empty email",
 			payload:      map[string]any{"email": "", "password": "StrongPass123!xyz"},
 			expectedCode: http.StatusBadRequest,
-			description:  "should fail when email is empty",
 		},
 		{
-			name:         "empty_password",
+			name:         "empty password",
 			payload:      map[string]any{"email": "test@example.com", "password": ""},
 			expectedCode: http.StatusBadRequest,
-			description:  "should fail when password is empty",
 		},
 		{
-			name:         "invalid_email_format",
+			name:         "invalid email format",
 			payload:      map[string]any{"email": "not-an-email", "password": "StrongPass123!xyz"},
 			expectedCode: http.StatusBadRequest,
-			description:  "should fail on invalid email format",
-		},
-		{
-			name:         "email_with_whitespace",
-			payload:      map[string]any{"email": "  test@example.com  ", "password": "StrongPass123!xyz"},
-			expectedCode: http.StatusBadRequest,
-			description:  "whitespace should be trimmed by normalizeEmail",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := newTestServer(t, &db.Store{})
-			body, _ := json.Marshal(tt.payload)
-			req := httptest.NewRequest(http.MethodPost, "/users/signin", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			server.router.ServeHTTP(w, req)
-			require.Equal(t, tt.expectedCode, w.Code, tt.description)
+			req := makeJSONRequest(t, http.MethodPost, "/users/signin", tt.payload)
+			w := serveRequest(server, req)
+
+			require.Equal(t, tt.expectedCode, w.Code)
 		})
 	}
+}
+
+func TestLogoutUserValidation(t *testing.T) {
+	server := newTestServer(t, &db.Store{})
+
+	req := makeJSONRequest(t, http.MethodPost, "/users/signout", map[string]any{})
+	w := serveRequest(server, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestProtectedUserRoutesRequireAuth(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   map[string]any
+	}{
+		{"get user", http.MethodGet, "/users/1", nil},
+		{"list users", http.MethodGet, "/users?page_id=1&page_size=5", nil},
+		{"update user", http.MethodPut, "/users/1", map[string]any{"first_name": "Test"}},
+		{"admin update user", http.MethodPut, "/admin/users/1", map[string]any{"user_type": "admin"}},
+		{"delete user", http.MethodDelete, "/admin/users/1", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestServer(t, &db.Store{})
+
+			var req *http.Request
+			if tt.body != nil {
+				req = makeJSONRequest(t, tt.method, tt.path, tt.body)
+			} else {
+				req = httptest.NewRequest(tt.method, tt.path, nil)
+			}
+
+			w := serveRequest(server, req)
+
+			require.Equal(t, http.StatusUnauthorized, w.Code)
+		})
+	}
+}
+
+func TestAdminUserRoutesRequireAdmin(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   map[string]any
+	}{
+		{"admin update user", http.MethodPut, "/admin/users/1", map[string]any{"user_type": "admin"}},
+		{"delete user", http.MethodDelete, "/admin/users/1", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestServer(t, &db.Store{})
+
+			var req *http.Request
+			if tt.body != nil {
+				req = makeJSONRequest(t, tt.method, tt.path, tt.body)
+			} else {
+				req = httptest.NewRequest(tt.method, tt.path, nil)
+			}
+
+			addAuthorization(
+				t,
+				req,
+				server.tokenMaker,
+				authorizationTypeBearer,
+				1,
+				"user@example.com",
+				"testuser",
+				UserTypeFree,
+				time.Minute,
+			)
+
+			w := serveRequest(server, req)
+
+			require.Equal(t, http.StatusUnauthorized, w.Code)
+		})
+	}
+}
+
+func TestListUsersBinding(t *testing.T) {
+	server := newTestServer(t, &db.Store{})
+
+	req := httptest.NewRequest(http.MethodGet, "/users?page_id=0&page_size=5", nil)
+	addAuthorization(
+		t,
+		req,
+		server.tokenMaker,
+		authorizationTypeBearer,
+		1,
+		"user@example.com",
+		"testuser",
+		UserTypeFree,
+		time.Minute,
+	)
+
+	w := serveRequest(server, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdateUserBinding(t *testing.T) {
+	server := newTestServer(t, &db.Store{})
+
+	req := makeJSONRequest(t, http.MethodPut, "/users/0", map[string]any{
+		"first_name": "Test",
+	})
+	addAuthorization(
+		t,
+		req,
+		server.tokenMaker,
+		authorizationTypeBearer,
+		1,
+		"user@example.com",
+		"testuser",
+		UserTypeFree,
+		time.Minute,
+	)
+
+	w := serveRequest(server, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
