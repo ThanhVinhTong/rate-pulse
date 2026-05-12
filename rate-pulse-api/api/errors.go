@@ -17,7 +17,10 @@ func RespondServiceError(ctx *gin.Context, err error) {
 		service.ErrSessionBlocked.Code,
 		service.ErrSessionExpired.Code:
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-	case service.ErrDuplicateEmail.Code:
+	case service.ErrNotFound.Code:
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+	case service.ErrDuplicateEmail.Code,
+		service.ErrDuplicateExchangeRate.Code:
 		ctx.JSON(http.StatusConflict, errorResponse(err))
 	default:
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

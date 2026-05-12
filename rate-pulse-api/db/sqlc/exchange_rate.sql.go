@@ -336,10 +336,10 @@ RETURNING rate_id, rate_value, source_currency_id, destination_currency_id, vali
 
 type UpdateExchangeRateParams struct {
 	RateID                int32
-	RateValue             string
-	SourceCurrencyID      int32
-	DestinationCurrencyID int32
-	ValidFromDate         time.Time
+	RateValue             sql.NullString
+	SourceCurrencyID      sql.NullInt32
+	DestinationCurrencyID sql.NullInt32
+	ValidFromDate         sql.NullTime
 	ValidToDate           sql.NullTime
 	SourceID              sql.NullInt32
 	TypeID                sql.NullInt32

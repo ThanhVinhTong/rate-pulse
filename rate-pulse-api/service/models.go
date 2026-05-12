@@ -107,3 +107,79 @@ type AdminUpdateUserInput struct {
 type DeleteUserInput struct {
 	UserID int32
 }
+
+/*
+fx service models
+*/
+type ExchangeRate struct {
+	RateID                int32
+	RateValue             string
+	SourceCurrencyID      int32
+	DestinationCurrencyID int32
+	ValidFromDate         time.Time
+	ValidToDate           time.Time
+	SourceID              int32
+	TypeID                int32
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+}
+
+type LatestExchangeRate struct {
+	RateID                  int32
+	RateValue               string
+	SourceCurrencyCode      string
+	DestinationCurrencyCode string
+	ValidFromDate           time.Time
+	RateSourceCode          string
+	TypeName                string
+	UpdatedAt               time.Time
+}
+
+type HistoricalDataPoint struct {
+	RateValue string
+	UpdatedAt time.Time
+	TypeID    int32
+}
+
+type CreateExchangeRateInput struct {
+	RateValue             string
+	SourceCurrencyID      int32
+	DestinationCurrencyID int32
+	ValidFromDate         time.Time
+	ValidToDate           time.Time
+	SourceID              int32
+	TypeID                int32
+}
+
+type GetExchangeRateInput struct {
+	RateID int32
+}
+
+type ListLatestExchangeRatesInput struct {
+	SourceCurrencyID int32
+	Limit            int32
+}
+
+type UpdateExchangeRateInput struct {
+	RateID                int32
+	RateValue             *string
+	SourceCurrencyID      *int32
+	DestinationCurrencyID *int32
+	ValidFromDate         *time.Time
+	ValidToDate           *time.Time
+	SourceID              *int32
+	TypeID                *int32
+}
+
+type DeleteExchangeRateInput struct {
+	RateID int32
+}
+
+type GetHistoricalDataInput struct {
+	SourceCurrencyID      int32
+	DestinationCurrencyID int32
+	SourceID              int32
+	TypeID                int32
+	TimeRange             string
+	DataPoints            int32
+}
