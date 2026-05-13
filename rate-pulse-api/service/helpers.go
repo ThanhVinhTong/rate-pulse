@@ -23,3 +23,57 @@ func NewUser(user db.User) User {
 		UpdatedAt:          user.UpdatedAt.Time,
 	}
 }
+
+/*
+	Helper function to create a new ExchangeRate from a db.ExchangeRate.
+*/
+func NewExchangeRate(rate db.ExchangeRate) ExchangeRate {
+	return ExchangeRate{
+		RateID:                rate.RateID,
+		RateValue:             rate.RateValue,
+		SourceCurrencyID:      rate.SourceCurrencyID,
+		DestinationCurrencyID: rate.DestinationCurrencyID,
+		ValidFromDate:         rate.ValidFromDate,
+		ValidToDate:           rate.ValidToDate.Time,
+		SourceID:              rate.SourceID.Int32,
+		TypeID:                rate.TypeID.Int32,
+		CreatedAt:             rate.CreatedAt.Time,
+		UpdatedAt:             rate.UpdatedAt.Time,
+	}
+}
+
+func NewExchangeRateFromGetRow(rate db.GetExchangeRateByIDRow) ExchangeRate {
+	return ExchangeRate{
+		RateID:                rate.RateID,
+		RateValue:             rate.RateValue,
+		SourceCurrencyID:      rate.SourceCurrencyID,
+		DestinationCurrencyID: rate.DestinationCurrencyID,
+		ValidFromDate:         rate.ValidFromDate,
+		ValidToDate:           rate.ValidToDate.Time,
+		SourceID:              rate.SourceID.Int32,
+		TypeID:                rate.TypeID.Int32,
+		CreatedAt:             rate.CreatedAt.Time,
+		UpdatedAt:             rate.UpdatedAt.Time,
+	}
+}
+
+func NewLatestExchangeRate(rate db.GetAllExchangeRatesTodayNormalisedRow) LatestExchangeRate {
+	return LatestExchangeRate{
+		RateID:                  rate.RateID,
+		RateValue:               rate.RateValue,
+		SourceCurrencyCode:      rate.SourceCurrencyCode,
+		DestinationCurrencyCode: rate.DestinationCurrencyCode,
+		ValidFromDate:           rate.ValidFromDate,
+		RateSourceCode:          rate.RateSourceCode.String,
+		TypeName:                rate.TypeName.String,
+		UpdatedAt:               rate.UpdatedAt.Time,
+	}
+}
+
+func NewHistoricalDataPoint(point db.GetHistoricalDataRow) HistoricalDataPoint {
+	return HistoricalDataPoint{
+		RateValue: point.RateValue,
+		UpdatedAt: point.UpdatedAt.Time,
+		TypeID:    point.TypeID.Int32,
+	}
+}

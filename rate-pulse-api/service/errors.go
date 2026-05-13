@@ -25,7 +25,8 @@ var (
 	ErrNotFound = NewError("NOT_FOUND", "not found") // 404
 
 	// Conflict errors (4xx)
-	ErrDuplicateEmail = NewError("DUPLICATE_EMAIL", "email already exists") // 409
+	ErrDuplicateEmail        = NewError("DUPLICATE_EMAIL", "email already exists")            // 409
+	ErrDuplicateExchangeRate = NewError("DUPLICATE_EXCHANGE_RATE", "duplicate exchange rate") // 409
 
 	// Server errors (5xx)
 	ErrInternal = NewError("INTERNAL_SERVER_ERROR", "internal server error") // 500

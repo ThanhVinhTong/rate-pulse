@@ -10,11 +10,13 @@ import (
 type Services struct {
 	Auth  *AuthService
 	Users *UserService
+	FX    *FXService
 }
 
 func NewServices(config util.Config, store *db.Store, tokenMaker token.Maker) *Services {
 	return &Services{
 		Auth:  NewAuthService(config, store, tokenMaker),
 		Users: NewUserService(store),
+		FX:    NewFXService(store),
 	}
 }
