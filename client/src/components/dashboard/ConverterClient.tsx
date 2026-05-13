@@ -4,6 +4,10 @@ import { Copy, ExternalLink, RotateCcw } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/Button";
+import {
+  CurrencyCodeBadge,
+  CurrencyPairBadge,
+} from "@/components/currency/currency-flag";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FieldCaption } from "@/components/ui/label";
@@ -160,7 +164,9 @@ function ConverterCard({
             {subtitle}
           </Text>
         </div>
-        <Badge variant="muted">{inputCurrency}</Badge>
+        <Badge variant="muted" className="gap-1.5">
+          <CurrencyCodeBadge code={inputCurrency} className="text-xs" />
+        </Badge>
       </div>
 
       <label className="block">
@@ -175,8 +181,8 @@ function ConverterCard({
             onChange={(event) => onAmountChange(event.target.value)}
             className="flex-1"
           />
-          <div className="flex h-10 min-w-16 items-center justify-center rounded-md border border-border bg-panel px-3 text-sm font-semibold text-text-primary">
-            {inputCurrency}
+          <div className="flex h-10 min-w-20 items-center justify-center rounded-md border border-border bg-panel px-3 text-sm font-semibold text-text-primary">
+            <CurrencyCodeBadge code={inputCurrency} className="text-sm" />
           </div>
         </div>
       </label>
@@ -187,7 +193,9 @@ function ConverterCard({
           <p className="text-2xl font-semibold text-primary tabular-nums">
             {convertedAmount}
           </p>
-          <Badge>{outputCurrency}</Badge>
+          <Badge className="gap-1.5 normal-case">
+            <CurrencyCodeBadge code={outputCurrency} className="text-xs text-primary" />
+          </Badge>
         </div>
         <Text variant="caption" className="mt-2">
           {hasAmount && rateData
@@ -576,7 +584,13 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
             <Heading level="h3">Latest snapshot</Heading>
             <Text variant="muted" className="mt-1">
               Best available buy and sell transfer rates across banks for{" "}
-              {baseCurrencyCode} to {targetCurrencyCode || "-"}.
+              <CurrencyPairBadge
+                sourceCode={baseCurrencyCode}
+                destinationCode={targetCurrencyCode || "-"}
+                separator="to"
+                className="inline-flex"
+              />
+              .
             </Text>
             {snapshotError ? (
               <Text variant="error" className="mt-2">

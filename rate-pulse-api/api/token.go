@@ -1,11 +1,10 @@
 package api
 
 import (
-	"database/sql"
-	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,60 +24,16 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	refreshPayload, err := server.tokenMaker.VerifyToken(req.RefreshToken)
+	res, err := server.services.Auth.RenewAccessToken(ctx, service.RenewAccessTokenInput{
+		RefreshToken: req.RefreshToken,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
-	session, err := server.store.GetSessionByID(ctx, refreshPayload.ID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "session not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	if session.IsBlocked.Valid && session.IsBlocked.Bool {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "session is blocked"})
-		return
-	}
-
-	if session.UserID != refreshPayload.UserID {
-		err := fmt.Errorf("incorrect session user")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	if session.RefreshToken != req.RefreshToken {
-		err := fmt.Errorf("mismatched session token")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	if time.Now().After(session.ExpiresAt) {
-		err := fmt.Errorf("session expired")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
-		refreshPayload.UserID,
-		refreshPayload.Username,
-		refreshPayload.Email,
-		refreshPayload.UserType,
-		server.config.AccessTokenDuration,
-	)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	res := renewAccessTokenResponse{
-		AccessToken:          accessToken,
-		AccessTokenExpiresAt: accessPayload.ExpiredAt,
-	}
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusOK, renewAccessTokenResponse{
+		AccessToken:          res.AccessToken,
+		AccessTokenExpiresAt: res.AccessTokenExpiresAt,
+	})
 }

@@ -1,16 +1,11 @@
 package api
 
 import (
-	"database/sql"
-	"errors"
-	"log"
 	"net/http"
 	"time"
 
-	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
-	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/gin-gonic/gin"
-	"github.com/lib/pq"
 )
 
 // createExchangeRateRequest represents the request body for creating a new exchange rate.
@@ -44,30 +39,17 @@ func (server *Server) createExchangeRate(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.CreateExchangeRateParams{
+	exchangeRate, err := server.services.FX.CreateExchangeRate(ctx, service.CreateExchangeRateInput{
 		RateValue:             req.RateValue,
 		SourceCurrencyID:      req.SourceCurrencyID,
 		DestinationCurrencyID: req.DestinationCurrencyID,
 		ValidFromDate:         req.ValidFromDate,
-		ValidToDate:           sql.NullTime{Time: req.ValidToDate, Valid: !req.ValidToDate.IsZero()},
-		SourceID:              sql.NullInt32{Int32: req.SourceID, Valid: req.SourceID > 0},
-		TypeID:                sql.NullInt32{Int32: req.Type, Valid: req.Type > 0},
-	}
-
-	exchangeRate, err := server.store.CreateExchangeRate(ctx, arg)
+		ValidToDate:           req.ValidToDate,
+		SourceID:              req.SourceID,
+		TypeID:                req.Type,
+	})
 	if err != nil {
-		var pqErr *pq.Error
-		if errors.As(err, &pqErr) {
-			switch pqErr.Code {
-			case "23505":
-				ctx.JSON(http.StatusConflict, gin.H{"error": "duplicate exchange rate"})
-				return
-			case "23503":
-				ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid reference id"})
-				return
-			}
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
@@ -100,13 +82,11 @@ func (server *Server) getExchangeRate(ctx *gin.Context) {
 		return
 	}
 
-	exchangeRate, err := server.store.GetExchangeRateByID(ctx, req.ID)
+	exchangeRate, err := server.services.FX.GetExchangeRate(ctx, service.GetExchangeRateInput{
+		RateID: req.ID,
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "exchange rate not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
@@ -117,7 +97,7 @@ func (server *Server) getExchangeRate(ctx *gin.Context) {
 // PageID starts from 1 and PageSize must be between 5 and 10.
 type listExchangeRateRequest struct {
 	SourceCurrencyID int32 `form:"source_currency_id" binding:"required,min=1"`
-	Limit            int32 `form:"limit,default=20" binding:"min=1,max=1000"`
+	Limit            int32 `form:"limit,default=20" binding:"min=1,max=2000"`
 }
 
 // Response: Array of ExchangeRate objects on success, error message on failure
@@ -132,23 +112,16 @@ func (server *Server) listExchangeRateToday(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.GetAllExchangeRatesTodayNormalisedParams{
+	exchangeRates, err := server.services.FX.ListLatestExchangeRates(ctx, service.ListLatestExchangeRatesInput{
 		SourceCurrencyID: req.SourceCurrencyID,
 		Limit:            req.Limit,
-	}
-	start := time.Now()
-
-	dbStart := time.Now()
-	exchangeRates, err := server.store.GetAllExchangeRatesTodayNormalised(ctx, arg)
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
-	log.Printf("db query took %s", time.Since(dbStart))
-	log.Printf("total query took %s", time.Since(start))
 
 	ctx.JSON(http.StatusOK, exchangeRates)
-	log.Printf("handler total took %s", time.Since(start))
 }
 
 // updateExchangeRateRequest represents the request body for updating an exchange rate.
@@ -191,20 +164,18 @@ func (server *Server) updateExchangeRate(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.UpdateExchangeRateParams{
+	exchangeRate, err := server.services.FX.UpdateExchangeRate(ctx, service.UpdateExchangeRateInput{
 		RateID:                uriReq.ID,
-		RateValue:             util.Value(req.RateValue),
-		SourceCurrencyID:      util.Value(req.SourceCurrencyID),
-		DestinationCurrencyID: util.Value(req.DestinationCurrencyID),
-		ValidFromDate:         util.Value(req.ValidFromDate),
-		ValidToDate:           sql.NullTime{Time: util.Value(req.ValidToDate), Valid: req.ValidToDate != nil},
-		SourceID:              sql.NullInt32{Int32: util.Value(req.SourceID), Valid: req.SourceID != nil},
-		TypeID:                sql.NullInt32{Int32: util.Value(req.TypeID), Valid: req.TypeID != nil},
-	}
-
-	exchangeRate, err := server.store.UpdateExchangeRate(ctx, arg)
+		RateValue:             req.RateValue,
+		SourceCurrencyID:      req.SourceCurrencyID,
+		DestinationCurrencyID: req.DestinationCurrencyID,
+		ValidFromDate:         req.ValidFromDate,
+		ValidToDate:           req.ValidToDate,
+		SourceID:              req.SourceID,
+		TypeID:                req.TypeID,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 
@@ -237,9 +208,8 @@ func (server *Server) deleteExchangeRate(ctx *gin.Context) {
 		return
 	}
 
-	err := server.store.DeleteExchangeRate(ctx, req.ID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+	if err := server.services.FX.DeleteExchangeRate(ctx, service.DeleteExchangeRateInput{RateID: req.ID}); err != nil {
+		RespondServiceError(ctx, err)
 		return
 	}
 
@@ -253,8 +223,9 @@ type getHistoricalRequest struct {
 	SourceCurrencyID      int32  `form:"source_currency_id" binding:"required,min=1"`
 	DestinationCurrencyID int32  `form:"destination_currency_id" binding:"required,min=1"`
 	SourceID              int32  `form:"source_id" binding:"required,min=1"`
-	TimeRange             string `form:"time_range" binding:"required"` // e.g., "24h", "7d", "2w", "1m", "1y", "all"
-	DataPoints            int32  `form:"data_points"`                   // Default: 50, max: 500
+	TypeID                int32  `form:"type_id" binding:"required,min=1"`
+	TimeRange             string `form:"time_range" binding:"required"`
+	DataPoints            int32  `form:"data_points"`
 }
 
 // getHistoricalData returns exchange rate history with evenly distributed data points.
@@ -282,34 +253,16 @@ func (server *Server) getHistoricalData(ctx *gin.Context) {
 		return
 	}
 
-	// Set default and validate data_points
-	if req.DataPoints == 0 {
-		req.DataPoints = 50
-	}
-	if req.DataPoints > 500 {
-		req.DataPoints = 500
-	}
-
-	// Parse time range to duration
-	duration, err := util.ParseTimeRangeToDuration(req.TimeRange)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Calculate start date by subtracting duration from now
-	startDate := time.Now().Add(-duration)
-
-	rows, err := server.store.GetHistoricalData(ctx, db.GetHistoricalDataParams{
+	rows, err := server.services.FX.GetHistoricalData(ctx, service.GetHistoricalDataInput{
 		SourceCurrencyID:      req.SourceCurrencyID,
 		DestinationCurrencyID: req.DestinationCurrencyID,
-		SourceID:              sql.NullInt32{Int32: req.SourceID, Valid: true},
-		UpdatedAt:             sql.NullTime{Time: startDate, Valid: true},
-		Ntile:                 req.DataPoints,
+		SourceID:              req.SourceID,
+		TypeID:                req.TypeID,
+		TimeRange:             req.TimeRange,
+		DataPoints:            req.DataPoints,
 	})
-
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		RespondServiceError(ctx, err)
 		return
 	}
 

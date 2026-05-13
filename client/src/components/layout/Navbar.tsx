@@ -22,6 +22,7 @@ const publicItems = [
   { href: "/exchange-rates", label: "Exchange Rates" },
   { href: "/converter", label: "Converter" },
   { href: "/historical", label: "Historical" },
+  { href: "/news", label: "News"}
 ] as const;
 
 interface NavbarProps {

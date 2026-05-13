@@ -4,6 +4,13 @@ import {
   DEFAULT_TARGET_CURRENCY_CODE,
   EXCHANGE_RATES_LIMIT 
 } from "@/types/exchange-rates";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Exchange Rates",
+  description:
+    "Access comprehensive exchange rate comparisons across financial institutions. Evaluate buy and sell margins to optimize your currency transfers.",
+};
 
 async function fetchJson(url: string, options: RequestInit, label: string) {
   const res = await fetch(url, options)
@@ -17,7 +24,7 @@ async function fetchJson(url: string, options: RequestInit, label: string) {
 }
 
 export default async function ExchangeRatesPage() {
-  const base = process.env.API_BASE_URL ?? "https://api.rate-pulse.me";
+  const base = process.env.RATE_PULSE_API_BASE_URL ?? "https://localhost:3000";
 
   const [currencies, rateSources, exchangeRatesLatest] =
   await Promise.all([

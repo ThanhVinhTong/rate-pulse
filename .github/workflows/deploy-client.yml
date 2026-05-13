@@ -35,4 +35,8 @@ jobs:
       #   run: npm run lint
 
       - name: Build
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_DB: ${{ secrets.MONGO_DB }}
+          MONGO_COLLECTION: ${{ secrets.MONGO_COLLECTION }}
         run: npm run build
