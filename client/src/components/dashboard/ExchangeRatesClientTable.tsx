@@ -58,7 +58,7 @@ function roundUp(num: number, precision: number) {
 }
 
 function rateSourceKey(r: ExchangeRateLatest): string {
-  return r.RateSourceCode?.Valid ? r.RateSourceCode.String : "UNKNOWN";
+  return r.RateSourceCode && r.RateSourceCode.trim() ? r.RateSourceCode : "UNKNOWN";
 }
 
 function currencyLabel(c: Currency): string {

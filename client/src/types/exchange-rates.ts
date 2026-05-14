@@ -13,10 +13,7 @@ export interface ExchangeRateLatest {
     SourceCurrencyCode: string;
     DestinationCurrencyCode: string;
     ValidFromDate: string;
-    RateSourceCode: {
-      String: string;
-      Valid: boolean;
-    } | null;
+    RateSourceCode: string | null;
     TypeName: {
       String: string;
       Valid: boolean;
