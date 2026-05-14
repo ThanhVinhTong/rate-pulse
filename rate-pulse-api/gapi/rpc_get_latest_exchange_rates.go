@@ -3,23 +3,20 @@ package gapi
 import (
 	"context"
 
-	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/ThanhVinhTong/rate-pulse/service"
 )
 
 func (server *Server) GetLatestExchangeRates(
 	ctx context.Context,
 	req *pb.GetLatestExchangeRatesRequest,
 ) (*pb.GetLatestExchangeRatesResponse, error) {
-	exchangeRates, err := server.store.GetAllExchangeRatesTodayNormalised(
-		ctx, db.GetAllExchangeRatesTodayNormalisedParams{
-			SourceCurrencyID: req.GetSourceCurrencyId(),
-			Limit:            req.GetLimit(),
-		})
+	exchangeRates, err := server.services.FX.ListLatestExchangeRates(ctx, service.ListLatestExchangeRatesInput{
+		SourceCurrencyID: req.GetSourceCurrencyId(),
+		Limit:            req.GetLimit(),
+	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get latest exchange rates: %s", err.Error())
+		return nil, statusFromServiceError(err)
 	}
 
 	pbExchangeRates := make([]*pb.LatestExchangeRate, len(exchangeRates))

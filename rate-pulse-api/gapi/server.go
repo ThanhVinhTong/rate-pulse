@@ -3,9 +3,8 @@ package gapi
 import (
 	"fmt"
 
-	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/pb"
-	"github.com/ThanhVinhTong/rate-pulse/token"
+	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 )
 
@@ -15,23 +14,27 @@ type Server struct {
 	// Any RPC method that is not overridden will return an "unimplemented" gRPC error.
 	pb.UnimplementedRatePulseAuthenticationServiceServer
 	pb.UnimplementedRatePulseExchangeRateServiceServer
-	config     util.Config
-	store      *db.Store
-	tokenMaker token.Maker
+	config   util.Config
+	services *service.Services
 }
 
 // NewServer creates a gRPC server implementation.
-// It wires config, DB store, and token maker used by the RPC handlers.
-func NewServer(config util.Config, store *db.Store) (*Server, error) {
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create token maker: %w", err)
+// It receives application services through dependency injection so RPC handlers
+// stay transport-focused and do not depend on repositories directly.
+func NewServer(config util.Config, services *service.Services) (*Server, error) {
+	if services == nil {
+		return nil, fmt.Errorf("services must not be nil")
+	}
+	if services.Auth == nil {
+		return nil, fmt.Errorf("auth service must not be nil")
+	}
+	if services.FX == nil {
+		return nil, fmt.Errorf("fx service must not be nil")
 	}
 
 	server := &Server{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
+		config:   config,
+		services: services,
 	}
 
 	return server, nil

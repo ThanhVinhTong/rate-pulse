@@ -10,6 +10,8 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/gapi"
 	pb "github.com/ThanhVinhTong/rate-pulse/pb"
+	"github.com/ThanhVinhTong/rate-pulse/service"
+	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -56,7 +58,13 @@ func runGinServer(config util.Config, store *db.Store) {
 }
 
 func runGrpcServer(config util.Config, store *db.Store) {
-	server, err := gapi.NewServer(config, store)
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal("Cannot create token maker: ", err)
+	}
+
+	services := service.NewServices(config, store, tokenMaker)
+	server, err := gapi.NewServer(config, services)
 	if err != nil {
 		log.Fatal("Cannot create server: ", err)
 	}
