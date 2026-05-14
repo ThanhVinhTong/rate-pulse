@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
@@ -26,15 +26,10 @@ class VCB(FX):
         translate_column = self.bank_constants.get_translate_column()
         fx_list: list[dict] = []
 
-        try:
-            self.driver.get(website)
-            logger.info("Scraping FX from %s", website)
-            time.sleep(5)
-        except WebDriverException as e:
-            logger.error("%s: navigation failed: %s", name, e)
+        if not self.open_page(name=name, url=website):
             return
 
-        tz_utc_plus_7 = timezone(timedelta(hours=7), "UTC+7")
+        tz_utc_plus_7 = self.vn_timezone()
 
         try:
             date_block = self.driver.find_element(By.CLASS_NAME, "currency__description-top").text.split()
@@ -110,18 +105,15 @@ class VCB(FX):
                     info["sell_cash_transfer"]: parse_rate(cells[4].text),
                 }
 
-                for type_name, rate_val in rates_to_save.items():
-                    if rate_val is not None:
-                        fx_list.append(
-                            {
-                                "source_code": "VCB",
-                                "source_currency": info["source_currency"],
-                                "destination_currency": currency_code,
-                                "type_id": translate_column[type_name],
-                                "rate_value": rate_val,
-                                "valid_from_date": updated_at,
-                            }
-                        )
+                self.append_rates(
+                    fx_list=fx_list,
+                    source_code=name,
+                    source_currency=info["source_currency"],
+                    destination_currency=currency_code,
+                    rates_by_type=rates_to_save,
+                    translate_column=translate_column,
+                    valid_from_date=updated_at,
+                )
             except Exception as e:
                 logger.warning("%s: skipped row: %s", name, e)
                 continue

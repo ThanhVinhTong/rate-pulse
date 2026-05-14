@@ -427,6 +427,7 @@ rate_source_data = {
     # "STRIPE": {"source_name": "Stripe, Inc.", "source_link": "https://stripe.com/", "source_country": "UnitedStates"},
     # "JPM": {"source_name": "JPMorgan Chase & Co.", "source_link": "https://www.jpmorgan.com/", "source_country": "UnitedStates"},
     # "BAC": {"source_name": "Bank of America Corporation", "source_link": "https://www.bankofamerica.com/", "source_country": "UnitedStates"},
+    # "TCB": {"source_name": "Techcombank", "source_link": "https://www.techcombank.com.vn/", "source_country": "VietNam"},
 }
 
 # Connect to Supabase with .env file

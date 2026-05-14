@@ -1,8 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
+from datetime import timedelta, timezone
 
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from selenium.common.exceptions import WebDriverException
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,47 @@ class FX(ABC):
     @abstractmethod
     def get_fx(self) -> None:
         pass
+
+    @staticmethod
+    def vn_timezone():
+        return timezone(timedelta(hours=7), "UTC+7")
+
+    def open_page(self, *, name: str, url: str, wait_seconds: float = 5) -> bool:
+        import time
+
+        try:
+            self.driver.get(url)
+            logger.info("%s: scraping FX from %s", name, url)
+            time.sleep(wait_seconds)
+            return True
+        except WebDriverException as e:
+            logger.error("%s: navigation failed: %s", name, e)
+            return False
+
+    def append_rates(
+        self,
+        *,
+        fx_list: list[dict],
+        source_code: str,
+        source_currency: str,
+        destination_currency: str,
+        rates_by_type: dict[str, float | None],
+        translate_column: dict[str, int],
+        valid_from_date,
+    ) -> None:
+        for type_name, rate_val in rates_by_type.items():
+            if rate_val is None:
+                continue
+            fx_list.append(
+                {
+                    "source_code": source_code,
+                    "source_currency": source_currency,
+                    "destination_currency": destination_currency,
+                    "type_id": translate_column[type_name],
+                    "rate_value": rate_val,
+                    "valid_from_date": valid_from_date,
+                }
+            )
 
     def save_to_db(self, fx_list: list[dict]) -> None:
         if not fx_list:
@@ -32,6 +75,8 @@ class FX(ABC):
                           AND destination_currency_id = (SELECT currency_id FROM currencies WHERE currency_code = :destination_currency)
                           AND type_id = :type_id
                           AND rate_value = :rate_value
+                          AND date_trunc('day', valid_from_date) = date_trunc('day', CAST(:valid_from_date AS TIMESTAMP))
+                          AND FLOOR(EXTRACT(HOUR FROM valid_from_date) / 2) = FLOOR(EXTRACT(HOUR FROM CAST(:valid_from_date AS TIMESTAMP)) / 2)
                         ORDER BY valid_from_date DESC
                         LIMIT 1
                     """)

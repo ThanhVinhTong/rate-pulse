@@ -1,6 +1,5 @@
 import logging
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.common.by import By
@@ -24,14 +23,9 @@ class VTB(FX):
         info = self.bank_constants.get_info()
         translate_column = self.bank_constants.get_translate_column()
         fx_list: list[dict] = []
-        tz_utc_plus_7 = timezone(timedelta(hours=7), "UTC+7")
+        tz_utc_plus_7 = self.vn_timezone()
 
-        try:
-            self.driver.get(website)
-            logger.info("Scraping FX from %s", website)
-            time.sleep(5)
-        except WebDriverException as e:
-            logger.error("%s: navigation failed: %s", name, e)
+        if not self.open_page(name=name, url=website):
             return
 
         try:
@@ -63,7 +57,11 @@ class VTB(FX):
             )
 
         try:
-            body = self.driver.find_elements(By.TAG_NAME, "tbody")[0]
+            bodies = self.driver.find_elements(By.TAG_NAME, "tbody")
+            if not bodies:
+                logger.warning("%s: rate table not found", name)
+                return
+            body = bodies[0]
         except NoSuchElementException as e:
             logger.warning("%s: rate table not found: %s", name, e)
             return
@@ -105,18 +103,15 @@ class VTB(FX):
                         "sell": parse_rate(clean_symbol(sell_cash_transfer)),
                     }
 
-                    for type_name, rate_val in temp_rates.items():
-                        if rate_val is not None:
-                            fx_list.append(
-                                {
-                                    "source_code": "VTB",
-                                    "source_currency": info["source_currency"],
-                                    "destination_currency": currency_code,
-                                    "type_id": translate_column[type_name],
-                                    "rate_value": rate_val,
-                                    "valid_from_date": updated_at,
-                                }
-                            )
+                    self.append_rates(
+                        fx_list=fx_list,
+                        source_code=name,
+                        source_currency=info["source_currency"],
+                        destination_currency=currency_code,
+                        rates_by_type=temp_rates,
+                        translate_column=translate_column,
+                        valid_from_date=updated_at,
+                    )
             except Exception as e:
                 logger.warning("%s: skipped row: %s", name, e)
                 continue

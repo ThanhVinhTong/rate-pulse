@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.common.by import By
@@ -26,7 +26,7 @@ class MBB(FX):
         info = self.bank_constants.get_info()
         translate_column = self.bank_constants.get_translate_column()
         fx_list: list[dict] = []
-        tz_utc_plus_7 = timezone(timedelta(hours=7), "UTC+7")
+        tz_utc_plus_7 = self.vn_timezone()
 
         updated_at: datetime | None = None
         try:
@@ -51,12 +51,7 @@ class MBB(FX):
             updated_at = datetime.now(tz_utc_plus_7)
             logger.info("%s: using fallback timestamp (UTC+7 now) for valid_from_date", name)
 
-        try:
-            self.driver.get(website)
-            logger.info("Scraping FX from %s", website)
-            time.sleep(5)
-        except WebDriverException as e:
-            logger.error("%s: main site navigation failed: %s", name, e)
+        if not self.open_page(name=name, url=website):
             return
 
         try:
@@ -107,18 +102,15 @@ class MBB(FX):
                     info["sell_transfer"]: parse_rate(sell_transfer),
                 }
 
-                for type_name, rate_val in rates_to_save.items():
-                    if rate_val is not None:
-                        fx_list.append(
-                            {
-                                "source_code": "MBB",
-                                "source_currency": info["source_currency"],
-                                "destination_currency": currency_code,
-                                "type_id": translate_column[type_name],
-                                "rate_value": rate_val,
-                                "valid_from_date": updated_at,
-                            }
-                        )
+                self.append_rates(
+                    fx_list=fx_list,
+                    source_code=name,
+                    source_currency=info["source_currency"],
+                    destination_currency=currency_code,
+                    rates_by_type=rates_to_save,
+                    translate_column=translate_column,
+                    valid_from_date=updated_at,
+                )
             except Exception as e:
                 logger.warning("%s: skipped row: %s", name, e)
                 continue
