@@ -12,6 +12,7 @@ func statusFromServiceError(err error) error {
 		return status.Error(codes.InvalidArgument, service.ServiceErrorMessage(err))
 	case service.ErrInvalidCredentials.Code,
 		service.ErrUnauthorized.Code,
+		service.ErrInactiveUser.Code,
 		service.ErrSessionNotFound.Code,
 		service.ErrSessionBlocked.Code,
 		service.ErrSessionExpired.Code:

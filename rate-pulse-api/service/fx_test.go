@@ -228,7 +228,7 @@ func TestFXServiceListLatestExchangeRatesInvalidLimit(t *testing.T) {
 
 	rates, err := fxService.ListLatestExchangeRates(context.Background(), ListLatestExchangeRatesInput{
 		SourceCurrencyID: 1,
-		Limit:            1001,
+		Limit:            10001,
 	})
 
 	requireFXServiceErrorCode(t, err, ErrInvalidInput.Code)

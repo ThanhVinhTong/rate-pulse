@@ -64,12 +64,12 @@ func runGrpcServer(config util.Config, store *db.Store) {
 	}
 
 	services := service.NewServices(config, store, tokenMaker)
-	server, err := gapi.NewServer(config, services)
+	server, err := gapi.NewServer(config, services, tokenMaker)
 	if err != nil {
 		log.Fatal("Cannot create server: ", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(gapi.UnaryServerInterceptor(tokenMaker)))
 	pb.RegisterRatePulseAuthenticationServiceServer(grpcServer, server)
 	pb.RegisterRatePulseExchangeRateServiceServer(grpcServer, server)
 	reflection.Register(grpcServer) // Freely explore what RPC methods are available

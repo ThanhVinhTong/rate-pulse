@@ -12,6 +12,10 @@ func (server *Server) SignInUser(
 	ctx context.Context,
 	req *pb.SignInUserRequest,
 ) (*pb.SignInUserResponse, error) {
+	if err := validateSignInUserRequest(req); err != nil {
+		return nil, err
+	}
+
 	metadata := server.GetMetadata(ctx)
 	result, err := server.services.Auth.SignIn(ctx, service.SignInInput{
 		Email:     req.GetEmail(),

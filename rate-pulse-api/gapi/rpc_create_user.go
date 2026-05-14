@@ -11,6 +11,10 @@ func (server *Server) CreateUser(
 	ctx context.Context,
 	req *pb.CreateUserRequest,
 ) (*pb.CreateUserResponse, error) {
+	if err := validateCreateUserRequest(req); err != nil {
+		return nil, err
+	}
+
 	user, err := server.services.Auth.CreateUser(ctx, service.CreateUserInput{
 		Username:           req.GetUsername(),
 		Email:              req.GetEmail(),

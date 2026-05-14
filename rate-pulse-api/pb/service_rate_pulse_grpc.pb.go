@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RatePulseAuthenticationService_CreateUser_FullMethodName = "/pb.RatePulseAuthenticationService/CreateUser"
-	RatePulseAuthenticationService_SignInUser_FullMethodName = "/pb.RatePulseAuthenticationService/SignInUser"
+	RatePulseAuthenticationService_CreateUser_FullMethodName       = "/pb.RatePulseAuthenticationService/CreateUser"
+	RatePulseAuthenticationService_SignInUser_FullMethodName       = "/pb.RatePulseAuthenticationService/SignInUser"
+	RatePulseAuthenticationService_RenewAccessToken_FullMethodName = "/pb.RatePulseAuthenticationService/RenewAccessToken"
 )
 
 // RatePulseAuthenticationServiceClient is the client API for RatePulseAuthenticationService service.
@@ -29,6 +30,7 @@ const (
 type RatePulseAuthenticationServiceClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	SignInUser(ctx context.Context, in *SignInUserRequest, opts ...grpc.CallOption) (*SignInUserResponse, error)
+	RenewAccessToken(ctx context.Context, in *RenewAccessTokenRequest, opts ...grpc.CallOption) (*RenewAccessTokenResponse, error)
 }
 
 type ratePulseAuthenticationServiceClient struct {
@@ -59,12 +61,23 @@ func (c *ratePulseAuthenticationServiceClient) SignInUser(ctx context.Context, i
 	return out, nil
 }
 
+func (c *ratePulseAuthenticationServiceClient) RenewAccessToken(ctx context.Context, in *RenewAccessTokenRequest, opts ...grpc.CallOption) (*RenewAccessTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenewAccessTokenResponse)
+	err := c.cc.Invoke(ctx, RatePulseAuthenticationService_RenewAccessToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RatePulseAuthenticationServiceServer is the server API for RatePulseAuthenticationService service.
 // All implementations must embed UnimplementedRatePulseAuthenticationServiceServer
 // for forward compatibility.
 type RatePulseAuthenticationServiceServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
 	SignInUser(context.Context, *SignInUserRequest) (*SignInUserResponse, error)
+	RenewAccessToken(context.Context, *RenewAccessTokenRequest) (*RenewAccessTokenResponse, error)
 	mustEmbedUnimplementedRatePulseAuthenticationServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedRatePulseAuthenticationServiceServer) CreateUser(context.Cont
 }
 func (UnimplementedRatePulseAuthenticationServiceServer) SignInUser(context.Context, *SignInUserRequest) (*SignInUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignInUser not implemented")
+}
+func (UnimplementedRatePulseAuthenticationServiceServer) RenewAccessToken(context.Context, *RenewAccessTokenRequest) (*RenewAccessTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenewAccessToken not implemented")
 }
 func (UnimplementedRatePulseAuthenticationServiceServer) mustEmbedUnimplementedRatePulseAuthenticationServiceServer() {
 }
@@ -139,6 +155,24 @@ func _RatePulseAuthenticationService_SignInUser_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RatePulseAuthenticationService_RenewAccessToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenewAccessTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RatePulseAuthenticationServiceServer).RenewAccessToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RatePulseAuthenticationService_RenewAccessToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RatePulseAuthenticationServiceServer).RenewAccessToken(ctx, req.(*RenewAccessTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RatePulseAuthenticationService_ServiceDesc is the grpc.ServiceDesc for RatePulseAuthenticationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -153,6 +187,10 @@ var RatePulseAuthenticationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignInUser",
 			Handler:    _RatePulseAuthenticationService_SignInUser_Handler,
+		},
+		{
+			MethodName: "RenewAccessToken",
+			Handler:    _RatePulseAuthenticationService_RenewAccessToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

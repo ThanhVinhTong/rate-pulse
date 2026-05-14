@@ -11,6 +11,10 @@ func (server *Server) GetLatestExchangeRates(
 	ctx context.Context,
 	req *pb.GetLatestExchangeRatesRequest,
 ) (*pb.GetLatestExchangeRatesResponse, error) {
+	if err := validateGetLatestExchangeRatesRequest(req); err != nil {
+		return nil, err
+	}
+
 	exchangeRates, err := server.services.FX.ListLatestExchangeRates(ctx, service.ListLatestExchangeRatesInput{
 		SourceCurrencyID: req.GetSourceCurrencyId(),
 		Limit:            req.GetLimit(),
