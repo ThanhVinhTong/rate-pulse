@@ -77,7 +77,7 @@ const SELL_TRANSFER_TYPES = new Set([
 ]);
 
 function rateSourceKey(rate: ExchangeRateLatest): string {
-  return rate.RateSourceCode?.Valid ? rate.RateSourceCode.String : "UNKNOWN";
+  return rate.RateSourceCode && rate.RateSourceCode.trim() ? rate.RateSourceCode : "UNKNOWN";
 }
 
 function rateType(rate: ExchangeRateLatest): string {

@@ -17,14 +17,8 @@ import {
 
 interface HistoricalDataPoint {
   RateValue: string;
-  UpdatedAt: {
-    Time: string;
-    Valid: boolean;
-  };
-  TypeID: {
-    Int32: number;
-    Valid: boolean;
-  };
+  UpdatedAt: string; // ISO string
+  TypeID: number;
 }
 
 interface HistoricalClientProps {
@@ -331,15 +325,15 @@ export function HistoricalClient({
     const transformed = historicalRates
       .filter((rate) => {
         // Filter by selected type
-        if (selectedType !== null && rate.TypeID.Valid && rate.TypeID.Int32 !== selectedType) {
+        if (selectedType !== null && rate.TypeID !== selectedType) {
           return false;
         }
-        return rate.UpdatedAt.Valid && rate.RateValue;
+        return rate.UpdatedAt && rate.RateValue;
       })
       .map((rate) => {
-        const timestamp = new Date(rate.UpdatedAt.Time).getTime();
+        const timestamp = new Date(rate.UpdatedAt).getTime();
         return {
-          date: formatChartLabel(rate.UpdatedAt.Time, timeRange),
+          date: formatChartLabel(rate.UpdatedAt, timeRange),
           timestamp,
           rate: parseFloat(rate.RateValue),
         };
