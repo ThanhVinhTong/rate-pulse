@@ -14,14 +14,8 @@ export interface ExchangeRateLatest {
     DestinationCurrencyCode: string;
     ValidFromDate: string;
     RateSourceCode: string | null;
-    TypeName: {
-      String: string;
-      Valid: boolean;
-    } | null;
-    UpdatedAt: {
-      Time: string;
-      Valid: boolean;
-    } | null;
+    TypeName: string;
+    UpdatedAt: string;
 }
 
 export interface Currency {
