@@ -1,5 +1,15 @@
 import type { Metadata } from "next";
-import { ArrowRight, BarChart3, Globe2, Newspaper, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  Clock3,
+  Globe2,
+  LineChart,
+  Newspaper,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 
 import { NewsArticleCard } from "@/components/dashboard/NewsArticleCard";
 import { HeroGradientBackdrop } from "@/components/ui/hero";
@@ -14,13 +24,42 @@ import type { NewsArticleRegion } from "@/types";
 export const metadata: Metadata = {
   title: "Home",
   description:
-    "Rate-pulse — monitor FX quotes from multiple sources and read macro news that helps explain moves.",
+    "Rate-pulse - monitor FX quotes from multiple sources and read macro news that helps explain moves.",
 };
+
+const quickStats = [
+  { label: "Primary views", value: "4", detail: "Rates, converter, historical, and news" },
+  { label: "Rate context", value: "Pair + source", detail: "Compare quotes without losing origin details" },
+  { label: "Preview policy", value: "No fake prices", detail: "Home visuals avoid implying executable data" },
+] as const;
+
+const workflowSteps = [
+  {
+    title: "Find the pair",
+    body: "Start with a clean board built for pair, currency, and source review.",
+    icon: Search,
+  },
+  {
+    title: "Check the move",
+    body: "Use historical charts to compare recent behavior before making notes.",
+    icon: LineChart,
+  },
+  {
+    title: "Read the reason",
+    body: "Scan macro headlines beside your rate workflow when markets move.",
+    icon: Newspaper,
+  },
+  {
+    title: "Refresh the view",
+    body: "Return to the live views after signing in for the latest available data.",
+    icon: RefreshCw,
+  },
+] as const;
 
 const valueProps = [
   {
     title: "Multi-source rates",
-    body: "Compare bank and channel quotes in one place—by pair and source.",
+    body: "Compare bank and channel quotes in one place by pair, currency, and source.",
     icon: Globe2,
   },
   {
@@ -30,7 +69,7 @@ const valueProps = [
   },
   {
     title: "Signed-in data",
-    body: "Live figures come from your authenticated session to the API—not the hero preview.",
+    body: "Live figures come from your authenticated session to the API, not the hero preview.",
     icon: ShieldCheck,
   },
 ] as const;
@@ -63,6 +102,7 @@ export default async function Home() {
     category: "World News",
     timestamp: doc.time || null,
   }));
+
   return (
     <div className="space-y-0 pb-6">
       <Panel variant="hero" className="relative" id="introduction" aria-labelledby="hero-heading">
@@ -73,13 +113,13 @@ export default async function Home() {
 
             <h1
               id="hero-heading"
-              className="mt-6 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-text-primary sm:text-5xl lg:text-7xl"
+              className="mt-6 max-w-2xl text-4xl font-bold leading-[1.1] text-text-primary sm:text-5xl lg:text-7xl"
             >
               Compare exchange rates with context.
             </h1>
-            <Text variant="bodyLg" className="mt-4 max-w-md">
-              Watch quotes from multiple sources and scan stories that sit next to your FX workflow. No execution, no
-              implied performance.
+            <Text variant="bodyLg" className="mt-4 max-w-xl">
+              Watch quotes from multiple sources, convert currency, review historical movement, and scan stories that
+              sit beside your FX workflow.
             </Text>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -96,11 +136,67 @@ export default async function Home() {
         </div>
       </Panel>
 
-      <section className="mt-14 scroll-mt-24 sm:mt-20" aria-labelledby="value-props-heading">
-        <h2 id="value-props-heading" className="sr-only">
-          Overview
-        </h2>
-        <div className="grid gap-4 md:grid-cols-3">
+      <section className="mt-8 grid gap-3 sm:grid-cols-3" aria-label="Product summary">
+        {quickStats.map((item) => (
+          <Panel key={item.label} variant="inset" padding="md">
+            <Text variant="labelUpper">{item.label}</Text>
+            <p className="mt-3 text-xl font-semibold text-text-primary">{item.value}</p>
+            <Text variant="muted" className="mt-2 leading-6">
+              {item.detail}
+            </Text>
+          </Panel>
+        ))}
+      </section>
+
+      <section className="mt-14 scroll-mt-24 sm:mt-20" aria-labelledby="workflow-heading">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <Text variant="overlineBrand">Workflow</Text>
+            <Heading level="h2" className="mt-2" id="workflow-heading">
+              Move from quote to context
+            </Heading>
+            <Text variant="muted" className="mt-2 max-w-2xl">
+              The home page mirrors the main journey through the product: compare, convert, review, and read.
+            </Text>
+          </div>
+          <TextLink href="/converter" variant="inline">
+            Open converter
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </TextLink>
+        </div>
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-4">
+          {workflowSteps.map((item, index) => (
+            <Panel key={item.title} variant="darkSection" padding="md">
+              <div className="flex items-center justify-between gap-3">
+                <item.icon className="h-5 w-5 text-accent" aria-hidden />
+                <span className="font-mono text-xs text-text-tertiary">0{index + 1}</span>
+              </div>
+              <Heading level="h3" className="mt-5">
+                {item.title}
+              </Heading>
+              <Text variant="muted" className="mt-2 leading-6">
+                {item.body}
+              </Text>
+            </Panel>
+          ))}
+        </div>
+      </section>
+
+      <section
+        className="mt-14 scroll-mt-24 border-t border-border pt-14 sm:mt-20 sm:pt-20"
+        aria-labelledby="value-props-heading"
+      >
+        <div className="max-w-2xl">
+          <Text variant="overlineBrand">Core views</Text>
+          <Heading level="h2" className="mt-2" id="value-props-heading">
+            Built for rate comparison
+          </Heading>
+          <Text variant="muted" className="mt-2">
+            Each primary view keeps the rate source, market context, and user session clear.
+          </Text>
+        </div>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
           {valueProps.map((item) => (
             <Panel key={item.title} variant="heroCard" padding="md">
               <item.icon className="h-8 w-8 text-[#00d3e5]" aria-hidden />
@@ -123,11 +219,11 @@ export default async function Home() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <Text variant="overlineBrand">Markets</Text>
-            <Heading level="h2" className="mt-2">
+            <Heading level="h2" className="mt-2" id="fx-heading">
               FX board
             </Heading>
             <Text variant="muted" className="mt-2 max-w-lg">
-              Filters, per-source tables, and a converter once you open the dashboard.
+              Filters, source-aware tables, timestamps, and a converter once you open the workspace.
             </Text>
           </div>
           <TextLink href="/exchange-rates" variant="inline">
@@ -139,9 +235,7 @@ export default async function Home() {
           {fxPreviewCards.map((item) => (
             <Card key={item.title}>
               <CardHeader>
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
-                  {item.label}
-                </p>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">{item.label}</p>
                 <CardTitle className="mt-2">{item.title}</CardTitle>
                 <CardDescription className="mt-2">{item.body}</CardDescription>
               </CardHeader>
@@ -163,7 +257,7 @@ export default async function Home() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <Text variant="overlineBrand">Macro</Text>
-            <Heading level="h2" className="mt-2">
+            <Heading level="h2" className="mt-2" id="news-heading">
               Headlines
             </Heading>
             <Text variant="muted" className="mt-2 max-w-lg">
@@ -175,11 +269,19 @@ export default async function Home() {
             <ArrowRight className="h-4 w-4" aria-hidden />
           </TextLink>
         </div>
-        <div className="mt-10 grid gap-4 lg:grid-cols-3">
-          {homeNews.map((article) => (
-            <NewsArticleCard key={article.title} article={article} />
-          ))}
-        </div>
+
+        {homeNews.length > 0 ? (
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+            {homeNews.slice(0, 3).map((article) => (
+              <NewsArticleCard key={article.title} article={article} />
+            ))}
+          </div>
+        ) : (
+          <Panel variant="inset" padding="md" className="mt-10 flex items-center gap-3">
+            <Clock3 className="h-5 w-5 text-accent" aria-hidden />
+            <Text variant="muted">Latest headlines will appear here when the news feed is available.</Text>
+          </Panel>
+        )}
 
         <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-border pt-8">
           <TextLink href="/historical" variant="pill">

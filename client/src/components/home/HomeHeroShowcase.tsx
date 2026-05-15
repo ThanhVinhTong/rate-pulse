@@ -5,14 +5,20 @@ import { Activity } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 import { Text } from "@/components/ui/typography";
 
-/** Pairs only — no rate figures (avoids implying live or accurate quotes). */
+/** Pairs only - no rate figures (avoids implying live or accurate quotes). */
 const TICKER_PAIRS = ["EUR/USD", "USD/JPY", "GBP/USD", "USD/VND", "XAU/USD", "EUR/GBP"];
+
+const WORKSPACE_PREVIEW = [
+  { view: "Rates board", detail: "Compare sources" },
+  { view: "Converter", detail: "Check scenarios" },
+  { view: "Historical", detail: "Review movement" },
+] as const;
 
 export function HomeHeroShowcase() {
   return (
     <div className="flex flex-col gap-4">
       <Text variant="labelUpper" className="text-center text-[11px]">
-        Illustrative only — not live or executable prices
+        Illustrative only - not live or executable prices
       </Text>
 
       <Panel variant="ticker">
@@ -73,16 +79,16 @@ export function HomeHeroShowcase() {
 
       <Panel variant="dashed" padding="md">
         <Text variant="labelUpper" className="mb-3">
-          Preview rows
+          Workspace preview
         </Text>
         <div className="space-y-2">
-          {["Row A", "Row B", "Row C"].map((label) => (
+          {WORKSPACE_PREVIEW.map((item) => (
             <div
-              key={label}
+              key={item.view}
               className="flex items-center justify-between gap-3 rounded-md border border-border bg-panel px-3 py-2 text-sm"
             >
-              <span className="font-medium text-text-muted">{label}</span>
-              <span className="font-mono text-text-tertiary">— / —</span>
+              <span className="font-semibold text-text-muted">{item.view}</span>
+              <span className="text-right text-xs font-medium text-text-tertiary">{item.detail}</span>
             </div>
           ))}
         </div>
