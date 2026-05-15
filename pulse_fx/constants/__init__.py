@@ -6,6 +6,7 @@ from .vn.MBBConstant import MBBConstant
 from .vn.TCBConstant import TCBConstant
 from .vn.AgribankConstant import AgribankConstant
 from .vn.HSBCVNConstant import HSBCVNConstant
+from .vn.KLBConstant import KLBConstant
 from .vn.TPBConstant import TPBConstant
 
 BANK_CONSTANTS = {
@@ -17,6 +18,7 @@ BANK_CONSTANTS = {
     "tcb": TCBConstant,
     "agribank": AgribankConstant,
     "hsbcvn": HSBCVNConstant,
+    "klb": KLBConstant,
     "tpb": TPBConstant,
 }
 
@@ -29,6 +31,7 @@ BANK_CODES = {
     "tcb": "TCB",
     "agribank": "AGRIBANK",
     "hsbcvn": "HSBC-VN",
+    "klb": "KLB",
     "tpb": "TPB",
 }
 

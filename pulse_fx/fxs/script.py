@@ -8,6 +8,7 @@ from fxs.vn.ACB import ACB
 from fxs.vn.Agribank import Agribank
 from fxs.vn.BIDV import BIDV
 from fxs.vn.HSBCVN import HSBCVN
+from fxs.vn.KLB import KLB
 from fxs.vn.MBB import MBB
 from fxs.vn.TCB import TCB
 from fxs.vn.TPB import TPB
@@ -24,6 +25,7 @@ BANK_NAMES = {
     MBB: "mbb",
     TCB: "tcb",
     HSBCVN: "hsbcvn",
+    KLB: "klb",
     TPB: "tpb",
     VCB: "vcb",
     VTB: "vtb",
@@ -35,8 +37,7 @@ class Script:
         self.db_uri = db_uri
         self.webdriver_path = webdriver_path
         self.max_workers = max(1, max_workers)
-        self.bank_classes = [VCB, BIDV, ACB, VTB, MBB, TCB, Agribank, HSBCVN, TPB]
-        # self.bank_classes = [TPB]
+        self.bank_classes = [VCB, BIDV, ACB, VTB, MBB, TCB, Agribank, HSBCVN, TPB, KLB]
 
     def get_fx(self) -> None:
         if not self.db_uri or not str(self.db_uri).strip():
