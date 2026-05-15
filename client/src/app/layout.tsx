@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 
 import { ThemeProvider } from "@/components/common/ThemeProvider";
@@ -7,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { Container } from "@/components/ui/container";
 import { getUserFromCookie } from "@/lib/auth";
+import type { Metadata } from "next";
 
 import "./globals.css";
 
@@ -22,7 +22,10 @@ export const metadata: Metadata = {
     template: "%s | Rate-pulse",
   },
   description:
-    "Compare exchange rates across sources, review trends, and manage saved account preferences.",
+    "Compare exchange rates across sources, review trends, and read news for latest updates.",
+  icons: {
+    icon: "/ratepulse.png", // or .svg
+  },
 };
 
 export default async function RootLayout({

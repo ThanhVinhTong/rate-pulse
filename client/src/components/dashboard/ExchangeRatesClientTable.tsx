@@ -14,12 +14,6 @@ import {
   MOBILE_RATE_PREVIEW_LIMIT
 } from "@/types/exchange-rates";
 
-function nullString(
-  v: { String: string; Valid: boolean } | null | undefined,
-): string {
-  return v?.Valid ? v.String : "—";
-}
-
 /** Same output on Node (SSR) and browser — avoids hydration mismatch. */
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -34,12 +28,6 @@ function formatDateTime(iso: string): string {
     second: "2-digit",
     hour12: false,
   });
-}
-
-function nullTime(
-  v: { Time: string; Valid: boolean } | null | undefined,
-): string {
-  return v?.Valid ? formatDateTime(v.Time) : "—";
 }
 
 /** API may return a non-array when there are no rows — keep UI stable. */
@@ -58,7 +46,7 @@ function roundUp(num: number, precision: number) {
 }
 
 function rateSourceKey(r: ExchangeRateLatest): string {
-  return r.RateSourceCode?.Valid ? r.RateSourceCode.String : "UNKNOWN";
+  return r.RateSourceCode && r.RateSourceCode.trim() ? r.RateSourceCode : "UNKNOWN";
 }
 
 function currencyLabel(c: Currency): string {
@@ -347,7 +335,7 @@ export function ExchangeRatesClientTable({
         const hay = [
           r.SourceCurrencyCode,
           r.DestinationCurrencyCode,
-          nullString(r.TypeName),
+          r.TypeName,
           rateSourceKey(r),
           r.RateValue,
         ]
@@ -656,7 +644,7 @@ export function ExchangeRatesClientTable({
                           Type
                         </span>
                         <p className="font-medium text-text-primary">
-                          {nullString(r.TypeName)}
+                          {r.TypeName || "—"}
                         </p>
                       </div>
                       <div>
@@ -672,7 +660,7 @@ export function ExchangeRatesClientTable({
                           Updated
                         </span>
                         <p className="font-medium tabular-nums text-text-primary">
-                          {nullTime(r.UpdatedAt)}
+                          {r.UpdatedAt ? formatDateTime(r.UpdatedAt) : "—"}
                         </p>
                       </div>
                     </div>
@@ -790,14 +778,14 @@ export function ExchangeRatesClientTable({
                       </td>
                       <td className="border-l border-border px-3 py-2.5 align-middle text-text-primary">
                         <span className="line-clamp-2 leading-snug">
-                          {nullString(r.TypeName)}
+                          {r.TypeName || "—"}
                         </span>
                       </td>
                       <td className="border-l border-border px-3 py-2.5 align-middle tabular-nums text-text-muted">
                         {formatDateTime(r.ValidFromDate)}
                       </td>
                       <td className="border-l border-border px-3 py-2.5 pr-4 align-middle tabular-nums text-text-muted">
-                        {nullTime(r.UpdatedAt)}
+                        {r.UpdatedAt ? formatDateTime(r.UpdatedAt) : "—"}
                       </td>
                     </tr>
                   ))}
