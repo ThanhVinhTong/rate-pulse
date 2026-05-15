@@ -428,6 +428,11 @@ rate_source_data = {
     # "JPM": {"source_name": "JPMorgan Chase & Co.", "source_link": "https://www.jpmorgan.com/", "source_country": "UnitedStates"},
     # "BAC": {"source_name": "Bank of America Corporation", "source_link": "https://www.bankofamerica.com/", "source_country": "UnitedStates"},
     # "TCB": {"source_name": "Techcombank", "source_link": "https://www.techcombank.com.vn/", "source_country": "VietNam"},
+    # "Agribank": {"source_name": "Vietnam Bank for Agriculture and Rural Development", "source_link": "https://www.agribank.com.vn/", "source_country": "VietNam"},
+    # "HSBC-VN": {"source_name": "HSBC Vietnam", "source_link": "https://www.hsbc.com.vn/", "source_country": "VietNam"},
+    # "HSBC": {"source_name": "HSBC Holdings plc", "source_link": "https://www.hsbc.com/", "source_country": "UnitedKingdom"},
+    # "KLB": {"source_name": "Kien Long Commercial Joint Stock Bank", "source_link": "https://www.kienlongbank.com/", "source_country": "VietNam"},
+    # "TPB": {"source_name": "Tien Phong Commercial Joint Stock Bank", "source_link": "https://www.tpb.vn/", "source_country": "VietNam"},
 }
 
 # Connect to Supabase with .env file

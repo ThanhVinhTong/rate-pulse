@@ -5,6 +5,7 @@ from .vn.VTBConstant import VTBConstant
 from .vn.ACBConstant import ACBConstant
 from .vn.MBBConstant import MBBConstant
 from .vn.TCBConstant import TCBConstant
+from .vn.AgribankConstant import AgribankConstant
 
 BANK_CONSTANTS = {
     "vcb": VCBConstant,
@@ -13,6 +14,7 @@ BANK_CONSTANTS = {
     "acb": ACBConstant,
     "mbb": MBBConstant,
     "tcb": TCBConstant,
+    "agribank": AgribankConstant,
 }
 
 def get_bank_constants() -> dict:
