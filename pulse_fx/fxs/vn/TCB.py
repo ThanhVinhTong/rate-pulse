@@ -6,7 +6,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-from constants import require_bank_constant
+from constants import get_bank_code, require_bank_constant
 from fxs.FX import FX
 from utils.checkers import check_currency_data
 from utils.numeric_cleaner import parse_rate
@@ -15,12 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class TCB(FX):
-    def __init__(self, driver, connection):
+    def __init__(self, driver, connection, name="tcb"):
         super().__init__(driver, connection)
-        self.bank_constants = require_bank_constant("tcb")
+        self.bank_constants = require_bank_constant(name)
+        self.code = get_bank_code(name)
 
     def get_fx(self) -> None:
-        name = "TCB"
+        name = self.code
         website = self.bank_constants.get_website()
         info = self.bank_constants.get_info()
         translate_column = self.bank_constants.get_translate_column()
@@ -37,7 +38,8 @@ class TCB(FX):
             return
 
         rows = content.find_elements(By.CLASS_NAME, "exchange-rate__table-records")
-        for row in rows:
+        row_error_count = 0
+        for row_index, row in enumerate(rows, start=1):
             try:
                 columns = row.find_elements(By.CLASS_NAME, "table__first-column")
                 if len(columns) < 2:
@@ -53,7 +55,14 @@ class TCB(FX):
 
                 data_items = row.find_elements(By.CLASS_NAME, "data-content__item")
                 if len(data_items) < 4:
-                    logger.warning("%s: skipped %s row with %s rate cells", name, currency_code, len(data_items))
+                    row_error_count += 1
+                    logger.warning(
+                        "%s: skipped source row %s for %s | expected at least 4 rate cells, found %s",
+                        name,
+                        row_index,
+                        currency_code,
+                        len(data_items),
+                    )
                     continue
 
                 rates_to_save = {
@@ -73,11 +82,18 @@ class TCB(FX):
                     valid_from_date=updated_at,
                 )
             except Exception as e:
-                logger.warning("%s: skipped row: %s", name, e)
+                row_error_count += 1
+                self.log_row_error(name=name, row_index=row_index, row_text=row.text, error=e)
                 continue
 
-        self.save_to_db(fx_list)
-        logger.info("%s: collected %s rate row(s) for DB", name, len(fx_list))
+        db_result = self.save_to_db(fx_list)
+        self.log_scrape_summary(
+            name=name,
+            source_record_count=len(rows),
+            extracted_record_count=len(fx_list),
+            db_result=db_result,
+            row_error_count=row_error_count,
+        )
 
     def _find_main_rate_content(self, name: str):
         try:

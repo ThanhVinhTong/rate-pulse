@@ -4,7 +4,7 @@ from datetime import datetime
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 
-from constants import require_bank_constant
+from constants import get_bank_code, require_bank_constant
 from fxs.FX import FX
 from utils.checkers import check_currency_data
 from utils.dom_helpers import find_table_by_class_variants
@@ -14,12 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class BIDV(FX):
-    def __init__(self, driver, connection):
+    def __init__(self, driver, connection, name="bidv"):
         super().__init__(driver, connection)
-        self.bank_constants = require_bank_constant("bidv")
+        self.bank_constants = require_bank_constant(name)
+        self.code = get_bank_code(name)
 
     def get_fx(self) -> None:
-        name = "BIDV"
+        name = self.code
         website = self.bank_constants.get_website()
         info = self.bank_constants.get_info()
         translate_column = self.bank_constants.get_translate_column()
@@ -63,7 +64,8 @@ class BIDV(FX):
             return
 
         rows = tbody.find_elements(By.TAG_NAME, "tr")
-        for row in rows:
+        row_error_count = 0
+        for row_index, row in enumerate(rows, start=1):
             try:
                 cells = row.find_elements(By.TAG_NAME, "td")
                 if not cells:
@@ -89,8 +91,15 @@ class BIDV(FX):
                     valid_from_date=updated_at,
                 )
             except Exception as e:
-                logger.warning("%s: skipped row: %s", name, e)
+                row_error_count += 1
+                self.log_row_error(name=name, row_index=row_index, row_text=row.text, error=e)
                 continue
 
-        self.save_to_db(fx_list)
-        logger.info("%s: collected %s rate row(s) for DB", name, len(fx_list))
+        db_result = self.save_to_db(fx_list)
+        self.log_scrape_summary(
+            name=name,
+            source_record_count=len(rows),
+            extracted_record_count=len(fx_list),
+            db_result=db_result,
+            row_error_count=row_error_count,
+        )
