@@ -8,6 +8,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/mail"
+	"strings"
 	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
@@ -31,6 +33,28 @@ func NewAuthService(config util.Config, store *db.Store, tokenMaker token.Maker)
 }
 
 func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (User, error) {
+	if strings.TrimSpace(input.Username) == "" {
+		return User{}, Wrap(errors.New("username is required"), ErrInvalidInput.Code, "username is required")
+	}
+	if strings.TrimSpace(input.Email) == "" {
+		return User{}, Wrap(errors.New("email is required"), ErrInvalidInput.Code, "email is required")
+	}
+	if len(input.Email) > 254 {
+		return User{}, Wrap(errors.New("email is too long"), ErrInvalidInput.Code, "email is too long")
+	}
+	if parsed, err := mail.ParseAddress(input.Email); err != nil || parsed.Address != strings.TrimSpace(input.Email) {
+		return User{}, Wrap(err, ErrInvalidInput.Code, "email is invalid")
+	}
+	if input.Password == "" {
+		return User{}, Wrap(errors.New("password is required"), ErrInvalidInput.Code, "password is required")
+	}
+	if strings.TrimSpace(input.FirstName) == "" {
+		return User{}, Wrap(errors.New("first_name is required"), ErrInvalidInput.Code, "first_name is required")
+	}
+	if strings.TrimSpace(input.LastName) == "" {
+		return User{}, Wrap(errors.New("last_name is required"), ErrInvalidInput.Code, "last_name is required")
+	}
+
 	// Normalize the email address
 	email := util.NormalizeEmail(input.Email)
 

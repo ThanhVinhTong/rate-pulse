@@ -10,6 +10,8 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/gapi"
 	pb "github.com/ThanhVinhTong/rate-pulse/pb"
+	"github.com/ThanhVinhTong/rate-pulse/service"
+	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -37,9 +39,10 @@ func main() {
 
 	defer conn.Close()
 
+	// Run both servers in separate goroutines
 	store := db.NewStore(conn)
+	go runGrpcServer(config, store)
 	runGinServer(config, store)
-	// runGrpcServer(config, store)
 }
 
 func runGinServer(config util.Config, store *db.Store) {
@@ -55,13 +58,20 @@ func runGinServer(config util.Config, store *db.Store) {
 }
 
 func runGrpcServer(config util.Config, store *db.Store) {
-	server, err := gapi.NewServer(config, store)
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		log.Fatal("Cannot create token maker: ", err)
+	}
+
+	services := service.NewServices(config, store, tokenMaker)
+	server, err := gapi.NewServer(config, services, tokenMaker)
 	if err != nil {
 		log.Fatal("Cannot create server: ", err)
 	}
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterRatePulseServiceServer(grpcServer, server)
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(gapi.UnaryServerInterceptor(tokenMaker)))
+	pb.RegisterRatePulseAuthenticationServiceServer(grpcServer, server)
+	pb.RegisterRatePulseExchangeRateServiceServer(grpcServer, server)
 	reflection.Register(grpcServer) // Freely explore what RPC methods are available
 
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)

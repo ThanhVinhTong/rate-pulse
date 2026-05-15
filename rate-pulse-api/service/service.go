@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
@@ -8,9 +10,9 @@ import (
 
 // Services groups application use cases behind transport layers such as REST and gRPC.
 type Services struct {
-	Auth  *AuthService
-	Users *UserService
-	FX    *FXService
+	Auth  AuthUseCase
+	Users UserUseCase
+	FX    FXUseCase
 }
 
 func NewServices(config util.Config, store *db.Store, tokenMaker token.Maker) *Services {
@@ -19,4 +21,28 @@ func NewServices(config util.Config, store *db.Store, tokenMaker token.Maker) *S
 		Users: NewUserService(store),
 		FX:    NewFXService(store),
 	}
+}
+
+type AuthUseCase interface {
+	CreateUser(ctx context.Context, input CreateUserInput) (User, error)
+	SignIn(ctx context.Context, input SignInInput) (SignInResult, error)
+	RenewAccessToken(ctx context.Context, input RenewAccessTokenInput) (RenewAccessTokenResult, error)
+	SignOut(ctx context.Context, refreshToken string) error
+}
+
+type UserUseCase interface {
+	GetUser(ctx context.Context, input GetUserInput) (User, error)
+	ListUsers(ctx context.Context, input ListUsersInput) ([]User, error)
+	UpdateUser(ctx context.Context, input UpdateUserInput) (User, error)
+	AdminUpdateUser(ctx context.Context, input AdminUpdateUserInput) (User, error)
+	DeleteUser(ctx context.Context, input DeleteUserInput) error
+}
+
+type FXUseCase interface {
+	CreateExchangeRate(ctx context.Context, input CreateExchangeRateInput) (ExchangeRate, error)
+	GetExchangeRate(ctx context.Context, input GetExchangeRateInput) (ExchangeRate, error)
+	ListLatestExchangeRates(ctx context.Context, input ListLatestExchangeRatesInput) ([]LatestExchangeRate, error)
+	UpdateExchangeRate(ctx context.Context, input UpdateExchangeRateInput) (ExchangeRate, error)
+	DeleteExchangeRate(ctx context.Context, input DeleteExchangeRateInput) error
+	GetHistoricalData(ctx context.Context, input GetHistoricalDataInput) ([]HistoricalDataPoint, error)
 }

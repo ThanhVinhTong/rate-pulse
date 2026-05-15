@@ -29,6 +29,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("DB_DRIVER")
 	viper.BindEnv("DB_SOURCE")
 	viper.BindEnv("HTTP_SERVER_ADDRESS")
+	viper.BindEnv("GRPC_SERVER_ADDRESS")
 	viper.BindEnv("TOKEN_SYMMETRIC_KEY")
 	viper.BindEnv("ACCESS_TOKEN_DURATION")
 	viper.BindEnv("REFRESH_TOKEN_DURATION")

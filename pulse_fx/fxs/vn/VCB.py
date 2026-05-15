@@ -1,12 +1,12 @@
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-from constants import require_bank_constant
+from constants import get_bank_code, require_bank_constant
 from fxs.FX import FX
 from utils.checkers import check_currency_data
 from utils.numeric_cleaner import parse_rate
@@ -15,26 +15,22 @@ logger = logging.getLogger(__name__)
 
 
 class VCB(FX):
-    def __init__(self, driver, connection):
+    def __init__(self, driver, connection, name="vcb"):
         super().__init__(driver, connection)
-        self.bank_constants = require_bank_constant("vcb")
+        self.bank_constants = require_bank_constant(name)
+        self.code = get_bank_code(name)
 
     def get_fx(self) -> None:
-        name = "VCB"
+        name = self.code
         website = self.bank_constants.get_website()
         info = self.bank_constants.get_info()
         translate_column = self.bank_constants.get_translate_column()
         fx_list: list[dict] = []
 
-        try:
-            self.driver.get(website)
-            logger.info("Scraping FX from %s", website)
-            time.sleep(5)
-        except WebDriverException as e:
-            logger.error("%s: navigation failed: %s", name, e)
+        if not self.open_page(name=name, url=website):
             return
 
-        tz_utc_plus_7 = timezone(timedelta(hours=7), "UTC+7")
+        tz_utc_plus_7 = self.vn_timezone()
 
         try:
             date_block = self.driver.find_element(By.CLASS_NAME, "currency__description-top").text.split()
@@ -94,7 +90,8 @@ class VCB(FX):
             logger.warning("%s: stopped expanding table (may be partial list): %s", name, e)
 
         rows = tbody.find_elements(By.TAG_NAME, "tr")
-        for row in rows:
+        row_error_count = 0
+        for row_index, row in enumerate(rows, start=1):
             try:
                 cells = row.find_elements(By.TAG_NAME, "td")
                 if not cells:
@@ -110,21 +107,25 @@ class VCB(FX):
                     info["sell_cash_transfer"]: parse_rate(cells[4].text),
                 }
 
-                for type_name, rate_val in rates_to_save.items():
-                    if rate_val is not None:
-                        fx_list.append(
-                            {
-                                "source_code": "VCB",
-                                "source_currency": info["source_currency"],
-                                "destination_currency": currency_code,
-                                "type_id": translate_column[type_name],
-                                "rate_value": rate_val,
-                                "valid_from_date": updated_at,
-                            }
-                        )
+                self.append_rates(
+                    fx_list=fx_list,
+                    source_code=name,
+                    source_currency=info["source_currency"],
+                    destination_currency=currency_code,
+                    rates_by_type=rates_to_save,
+                    translate_column=translate_column,
+                    valid_from_date=updated_at,
+                )
             except Exception as e:
-                logger.warning("%s: skipped row: %s", name, e)
+                row_error_count += 1
+                self.log_row_error(name=name, row_index=row_index, row_text=row.text, error=e)
                 continue
 
-        self.save_to_db(fx_list)
-        logger.info("%s: collected %s rate row(s) for DB", name, len(fx_list))
+        db_result = self.save_to_db(fx_list)
+        self.log_scrape_summary(
+            name=name,
+            source_record_count=len(rows),
+            extracted_record_count=len(fx_list),
+            db_result=db_result,
+            row_error_count=row_error_count,
+        )

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ThanhVinhTong/rate-pulse/pb";
+
+message LatestExchangeRate {
+  int32 rate_id = 1;
+  string rate_value = 2;
+  string source_currency_code = 3;
+  string destination_currency_code = 4;
+  google.protobuf.Timestamp valid_from_date = 5;
+  string rate_source_code = 6;
+  string type_name = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
