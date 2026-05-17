@@ -29,6 +29,7 @@ const (
 	authorizationHeaderKey  = "authorization"
 	authorizationTypeBearer = "bearer"
 	requestIDHeaderKey      = "x-request-id"
+	userTypeAdmin           = "admin"
 )
 
 var publicMethods = map[string]bool{
@@ -36,6 +37,10 @@ var publicMethods = map[string]bool{
 	pb.RatePulseAuthenticationService_SignInUser_FullMethodName:           true,
 	pb.RatePulseAuthenticationService_RenewAccessToken_FullMethodName:     true,
 	pb.RatePulseExchangeRateService_GetLatestExchangeRates_FullMethodName: true,
+}
+
+var adminMethods = map[string]bool{
+	pb.RatePulseInternalHealthService_CheckHealth_FullMethodName: true,
 }
 
 func UnaryServerInterceptor(tokenMaker token.Maker) grpc.UnaryServerInterceptor {
@@ -131,6 +136,10 @@ func authInterceptor(tokenMaker token.Maker) grpc.UnaryServerInterceptor {
 		payload, err := tokenMaker.VerifyToken(accessToken)
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, "invalid access token")
+		}
+
+		if adminMethods[info.FullMethod] && payload.UserType != userTypeAdmin {
+			return nil, status.Error(codes.PermissionDenied, "admin access required")
 		}
 
 		return handler(contextWithAuthorizationPayload(ctx, payload), req)

@@ -68,6 +68,7 @@ jobs:
               --from-literal=DB_SOURCE='${{ secrets.DB_SOURCE }}' \
               --from-literal=DB_DRIVER='${{ secrets.DB_DRIVER }}' \
               --from-literal=HTTP_SERVER_ADDRESS='${{ secrets.HTTP_SERVER_ADDRESS }}' \
+              --from-literal=GRPC_SERVER_ADDRESS='${{ secrets.GRPC_SERVER_ADDRESS }}' \
               --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
               --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
               --from-literal=REFRESH_TOKEN_DURATION='${{ secrets.REFRESH_TOKEN_DURATION }}' \
