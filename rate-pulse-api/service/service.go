@@ -10,16 +10,18 @@ import (
 
 // Services groups application use cases behind transport layers such as REST and gRPC.
 type Services struct {
-	Auth  AuthUseCase
-	Users UserUseCase
-	FX    FXUseCase
+	Auth   AuthUseCase
+	Users  UserUseCase
+	FX     FXUseCase
+	Health HealthUseCase
 }
 
 func NewServices(config util.Config, store *db.Store, tokenMaker token.Maker) *Services {
 	return &Services{
-		Auth:  NewAuthService(config, store, tokenMaker),
-		Users: NewUserService(store),
-		FX:    NewFXService(store),
+		Auth:   NewAuthService(config, store, tokenMaker),
+		Users:  NewUserService(store),
+		FX:     NewFXService(store),
+		Health: NewHealthService(store),
 	}
 }
 
@@ -28,6 +30,10 @@ type AuthUseCase interface {
 	SignIn(ctx context.Context, input SignInInput) (SignInResult, error)
 	RenewAccessToken(ctx context.Context, input RenewAccessTokenInput) (RenewAccessTokenResult, error)
 	SignOut(ctx context.Context, refreshToken string) error
+}
+
+type HealthUseCase interface {
+	CheckHealth(ctx context.Context) CheckHealthResult
 }
 
 type UserUseCase interface {

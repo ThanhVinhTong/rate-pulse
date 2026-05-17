@@ -20,6 +20,10 @@ func NewStore(db *sql.DB) *Store {
 	}
 }
 
+func (store *Store) PingContext(ctx context.Context) error {
+	return store.db.PingContext(ctx)
+}
+
 // execTx executes a function within a database transaction (unexported)
 func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, nil)

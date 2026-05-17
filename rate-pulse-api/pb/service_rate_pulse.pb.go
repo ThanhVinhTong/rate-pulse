@@ -25,7 +25,7 @@ var File_service_rate_pulse_proto protoreflect.FileDescriptor
 
 const file_service_rate_pulse_proto_rawDesc = "" +
 	"\n" +
-	"\x18service_rate_pulse.proto\x12\x02pb\x1a\x15rpc_create_user.proto\x1a\x15rpc_signin_user.proto\x1a\x1crpc_renew_access_token.proto\x1a#rpc_get_latest_exchange_rates.proto\x1a.protoc-gen-openapiv2/options/annotations.proto2\xef\x01\n" +
+	"\x18service_rate_pulse.proto\x12\x02pb\x1a\x15rpc_create_user.proto\x1a\x15rpc_signin_user.proto\x1a\x1crpc_renew_access_token.proto\x1a#rpc_get_latest_exchange_rates.proto\x1a\x16rpc_check_health.proto\x1a.protoc-gen-openapiv2/options/annotations.proto2\xef\x01\n" +
 	"\x1eRatePulseAuthenticationService\x12=\n" +
 	"\n" +
 	"CreateUser\x12\x15.pb.CreateUserRequest\x1a\x16.pb.CreateUserResponse\"\x00\x12=\n" +
@@ -33,7 +33,9 @@ const file_service_rate_pulse_proto_rawDesc = "" +
 	"SignInUser\x12\x15.pb.SignInUserRequest\x1a\x16.pb.SignInUserResponse\"\x00\x12O\n" +
 	"\x10RenewAccessToken\x12\x1b.pb.RenewAccessTokenRequest\x1a\x1c.pb.RenewAccessTokenResponse\"\x002\x81\x01\n" +
 	"\x1cRatePulseExchangeRateService\x12a\n" +
-	"\x16GetLatestExchangeRates\x12!.pb.GetLatestExchangeRatesRequest\x1a\".pb.GetLatestExchangeRatesResponse\"\x00B\x95\x01\x92Aj\x12h\n" +
+	"\x16GetLatestExchangeRates\x12!.pb.GetLatestExchangeRatesRequest\x1a\".pb.GetLatestExchangeRatesResponse\"\x002b\n" +
+	"\x1eRatePulseInternalHealthService\x12@\n" +
+	"\vCheckHealth\x12\x16.pb.CheckHealthRequest\x1a\x17.pb.CheckHealthResponse\"\x00B\x95\x01\x92Aj\x12h\n" +
 	"\x15Rate Pulse API - GRPC\"J\n" +
 	"\x12Rate Pulse project\x12\x19https://www.rate-pulse.me\x1a\x19vinhtongthanh57@gmail.com2\x031.0Z&github.com/ThanhVinhTong/rate-pulse/pbb\x06proto3"
 
@@ -42,22 +44,26 @@ var file_service_rate_pulse_proto_goTypes = []any{
 	(*SignInUserRequest)(nil),              // 1: pb.SignInUserRequest
 	(*RenewAccessTokenRequest)(nil),        // 2: pb.RenewAccessTokenRequest
 	(*GetLatestExchangeRatesRequest)(nil),  // 3: pb.GetLatestExchangeRatesRequest
-	(*CreateUserResponse)(nil),             // 4: pb.CreateUserResponse
-	(*SignInUserResponse)(nil),             // 5: pb.SignInUserResponse
-	(*RenewAccessTokenResponse)(nil),       // 6: pb.RenewAccessTokenResponse
-	(*GetLatestExchangeRatesResponse)(nil), // 7: pb.GetLatestExchangeRatesResponse
+	(*CheckHealthRequest)(nil),             // 4: pb.CheckHealthRequest
+	(*CreateUserResponse)(nil),             // 5: pb.CreateUserResponse
+	(*SignInUserResponse)(nil),             // 6: pb.SignInUserResponse
+	(*RenewAccessTokenResponse)(nil),       // 7: pb.RenewAccessTokenResponse
+	(*GetLatestExchangeRatesResponse)(nil), // 8: pb.GetLatestExchangeRatesResponse
+	(*CheckHealthResponse)(nil),            // 9: pb.CheckHealthResponse
 }
 var file_service_rate_pulse_proto_depIdxs = []int32{
 	0, // 0: pb.RatePulseAuthenticationService.CreateUser:input_type -> pb.CreateUserRequest
 	1, // 1: pb.RatePulseAuthenticationService.SignInUser:input_type -> pb.SignInUserRequest
 	2, // 2: pb.RatePulseAuthenticationService.RenewAccessToken:input_type -> pb.RenewAccessTokenRequest
 	3, // 3: pb.RatePulseExchangeRateService.GetLatestExchangeRates:input_type -> pb.GetLatestExchangeRatesRequest
-	4, // 4: pb.RatePulseAuthenticationService.CreateUser:output_type -> pb.CreateUserResponse
-	5, // 5: pb.RatePulseAuthenticationService.SignInUser:output_type -> pb.SignInUserResponse
-	6, // 6: pb.RatePulseAuthenticationService.RenewAccessToken:output_type -> pb.RenewAccessTokenResponse
-	7, // 7: pb.RatePulseExchangeRateService.GetLatestExchangeRates:output_type -> pb.GetLatestExchangeRatesResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
+	4, // 4: pb.RatePulseInternalHealthService.CheckHealth:input_type -> pb.CheckHealthRequest
+	5, // 5: pb.RatePulseAuthenticationService.CreateUser:output_type -> pb.CreateUserResponse
+	6, // 6: pb.RatePulseAuthenticationService.SignInUser:output_type -> pb.SignInUserResponse
+	7, // 7: pb.RatePulseAuthenticationService.RenewAccessToken:output_type -> pb.RenewAccessTokenResponse
+	8, // 8: pb.RatePulseExchangeRateService.GetLatestExchangeRates:output_type -> pb.GetLatestExchangeRatesResponse
+	9, // 9: pb.RatePulseInternalHealthService.CheckHealth:output_type -> pb.CheckHealthResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -72,6 +78,7 @@ func file_service_rate_pulse_proto_init() {
 	file_rpc_signin_user_proto_init()
 	file_rpc_renew_access_token_proto_init()
 	file_rpc_get_latest_exchange_rates_proto_init()
+	file_rpc_check_health_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
@@ -80,7 +87,7 @@ func file_service_rate_pulse_proto_init() {
 			NumEnums:      0,
 			NumMessages:   0,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_service_rate_pulse_proto_goTypes,
 		DependencyIndexes: file_service_rate_pulse_proto_depIdxs,

@@ -64,6 +64,24 @@ type RenewAccessTokenResult struct {
 }
 
 /*
+health service models
+*/
+type CheckHealthResult struct {
+	ServiceName   string
+	Status        string
+	Version       string
+	UptimeSeconds int64
+	CheckedAt     time.Time
+	Dependencies  []DependencyHealth
+}
+
+type DependencyHealth struct {
+	Name    string
+	Status  string
+	Message string
+}
+
+/*
 user service models
 */
 type GetUserInput struct {

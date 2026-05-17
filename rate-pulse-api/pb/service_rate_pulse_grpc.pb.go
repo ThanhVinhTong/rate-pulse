@@ -299,3 +299,106 @@ var RatePulseExchangeRateService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "service_rate_pulse.proto",
 }
+
+const (
+	RatePulseInternalHealthService_CheckHealth_FullMethodName = "/pb.RatePulseInternalHealthService/CheckHealth"
+)
+
+// RatePulseInternalHealthServiceClient is the client API for RatePulseInternalHealthService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RatePulseInternalHealthServiceClient interface {
+	CheckHealth(ctx context.Context, in *CheckHealthRequest, opts ...grpc.CallOption) (*CheckHealthResponse, error)
+}
+
+type ratePulseInternalHealthServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRatePulseInternalHealthServiceClient(cc grpc.ClientConnInterface) RatePulseInternalHealthServiceClient {
+	return &ratePulseInternalHealthServiceClient{cc}
+}
+
+func (c *ratePulseInternalHealthServiceClient) CheckHealth(ctx context.Context, in *CheckHealthRequest, opts ...grpc.CallOption) (*CheckHealthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckHealthResponse)
+	err := c.cc.Invoke(ctx, RatePulseInternalHealthService_CheckHealth_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RatePulseInternalHealthServiceServer is the server API for RatePulseInternalHealthService service.
+// All implementations must embed UnimplementedRatePulseInternalHealthServiceServer
+// for forward compatibility.
+type RatePulseInternalHealthServiceServer interface {
+	CheckHealth(context.Context, *CheckHealthRequest) (*CheckHealthResponse, error)
+	mustEmbedUnimplementedRatePulseInternalHealthServiceServer()
+}
+
+// UnimplementedRatePulseInternalHealthServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedRatePulseInternalHealthServiceServer struct{}
+
+func (UnimplementedRatePulseInternalHealthServiceServer) CheckHealth(context.Context, *CheckHealthRequest) (*CheckHealthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckHealth not implemented")
+}
+func (UnimplementedRatePulseInternalHealthServiceServer) mustEmbedUnimplementedRatePulseInternalHealthServiceServer() {
+}
+func (UnimplementedRatePulseInternalHealthServiceServer) testEmbeddedByValue() {}
+
+// UnsafeRatePulseInternalHealthServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RatePulseInternalHealthServiceServer will
+// result in compilation errors.
+type UnsafeRatePulseInternalHealthServiceServer interface {
+	mustEmbedUnimplementedRatePulseInternalHealthServiceServer()
+}
+
+func RegisterRatePulseInternalHealthServiceServer(s grpc.ServiceRegistrar, srv RatePulseInternalHealthServiceServer) {
+	// If the following call panics, it indicates UnimplementedRatePulseInternalHealthServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&RatePulseInternalHealthService_ServiceDesc, srv)
+}
+
+func _RatePulseInternalHealthService_CheckHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckHealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RatePulseInternalHealthServiceServer).CheckHealth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RatePulseInternalHealthService_CheckHealth_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RatePulseInternalHealthServiceServer).CheckHealth(ctx, req.(*CheckHealthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// RatePulseInternalHealthService_ServiceDesc is the grpc.ServiceDesc for RatePulseInternalHealthService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var RatePulseInternalHealthService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.RatePulseInternalHealthService",
+	HandlerType: (*RatePulseInternalHealthServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CheckHealth",
+			Handler:    _RatePulseInternalHealthService_CheckHealth_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "service_rate_pulse.proto",
+}

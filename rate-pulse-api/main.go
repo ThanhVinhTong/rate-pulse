@@ -74,6 +74,7 @@ func runGrpcServer(config util.Config, store *db.Store) {
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(gapi.UnaryServerInterceptor(tokenMaker)))
 	pb.RegisterRatePulseAuthenticationServiceServer(grpcServer, server)
 	pb.RegisterRatePulseExchangeRateServiceServer(grpcServer, server)
+	pb.RegisterRatePulseInternalHealthServiceServer(grpcServer, server)
 	reflection.Register(grpcServer) // Freely explore what RPC methods are available
 
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)

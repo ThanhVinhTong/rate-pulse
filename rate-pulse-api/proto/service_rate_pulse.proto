@@ -6,6 +6,7 @@ import "rpc_create_user.proto";
 import "rpc_signin_user.proto";
 import "rpc_renew_access_token.proto";
 import "rpc_get_latest_exchange_rates.proto";
+import "rpc_check_health.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/ThanhVinhTong/rate-pulse/pb";
@@ -42,4 +43,10 @@ service RatePulseExchangeRateService {
         returns (GetLatestExchangeRatesResponse){
 
         }
+}
+
+service RatePulseInternalHealthService {
+    rpc CheckHealth(CheckHealthRequest) returns (CheckHealthResponse){
+
+    }
 }
