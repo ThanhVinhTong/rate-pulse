@@ -23,4 +23,4 @@ spec:
               service:
                 name: rate-pulse-api-service
                 port:
-                  number: 50051
+                  number: 80
