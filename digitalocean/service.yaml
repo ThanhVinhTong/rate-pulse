@@ -6,7 +6,12 @@ spec:
   selector:
     app: rate-pulse-api  # This MUST match the label in your deployment.yaml
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: 8080
+    - name: grpc
+      protocol: TCP
+      port: 9090
+      targetPort: 50051
   type: ClusterIP
