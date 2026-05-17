@@ -15,6 +15,7 @@ type Server struct {
 	// Any RPC method that is not overridden will return an "unimplemented" gRPC error.
 	pb.UnimplementedRatePulseAuthenticationServiceServer
 	pb.UnimplementedRatePulseExchangeRateServiceServer
+	pb.UnimplementedRatePulseInternalHealthServiceServer
 	config     util.Config
 	services   *service.Services
 	tokenMaker token.Maker
@@ -32,6 +33,9 @@ func NewServer(config util.Config, services *service.Services, tokenMaker token.
 	}
 	if services.FX == nil {
 		return nil, fmt.Errorf("fx service must not be nil")
+	}
+	if services.Health == nil {
+		return nil, fmt.Errorf("health service must not be nil")
 	}
 	if tokenMaker == nil {
 		return nil, fmt.Errorf("token maker must not be nil")

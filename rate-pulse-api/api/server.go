@@ -61,6 +61,7 @@ func (server *Server) setupRouter() {
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
 	})
+	registerSwaggerRoutes(router)
 
 	// Public read-only market & reference data (no auth) — browse exchange-rates & historical UIs while logged out.
 	// Register specific paths before /:id routes.
@@ -131,8 +132,4 @@ func (server *Server) setupRouter() {
 // @return error: an error if the server fails to start
 func (server *Server) Start(address string) error {
 	return server.router.Run(address)
-}
-
-func errorResponse(err error) gin.H {
-	return gin.H{"error": err.Error()}
 }

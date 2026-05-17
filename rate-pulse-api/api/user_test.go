@@ -90,6 +90,35 @@ func TestCreateUserValidation(t *testing.T) {
 	}
 }
 
+func TestCreateUserValidationResponse(t *testing.T) {
+	server := newTestServer(t, &db.Store{})
+	req := makeJSONRequest(t, http.MethodPost, "/users/signup", map[string]any{
+		"email":      "not-an-email",
+		"password":   "StrongPass123!xyz",
+		"first_name": "Test",
+		"last_name":  "User",
+	})
+
+	w := serveRequest(server, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+
+	var body struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+		Fields  []struct {
+			Field  string `json:"field"`
+			Reason string `json:"reason"`
+		} `json:"fields"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
+	require.Equal(t, "INVALID_INPUT", body.Code)
+	require.Equal(t, "invalid request parameters", body.Message)
+	require.NotEmpty(t, body.Fields)
+	require.Equal(t, "username", body.Fields[0].Field)
+	require.Equal(t, "username is required", body.Fields[0].Reason)
+}
+
 func TestLoginUserValidation(t *testing.T) {
 	tests := []struct {
 		name         string
