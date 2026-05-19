@@ -69,7 +69,15 @@ export function Navbar({ session }: NavbarProps) {
   }, [auth.isAdmin, auth.isAuthenticated]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#1e2b3d] bg-[#0f1b2d] text-white shadow-sm">
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <header className="sticky top-0 z-40 border-b border-[#1e2b3d] bg-[#0f1b2d] text-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <IconBox variant="brand">
@@ -165,5 +173,6 @@ export function Navbar({ session }: NavbarProps) {
         </Panel>
       ) : null}
     </header>
+    </>
   );
 }
