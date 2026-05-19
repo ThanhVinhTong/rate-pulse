@@ -42,4 +42,7 @@ protoc:
 	--openapiv2_out=docs --openapiv2_opt=allow_merge=true,merge_file_name=api \
     proto/*.proto
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server protoc
+redis:
+	docker run --name redis -p 6379:6379 -d redis:8.6-alpine
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server protoc redis

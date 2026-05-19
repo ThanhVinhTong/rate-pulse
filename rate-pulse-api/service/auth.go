@@ -15,20 +15,24 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/worker"
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 )
 
 type AuthService struct {
-	config     util.Config
-	store      *db.Store
-	tokenMaker token.Maker
+	config          util.Config
+	store           *db.Store
+	tokenMaker      token.Maker
+	taskDistributor worker.TaskDistributor
 }
 
-func NewAuthService(config util.Config, store *db.Store, tokenMaker token.Maker) *AuthService {
+func NewAuthService(config util.Config, store *db.Store, tokenMaker token.Maker, taskDistributor worker.TaskDistributor) *AuthService {
 	return &AuthService{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
+		config:          config,
+		store:           store,
+		tokenMaker:      tokenMaker,
+		taskDistributor: taskDistributor,
 	}
 }
 
@@ -90,6 +94,21 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 		}
 		return User{}, Wrap(err, ErrInternal.Code, "failed to create user")
 	}
+
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.Timeout(30 * time.Second),
+		asynq.Queue(worker.QueueCritical),
+	}
+	err = s.taskDistributor.DistributeTaskSendVerifyEmail(
+		ctx,
+		&worker.PayloadSendVerifyEmail{UserId: user.UserID},
+		opts...,
+	)
+	if err != nil {
+		return User{}, Wrap(err, ErrInternal.Code, "failed to enqueue verify email task")
+	}
+
 	return NewUser(user), nil
 }
 

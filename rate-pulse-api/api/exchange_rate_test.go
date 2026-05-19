@@ -152,11 +152,11 @@ func TestListExchangeRate_DBError(t *testing.T) {
 	server, mock, mockDB := newExchangeRateServerWithMockDB(t)
 	defer mockDB.Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(`FROM exchange_rates`)).
-		WithArgs(int32(0), int32(20)).
+	mock.ExpectQuery(regexp.QuoteMeta(`FROM exchange_rates er`)).
+		WithArgs(int32(1), int32(20)).
 		WillReturnError(errors.New("db down"))
 
-	req := httptest.NewRequest(http.MethodGet, "/exchange-rates?last_rate_id=0&limit=20", nil)
+	req := httptest.NewRequest(http.MethodGet, "/exchange-rates-latest?source_currency_id=1&limit=20", nil)
 	addAuthorization(
 		t,
 		req,
@@ -179,16 +179,23 @@ func TestListExchangeRate_CursorCases(t *testing.T) {
 	server, mock, mockDB := newExchangeRateServerWithMockDB(t)
 	defer mockDB.Close()
 
-	t.Run("first_page_last_rate_id_0", func(t *testing.T) {
+	t.Run("valid_source_currency_id", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{
-			"rate_id", "rate_value", "source_currency_id", "destination_currency_id",
-			"valid_from_date", "valid_to_date", "source_id", "type_id", "created_at", "updated_at",
+			"rate_id",
+			"rate_value",
+			"source_currency_code",
+			"destination_currency_code",
+			"valid_from_date",
+			"rate_source_code",
+			"type_name",
+			"updated_at",
 		})
-		mock.ExpectQuery(regexp.QuoteMeta(`WHERE rate_id > $1`)).
-			WithArgs(int32(0), int32(20)).
+
+		mock.ExpectQuery(regexp.QuoteMeta(`FROM exchange_rates er`)).
+			WithArgs(int32(1), int32(20)).
 			WillReturnRows(rows)
 
-		req := httptest.NewRequest(http.MethodGet, "/exchange-rates?last_rate_id=0&limit=20", nil)
+		req := httptest.NewRequest(http.MethodGet, "/exchange-rates-latest?source_currency_id=1&limit=20", nil)
 		addAuthorization(
 			t,
 			req,
@@ -205,8 +212,8 @@ func TestListExchangeRate_CursorCases(t *testing.T) {
 		require.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("invalid_cursor_negative", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/exchange-rates?last_rate_id=-1&limit=20", nil)
+	t.Run("invalid_source_currency_id", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/exchange-rates-latest?source_currency_id=0&limit=20", nil)
 		addAuthorization(
 			t,
 			req,

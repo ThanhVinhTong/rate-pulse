@@ -4,7 +4,6 @@ package main
 
 import (
 	"database/sql"
-	"log"
 	"net"
 	"time"
 
@@ -15,7 +14,11 @@ import (
 	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/worker"
+	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -23,12 +26,12 @@ import (
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		log.Fatal("Cannot load config: ", err)
+		log.Fatal().Err(err).Msg("Cannot load config")
 	}
 
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
-		log.Fatal("Cannot connect to database: ", err)
+		log.Fatal().Err(err).Msg("Cannot connect to database")
 	}
 
 	conn.SetMaxOpenConns(10)
@@ -36,42 +39,60 @@ func main() {
 	conn.SetConnMaxLifetime(30 * time.Minute)
 	conn.SetConnMaxIdleTime(5 * time.Minute)
 	if err := conn.Ping(); err != nil {
-		log.Fatal("Cannot ping database: ", err)
+		log.Fatal().Err(err).Msg("Cannot ping database")
 	}
 
 	defer conn.Close()
 
-	// Run both servers in separate goroutines
+	// Run the task processor, gRPC server, and HTTP server from the same process.
 	store := db.NewStore(conn)
-	go runGrpcServer(config, store)
-	runGinServer(config, store)
-}
 
-func runGinServer(config util.Config, store *db.Store) {
-	server, err := api.NewServer(config, store)
-	if err != nil {
-		log.Fatal("Cannot create server: ", err)
+	// Initialize task distributor and processor for handling asynchronous tasks.
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
 	}
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 
-	err = server.Start(config.HTTPServerAddress)
-	if err != nil {
-		log.Fatal("Cannot start server: ", err)
-	}
-}
-
-func runGrpcServer(config util.Config, store *db.Store) {
+	// Create token maker for both gRPC and HTTP servers
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
-		log.Fatal("Cannot create token maker: ", err)
+		log.Fatal().Err(err).Msg("Cannot create token maker")
 	}
 
-	services := service.NewServices(config, store, tokenMaker)
+	// Initialize application service layer with dependencies.
+	gin.SetMode(gin.ReleaseMode)
+	services := service.NewServices(config, store, tokenMaker, taskDistributor)
+
+	// Start Task Processor and gRPC server in separate goroutines, while the main goroutine runs the HTTP server.
+	go runTaskProcessor(redisOpt, store)
+	go runGrpcServer(config, services, tokenMaker)
+	runGinServer(config, store, services, tokenMaker)
+}
+
+func runGinServer(
+	config util.Config,
+	store *db.Store,
+	services *service.Services,
+	tokenMaker token.Maker,
+) {
+	server, err := api.NewServer(config, store, services, tokenMaker)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Cannot create server")
+	}
+
+	if err := server.Start(config.HTTPServerAddress); err != nil {
+		log.Fatal().Err(err).Msg("Cannot start server")
+	}
+}
+
+func runGrpcServer(config util.Config, services *service.Services, tokenMaker token.Maker) {
 	server, err := gapi.NewServer(config, services, tokenMaker)
 	if err != nil {
-		log.Fatal("Cannot create server: ", err)
+		log.Fatal().Err(err).Msg("Cannot create server")
 	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(gapi.UnaryServerInterceptor(tokenMaker)))
+
 	pb.RegisterRatePulseAuthenticationServiceServer(grpcServer, server)
 	pb.RegisterRatePulseExchangeRateServiceServer(grpcServer, server)
 	pb.RegisterRatePulseInternalHealthServiceServer(grpcServer, server)
@@ -79,12 +100,20 @@ func runGrpcServer(config util.Config, store *db.Store) {
 
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)
 	if err != nil {
-		log.Fatal("Cannot create listener")
+		log.Fatal().Err(err).Msg("Cannot create listener")
 	}
 
-	log.Printf("gRPC server started on %s", config.GRPCServerAddress)
+	log.Info().Msgf("gRPC server started on %s", config.GRPCServerAddress)
 	err = grpcServer.Serve(listener)
 	if err != nil {
-		log.Fatal("Cannot serve gRPC server: ", err)
+		log.Fatal().Err(err).Msg("Cannot serve gRPC server")
+	}
+}
+
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store *db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+	log.Info().Msg("task processor created")
+	if err := taskProcessor.Start(); err != nil {
+		log.Fatal().Err(err).Msg("cannot start task processor")
 	}
 }

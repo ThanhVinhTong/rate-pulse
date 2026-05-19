@@ -10,11 +10,29 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/worker"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 )
 
-func newTestAuthService(t *testing.T) (*AuthService, sqlmock.Sqlmock, token.Maker) {
+type fakeTaskDistributor struct {
+	called  bool
+	payload *worker.PayloadSendVerifyEmail
+	err     error
+}
+
+func (f *fakeTaskDistributor) DistributeTaskSendVerifyEmail(
+	ctx context.Context,
+	payload *worker.PayloadSendVerifyEmail,
+	opts ...asynq.Option,
+) error {
+	f.called = true
+	f.payload = payload
+	return f.err
+}
+
+func newTestAuthService(t *testing.T) (*AuthService, sqlmock.Sqlmock, token.Maker, *fakeTaskDistributor) {
 	t.Helper()
 
 	sqlDB, mock, err := sqlmock.New()
@@ -34,8 +52,9 @@ func newTestAuthService(t *testing.T) (*AuthService, sqlmock.Sqlmock, token.Make
 	require.NoError(t, err)
 
 	store := db.NewStore(sqlDB)
+	taskDistributor := &fakeTaskDistributor{}
 
-	return NewAuthService(config, store, tokenMaker), mock, tokenMaker
+	return NewAuthService(config, store, tokenMaker, taskDistributor), mock, tokenMaker, taskDistributor
 }
 
 func requireServiceErrorCode(t *testing.T, err error, expectedCode string) {
@@ -65,7 +84,7 @@ func TestAuthServiceCreateUserValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authService, mock, _ := newTestAuthService(t)
+			authService, mock, _, _ := newTestAuthService(t)
 
 			user, err := authService.CreateUser(context.Background(), tt.input)
 
@@ -108,7 +127,7 @@ func TestAuthServiceSignInValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authService, mock, _ := newTestAuthService(t)
+			authService, mock, _, _ := newTestAuthService(t)
 
 			result, err := authService.SignIn(context.Background(), tt.input)
 
@@ -120,7 +139,7 @@ func TestAuthServiceSignInValidation(t *testing.T) {
 }
 
 func TestAuthServiceSignInUserNotFound(t *testing.T) {
-	authService, mock, _ := newTestAuthService(t)
+	authService, mock, _, _ := newTestAuthService(t)
 
 	mock.ExpectQuery("SELECT user_id, username, email, password").
 		WithArgs("missing@example.com").
@@ -137,7 +156,7 @@ func TestAuthServiceSignInUserNotFound(t *testing.T) {
 }
 
 func TestAuthServiceRenewAccessTokenSessionNotFound(t *testing.T) {
-	authService, mock, tokenMaker := newTestAuthService(t)
+	authService, mock, tokenMaker, _ := newTestAuthService(t)
 
 	refreshToken, refreshPayload, err := tokenMaker.CreateToken(
 		42,
@@ -162,7 +181,7 @@ func TestAuthServiceRenewAccessTokenSessionNotFound(t *testing.T) {
 }
 
 func TestAuthServiceRenewAccessTokenSuccess(t *testing.T) {
-	authService, mock, tokenMaker := newTestAuthService(t)
+	authService, mock, tokenMaker, _ := newTestAuthService(t)
 
 	refreshToken, refreshPayload, err := tokenMaker.CreateToken(
 		42,
@@ -208,7 +227,7 @@ func TestAuthServiceRenewAccessTokenSuccess(t *testing.T) {
 }
 
 func TestAuthServiceSignInSuccess(t *testing.T) {
-	authService, mock, _ := newTestAuthService(t)
+	authService, mock, _, _ := newTestAuthService(t)
 
 	const password = "correct horse battery staple"
 

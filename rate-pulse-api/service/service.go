@@ -6,6 +6,7 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/worker"
 )
 
 // Services groups application use cases behind transport layers such as REST and gRPC.
@@ -16,9 +17,14 @@ type Services struct {
 	Health HealthUseCase
 }
 
-func NewServices(config util.Config, store *db.Store, tokenMaker token.Maker) *Services {
+func NewServices(
+	config util.Config,
+	store *db.Store,
+	tokenMaker token.Maker,
+	taskDistributor worker.TaskDistributor,
+) *Services {
 	return &Services{
-		Auth:   NewAuthService(config, store, tokenMaker),
+		Auth:   NewAuthService(config, store, tokenMaker, taskDistributor),
 		Users:  NewUserService(store),
 		FX:     NewFXService(store),
 		Health: NewHealthService(store),

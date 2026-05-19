@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -22,17 +21,17 @@ type Server struct {
 	router     *gin.Engine
 }
 
-func NewServer(config util.Config, store *db.Store) (*Server, error) {
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create token maker: %w", err)
-	}
-
+func NewServer(
+	config util.Config,
+	store *db.Store,
+	services *service.Services,
+	tokenMaker token.Maker,
+) (*Server, error) {
 	server := &Server{
 		config:     config,
 		store:      store,
 		tokenMaker: tokenMaker,
-		services:   service.NewServices(config, store, tokenMaker),
+		services:   services,
 	}
 
 	server.setupRouter()
@@ -41,6 +40,9 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
+	if err := router.SetTrustedProxies(nil); err != nil {
+		return
+	}
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
