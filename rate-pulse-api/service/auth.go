@@ -22,12 +22,12 @@ import (
 
 type AuthService struct {
 	config          util.Config
-	store           *db.Store
+	store           db.Store
 	tokenMaker      token.Maker
 	taskDistributor worker.TaskDistributor
 }
 
-func NewAuthService(config util.Config, store *db.Store, tokenMaker token.Maker, taskDistributor worker.TaskDistributor) *AuthService {
+func NewAuthService(config util.Config, store db.Store, tokenMaker token.Maker, taskDistributor worker.TaskDistributor) *AuthService {
 	return &AuthService{
 		config:          config,
 		store:           store,
@@ -73,20 +73,37 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 		return User{}, Wrap(err, ErrInternal.Code, "failed to hash password")
 	}
 
-	user, err := s.store.CreateUser(ctx, db.CreateUserParams{
-		Username:           input.Username,
-		Email:              email,
-		Password:           hashedPassword,
-		UserType:           sql.NullString{String: "free", Valid: true},
-		EmailVerified:      sql.NullBool{Bool: false, Valid: true},
-		TimeZone:           sql.NullString{String: input.TimeZone, Valid: true},
-		LanguagePreference: sql.NullString{String: input.LanguagePreference, Valid: true},
-		CountryOfResidence: sql.NullString{String: input.CountryOfResidence, Valid: true},
-		CountryOfBirth:     sql.NullString{String: input.CountryOfBirth, Valid: true},
-		IsActive:           sql.NullBool{Bool: true, Valid: true},
-		LastName:           sql.NullString{String: input.LastName, Valid: true},
-		FirstName:          sql.NullString{String: input.FirstName, Valid: true},
-	})
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:           input.Username,
+			Email:              email,
+			Password:           hashedPassword,
+			UserType:           sql.NullString{String: "free", Valid: true},
+			EmailVerified:      sql.NullBool{Bool: false, Valid: true},
+			TimeZone:           sql.NullString{String: input.TimeZone, Valid: true},
+			LanguagePreference: sql.NullString{String: input.LanguagePreference, Valid: true},
+			CountryOfResidence: sql.NullString{String: input.CountryOfResidence, Valid: true},
+			CountryOfBirth:     sql.NullString{String: input.CountryOfBirth, Valid: true},
+			IsActive:           sql.NullBool{Bool: true, Valid: true},
+			LastName:           sql.NullString{String: input.LastName, Valid: true},
+			FirstName:          sql.NullString{String: input.FirstName, Valid: true},
+		},
+		AfterCreate: func(user db.User) error {
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.Timeout(30 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			return s.taskDistributor.DistributeTaskSendVerifyEmail(
+				ctx,
+				&worker.PayloadSendVerifyEmail{UserId: user.UserID},
+				opts...,
+			)
+		},
+	}
+
+	result, err := s.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code.Name() == "unique_violation" {
@@ -95,21 +112,7 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 		return User{}, Wrap(err, ErrInternal.Code, "failed to create user")
 	}
 
-	opts := []asynq.Option{
-		asynq.MaxRetry(10),
-		asynq.Timeout(30 * time.Second),
-		asynq.Queue(worker.QueueCritical),
-	}
-	err = s.taskDistributor.DistributeTaskSendVerifyEmail(
-		ctx,
-		&worker.PayloadSendVerifyEmail{UserId: user.UserID},
-		opts...,
-	)
-	if err != nil {
-		return User{}, Wrap(err, ErrInternal.Code, "failed to enqueue verify email task")
-	}
-
-	return NewUser(user), nil
+	return NewUser(result.User), nil
 }
 
 func (s *AuthService) SignIn(ctx context.Context, input SignInInput) (SignInResult, error) {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -65,6 +66,56 @@ func requireServiceErrorCode(t *testing.T, err error, expectedCode string) {
 	require.Equal(t, expectedCode, ServiceErrorCode(err))
 }
 
+func validCreateUserInput() CreateUserInput {
+	return CreateUserInput{
+		Username:           "testuser",
+		Email:              "test@example.com",
+		Password:           "StrongPass123!xyz",
+		TimeZone:           "Australia/Perth",
+		LanguagePreference: "en",
+		CountryOfResidence: "AU",
+		CountryOfBirth:     "VN",
+		FirstName:          "Test",
+		LastName:           "User",
+	}
+}
+
+func newCreateUserRows(userID int32, now time.Time) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{
+		"user_id",
+		"username",
+		"email",
+		"password",
+		"user_type",
+		"email_verified",
+		"time_zone",
+		"language_preference",
+		"country_of_residence",
+		"country_of_birth",
+		"is_active",
+		"created_at",
+		"updated_at",
+		"first_name",
+		"last_name",
+	}).AddRow(
+		userID,
+		"testuser",
+		"test@example.com",
+		"hashed-password",
+		sql.NullString{String: "free", Valid: true},
+		sql.NullBool{Bool: false, Valid: true},
+		sql.NullString{String: "Australia/Perth", Valid: true},
+		sql.NullString{String: "en", Valid: true},
+		sql.NullString{String: "AU", Valid: true},
+		sql.NullString{String: "VN", Valid: true},
+		sql.NullBool{Bool: true, Valid: true},
+		sql.NullTime{Time: now, Valid: true},
+		sql.NullTime{Time: now, Valid: true},
+		sql.NullString{String: "Test", Valid: true},
+		sql.NullString{String: "User", Valid: true},
+	)
+}
+
 func TestAuthServiceCreateUserValidation(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -93,6 +144,42 @@ func TestAuthServiceCreateUserValidation(t *testing.T) {
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestAuthServiceCreateUserSuccess(t *testing.T) {
+	authService, mock, _, taskDistributor := newTestAuthService(t)
+
+	userID := int32(42)
+	mock.ExpectBegin()
+	mock.ExpectQuery("INSERT INTO users").
+		WillReturnRows(newCreateUserRows(userID, time.Now()))
+	mock.ExpectCommit()
+
+	user, err := authService.CreateUser(context.Background(), validCreateUserInput())
+
+	require.NoError(t, err)
+	require.Equal(t, userID, user.UserID)
+	require.True(t, taskDistributor.called)
+	require.NotNil(t, taskDistributor.payload)
+	require.Equal(t, userID, taskDistributor.payload.UserId)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAuthServiceCreateUserRollbackWhenTaskDistributionFails(t *testing.T) {
+	authService, mock, _, taskDistributor := newTestAuthService(t)
+	taskDistributor.err = errors.New("redis unavailable")
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("INSERT INTO users").
+		WillReturnRows(newCreateUserRows(42, time.Now()))
+	mock.ExpectRollback()
+
+	user, err := authService.CreateUser(context.Background(), validCreateUserInput())
+
+	requireServiceErrorCode(t, err, ErrInternal.Code)
+	require.Empty(t, user)
+	require.True(t, taskDistributor.called)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestAuthServiceSignInValidation(t *testing.T) {

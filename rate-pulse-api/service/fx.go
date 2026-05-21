@@ -16,10 +16,10 @@ import (
 )
 
 type FXService struct {
-	store *db.Store
+	store db.Store
 }
 
-func NewFXService(store *db.Store) *FXService {
+func NewFXService(store db.Store) *FXService {
 	return &FXService{store: store}
 }
 

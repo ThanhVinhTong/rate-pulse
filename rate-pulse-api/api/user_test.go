@@ -81,7 +81,7 @@ func TestCreateUserValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := newTestServer(t, &db.Store{})
+			server := newTestServer(t, db.NewStore(nil))
 			req := makeJSONRequest(t, http.MethodPost, "/users/signup", tt.payload)
 			w := serveRequest(server, req)
 
@@ -91,7 +91,7 @@ func TestCreateUserValidation(t *testing.T) {
 }
 
 func TestCreateUserValidationResponse(t *testing.T) {
-	server := newTestServer(t, &db.Store{})
+	server := newTestServer(t, db.NewStore(nil))
 	req := makeJSONRequest(t, http.MethodPost, "/users/signup", map[string]any{
 		"email":      "not-an-email",
 		"password":   "StrongPass123!xyz",
@@ -154,7 +154,7 @@ func TestLoginUserValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := newTestServer(t, &db.Store{})
+			server := newTestServer(t, db.NewStore(nil))
 			req := makeJSONRequest(t, http.MethodPost, "/users/signin", tt.payload)
 			w := serveRequest(server, req)
 
@@ -164,7 +164,7 @@ func TestLoginUserValidation(t *testing.T) {
 }
 
 func TestLogoutUserValidation(t *testing.T) {
-	server := newTestServer(t, &db.Store{})
+	server := newTestServer(t, db.NewStore(nil))
 
 	req := makeJSONRequest(t, http.MethodPost, "/users/signout", map[string]any{})
 	w := serveRequest(server, req)
@@ -188,7 +188,7 @@ func TestProtectedUserRoutesRequireAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := newTestServer(t, &db.Store{})
+			server := newTestServer(t, db.NewStore(nil))
 
 			var req *http.Request
 			if tt.body != nil {
@@ -217,7 +217,7 @@ func TestAdminUserRoutesRequireAdmin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := newTestServer(t, &db.Store{})
+			server := newTestServer(t, db.NewStore(nil))
 
 			var req *http.Request
 			if tt.body != nil {
@@ -246,7 +246,7 @@ func TestAdminUserRoutesRequireAdmin(t *testing.T) {
 }
 
 func TestListUsersBinding(t *testing.T) {
-	server := newTestServer(t, &db.Store{})
+	server := newTestServer(t, db.NewStore(nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/users?page_id=0&page_size=5", nil)
 	addAuthorization(
@@ -267,7 +267,7 @@ func TestListUsersBinding(t *testing.T) {
 }
 
 func TestUpdateUserBinding(t *testing.T) {
-	server := newTestServer(t, &db.Store{})
+	server := newTestServer(t, db.NewStore(nil))
 
 	req := makeJSONRequest(t, http.MethodPut, "/users/0", map[string]any{
 		"first_name": "Test",

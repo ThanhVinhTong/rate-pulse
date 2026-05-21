@@ -15,7 +15,7 @@ import (
 // Serve all HTTP requests for our rate pulse service
 type Server struct {
 	config     util.Config
-	store      *db.Store
+	store      db.Store
 	tokenMaker token.Maker
 	services   *service.Services
 	router     *gin.Engine
@@ -23,7 +23,7 @@ type Server struct {
 
 func NewServer(
 	config util.Config,
-	store *db.Store,
+	store db.Store,
 	services *service.Services,
 	tokenMaker token.Maker,
 ) (*Server, error) {

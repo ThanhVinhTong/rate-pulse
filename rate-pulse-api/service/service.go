@@ -19,7 +19,7 @@ type Services struct {
 
 func NewServices(
 	config util.Config,
-	store *db.Store,
+	store db.Store,
 	tokenMaker token.Maker,
 	taskDistributor worker.TaskDistributor,
 ) *Services {

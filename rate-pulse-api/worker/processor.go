@@ -20,10 +20,10 @@ type TaskProcessor interface {
 
 type RedisTaskProcessor struct {
 	server *asynq.Server
-	store  *db.Store
+	store  db.Store
 }
 
-func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store *db.Store) TaskProcessor {
+func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskProcessor {
 	server := asynq.NewServer(
 		redisOpt,
 		asynq.Config{

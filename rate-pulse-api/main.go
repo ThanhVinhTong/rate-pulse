@@ -71,7 +71,7 @@ func main() {
 
 func runGinServer(
 	config util.Config,
-	store *db.Store,
+	store db.Store,
 	services *service.Services,
 	tokenMaker token.Maker,
 ) {
@@ -110,7 +110,7 @@ func runGrpcServer(config util.Config, services *service.Services, tokenMaker to
 	}
 }
 
-func runTaskProcessor(redisOpt asynq.RedisClientOpt, store *db.Store) {
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
 	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
 	log.Info().Msg("task processor created")
 	if err := taskProcessor.Start(); err != nil {

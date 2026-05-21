@@ -6,26 +6,33 @@ import (
 	"fmt"
 )
 
-// Store provides all functions to execute database queries and transactions
-type Store struct {
+// Store provides all functions to execute database queries and transactions.
+type Store interface {
+	Querier
+	PingContext(ctx context.Context) error
+	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
+	RefreshExchangeRatesTx(ctx context.Context, arg RefreshExchangeRatesParams) (RefreshExchangeRatesResult, error)
+}
+
+type SQLStore struct {
 	*Queries
 	db *sql.DB
 }
 
 // NewStore creates a new store
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		Queries: New(db),
 		db:      db,
 	}
 }
 
-func (store *Store) PingContext(ctx context.Context) error {
+func (store *SQLStore) PingContext(ctx context.Context) error {
 	return store.db.PingContext(ctx)
 }
 
 // execTx executes a function within a database transaction (unexported)
-func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -57,7 +64,7 @@ type RefreshExchangeRatesResult struct {
 // RefreshExchangeRatesTx clears existing exchange rates and inserts the provided
 // list of rates in a single transaction. If any insert fails, the whole
 // operation is rolled back.
-func (store *Store) RefreshExchangeRatesTx(ctx context.Context, arg RefreshExchangeRatesParams) (RefreshExchangeRatesResult, error) {
+func (store *SQLStore) RefreshExchangeRatesTx(ctx context.Context, arg RefreshExchangeRatesParams) (RefreshExchangeRatesResult, error) {
 	var result RefreshExchangeRatesResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
