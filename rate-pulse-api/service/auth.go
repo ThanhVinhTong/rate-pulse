@@ -92,6 +92,7 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 			opts := []asynq.Option{
 				asynq.MaxRetry(10),
 				asynq.Timeout(30 * time.Second),
+				asynq.ProcessIn(5 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
 
