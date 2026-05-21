@@ -5,6 +5,7 @@ package main
 import (
 	"database/sql"
 	"net"
+	"os"
 	"time"
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
@@ -18,12 +19,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: "3:04PM",
+	})
+
 	config, err := util.LoadConfig(".")
 	if err != nil {
 		log.Fatal().Err(err).Msg("Cannot load config")
@@ -80,6 +87,7 @@ func runGinServer(
 		log.Fatal().Err(err).Msg("Cannot create server")
 	}
 
+	log.Info().Msgf("HTTP server started on %s", config.HTTPServerAddress)
 	if err := server.Start(config.HTTPServerAddress); err != nil {
 		log.Fatal().Err(err).Msg("Cannot start server")
 	}

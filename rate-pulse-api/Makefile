@@ -29,7 +29,7 @@ cleancache:
 	go clean -testcache
 
 test:
-	go test -v -cover ./db/sqlc
+	go test ./...
 
 server:
 	go run main.go

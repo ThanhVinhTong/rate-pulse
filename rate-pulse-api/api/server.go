@@ -39,7 +39,10 @@ func NewServer(
 }
 
 func (server *Server) setupRouter() {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(ginRecovery())
+	router.Use(requestIDMiddleware())
+	router.Use(ginLogger())
 	if err := router.SetTrustedProxies(nil); err != nil {
 		return
 	}
