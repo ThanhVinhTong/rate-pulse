@@ -29,7 +29,7 @@ cleancache:
 	go clean -testcache
 
 test:
-	go test ./...
+	go test -v -cover -short ./...
 
 server:
 	go run main.go

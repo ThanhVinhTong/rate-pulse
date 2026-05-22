@@ -52,9 +52,27 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 	}
 
 	// Process the verify email task for the retrieved user
-	// ...
+	subject := "Verify your Rate Pulse account"
+	content := fmt.Sprintf(`
+<h1>Welcome, %s</h1>
+<p>Please verify your email address.</p>
+<p>User ID: %d</p>
+`, user.FirstName.String, user.UserID)
 
-	log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).
-		Int32("id", user.UserID).Msg("processed task")
+	err = processor.emailSender.SendEmail(
+		subject,
+		content,
+		[]string{user.Email},
+		nil,
+		nil,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to send verify email: %w", err)
+	}
+
+	log.Info().Str("type", task.Type()).Int32("user_id", user.UserID).
+		Str("email", user.Email).Msg("sent verify email")
+
 	return nil
 }

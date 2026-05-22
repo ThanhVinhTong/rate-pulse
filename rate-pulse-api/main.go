@@ -10,6 +10,7 @@ import (
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/email"
 	"github.com/ThanhVinhTong/rate-pulse/gapi"
 	pb "github.com/ThanhVinhTong/rate-pulse/pb"
 	"github.com/ThanhVinhTong/rate-pulse/service"
@@ -70,8 +71,18 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	services := service.NewServices(config, store, tokenMaker, taskDistributor)
 
+	// Initialize Email Sender
+	emailSender, err := email.NewGmailSender(
+		config.EmailSenderName,
+		config.EmailSenderAddress,
+		config.EmailSenderPassword,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Cannot create email sender")
+	}
+
 	// Start Task Processor and gRPC server in separate goroutines, while the main goroutine runs the HTTP server.
-	go runTaskProcessor(redisOpt, store)
+	go runTaskProcessor(redisOpt, store, emailSender)
 	go runGrpcServer(config, services, tokenMaker)
 	runGinServer(config, store, services, tokenMaker)
 }
@@ -118,8 +129,8 @@ func runGrpcServer(config util.Config, services *service.Services, tokenMaker to
 	}
 }
 
-func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
-	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, emailSender email.Sender) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, emailSender)
 	log.Info().Msg("task processor created")
 	if err := taskProcessor.Start(); err != nil {
 		log.Fatal().Err(err).Msg("cannot start task processor")
