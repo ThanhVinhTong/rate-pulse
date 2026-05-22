@@ -1,7 +1,6 @@
 # Welcome to Rate Pulse
 
-**Thank you for joining us!**  
-Your account has been successfully created and your email has been verified.
+**Thank you for joining us!**
 
 ---
 
