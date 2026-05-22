@@ -5,6 +5,7 @@ import (
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/email"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog/log"
 )
@@ -24,12 +25,14 @@ type RedisTaskProcessor struct {
 	server      *asynq.Server
 	store       db.Store
 	emailSender email.Sender
+	config      util.Config
 }
 
 func NewRedisTaskProcessor(
 	redisOpt asynq.RedisClientOpt,
 	store db.Store,
 	emailSender email.Sender,
+	config util.Config,
 ) TaskProcessor {
 	server := asynq.NewServer(
 		redisOpt,
@@ -52,6 +55,7 @@ func NewRedisTaskProcessor(
 		server:      server,
 		store:       store,
 		emailSender: emailSender,
+		config:      config,
 	}
 }
 

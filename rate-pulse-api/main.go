@@ -82,7 +82,7 @@ func main() {
 	}
 
 	// Start Task Processor and gRPC server in separate goroutines, while the main goroutine runs the HTTP server.
-	go runTaskProcessor(redisOpt, store, emailSender)
+	go runTaskProcessor(config, redisOpt, store, emailSender)
 	go runGrpcServer(config, services, tokenMaker)
 	runGinServer(config, store, services, tokenMaker)
 }
@@ -129,8 +129,8 @@ func runGrpcServer(config util.Config, services *service.Services, tokenMaker to
 	}
 }
 
-func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, emailSender email.Sender) {
-	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, emailSender)
+func runTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, store db.Store, emailSender email.Sender) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, emailSender, config)
 	log.Info().Msg("task processor created")
 	if err := taskProcessor.Start(); err != nil {
 		log.Fatal().Err(err).Msg("cannot start task processor")

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog/log"
 )
@@ -51,18 +53,38 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
+	secretCodeHash, err := util.HashPassword(util.RandomString(32))
+	if err != nil {
+		return fmt.Errorf("failed to generate hashed secret: %w", err)
+	}
+
+	verifyEmail, err := processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
+		UserID:         user.UserID,
+		Email:          user.Email,
+		SecretCodeHash: secretCodeHash,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create verified email: %w", err)
+	}
+
 	// Process the verify email task for the retrieved user
-	subject := "Verify your Rate Pulse account"
-	content := fmt.Sprintf(`
-<h1>Welcome, %s</h1>
-<p>Please verify your email address.</p>
-<p>User ID: %d</p>
-`, user.FirstName.String, user.UserID)
+	subject := "Welcome to Rate Pulse"
+	verifyUrl := fmt.Sprintf(
+		"%s?email_id=%d&secret_code=%s",
+		processor.config.FrontendVerifyEmailURL,
+		verifyEmail.ID,
+		verifyEmail.SecretCodeHash,
+	)
+	content := fmt.Sprintf(`Hello %s,<br/>
+	Thank you for registering with us!<br/>
+	Please <a href="%s">click here</a> to verify your email address.<br/>
+	`, user.Username, verifyUrl)
+	to := []string{user.Email}
 
 	err = processor.emailSender.SendEmail(
 		subject,
 		content,
-		[]string{user.Email},
+		to,
 		nil,
 		nil,
 		nil,

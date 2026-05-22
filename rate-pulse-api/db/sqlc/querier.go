@@ -24,6 +24,7 @@ type Querier interface {
 	CreateSubscriptionPlan(ctx context.Context, arg CreateSubscriptionPlanParams) (SubscriptionPlan, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserSubscription(ctx context.Context, arg CreateUserSubscriptionParams) (UserSubscription, error)
+	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
 	DeleteAllExchangeRates(ctx context.Context) error
 	DeleteCountry(ctx context.Context, countryID int32) error
 	DeleteCurrency(ctx context.Context, currencyID int32) error
@@ -100,7 +101,9 @@ type Querier interface {
 	UpdateRateSourcePreference(ctx context.Context, arg UpdateRateSourcePreferenceParams) (UserRateSourcePreference, error)
 	UpdateSubscriptionPlan(ctx context.Context, arg UpdateSubscriptionPlanParams) (SubscriptionPlan, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUserEmailVerified(ctx context.Context, userID int32) (User, error)
 	UpdateUserSubscription(ctx context.Context, arg UpdateUserSubscriptionParams) (UserSubscription, error)
+	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
 }
 
 var _ Querier = (*Queries)(nil)
