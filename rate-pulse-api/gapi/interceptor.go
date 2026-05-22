@@ -11,7 +11,6 @@ package gapi
 
 import (
 	"context"
-	"log/slog"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/ThanhVinhTong/rate-pulse/pb"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -70,12 +70,12 @@ func recoveryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				slog.ErrorContext(ctx, "grpc panic recovered",
-					"method", info.FullMethod,
-					"request_id", requestIDFromContext(ctx),
-					"panic", recovered,
-					"stack", string(debug.Stack()),
-				)
+				log.Error().
+					Str("method", info.FullMethod).
+					Str("request_id", requestIDFromContext(ctx)).
+					Interface("panic", recovered).
+					Bytes("stack", debug.Stack()).
+					Msg("grpc panic recovered")
 				err = status.Error(codes.Internal, "internal server error")
 			}
 		}()
@@ -102,22 +102,22 @@ func loggingInterceptor() grpc.UnaryServerInterceptor {
 		resp, err := handler(ctx, req)
 		code := status.Code(err)
 
-		attrs := []any{
-			"method", info.FullMethod,
-			"request_id", requestIDFromContext(ctx),
-			"status_code", code.String(),
-			"latency_ms", time.Since(start).Milliseconds(),
-		}
-		if payload, ok := authorizationPayloadFromContext(ctx); ok {
-			attrs = append(attrs, "user_id", payload.UserID)
-		}
-
+		event := log.Info()
 		if err != nil {
-			slog.ErrorContext(ctx, "grpc request completed", append(attrs, "error", err.Error())...)
-			return resp, err
+			event = log.Error().Err(err)
 		}
 
-		slog.InfoContext(ctx, "grpc request completed", attrs...)
+		event = event.
+			Str("method", info.FullMethod).
+			Str("request_id", requestIDFromContext(ctx)).
+			Str("status_code", code.String()).
+			Int64("latency_ms", time.Since(start).Milliseconds())
+
+		if payload, ok := authorizationPayloadFromContext(ctx); ok {
+			event = event.Int32("user_id", payload.UserID)
+		}
+
+		event.Msg("grpc request completed")
 		return resp, nil
 	}
 }

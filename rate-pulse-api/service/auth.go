@@ -15,20 +15,24 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/worker"
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 )
 
 type AuthService struct {
-	config     util.Config
-	store      *db.Store
-	tokenMaker token.Maker
+	config          util.Config
+	store           db.Store
+	tokenMaker      token.Maker
+	taskDistributor worker.TaskDistributor
 }
 
-func NewAuthService(config util.Config, store *db.Store, tokenMaker token.Maker) *AuthService {
+func NewAuthService(config util.Config, store db.Store, tokenMaker token.Maker, taskDistributor worker.TaskDistributor) *AuthService {
 	return &AuthService{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
+		config:          config,
+		store:           store,
+		tokenMaker:      tokenMaker,
+		taskDistributor: taskDistributor,
 	}
 }
 
@@ -69,20 +73,38 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 		return User{}, Wrap(err, ErrInternal.Code, "failed to hash password")
 	}
 
-	user, err := s.store.CreateUser(ctx, db.CreateUserParams{
-		Username:           input.Username,
-		Email:              email,
-		Password:           hashedPassword,
-		UserType:           sql.NullString{String: "free", Valid: true},
-		EmailVerified:      sql.NullBool{Bool: false, Valid: true},
-		TimeZone:           sql.NullString{String: input.TimeZone, Valid: true},
-		LanguagePreference: sql.NullString{String: input.LanguagePreference, Valid: true},
-		CountryOfResidence: sql.NullString{String: input.CountryOfResidence, Valid: true},
-		CountryOfBirth:     sql.NullString{String: input.CountryOfBirth, Valid: true},
-		IsActive:           sql.NullBool{Bool: true, Valid: true},
-		LastName:           sql.NullString{String: input.LastName, Valid: true},
-		FirstName:          sql.NullString{String: input.FirstName, Valid: true},
-	})
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:           input.Username,
+			Email:              email,
+			Password:           hashedPassword,
+			UserType:           sql.NullString{String: "free", Valid: true},
+			EmailVerified:      sql.NullBool{Bool: false, Valid: true},
+			TimeZone:           sql.NullString{String: input.TimeZone, Valid: true},
+			LanguagePreference: sql.NullString{String: input.LanguagePreference, Valid: true},
+			CountryOfResidence: sql.NullString{String: input.CountryOfResidence, Valid: true},
+			CountryOfBirth:     sql.NullString{String: input.CountryOfBirth, Valid: true},
+			IsActive:           sql.NullBool{Bool: true, Valid: true},
+			LastName:           sql.NullString{String: input.LastName, Valid: true},
+			FirstName:          sql.NullString{String: input.FirstName, Valid: true},
+		},
+		AfterCreate: func(user db.User) error {
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.Timeout(30 * time.Second),
+				asynq.ProcessIn(5 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			return s.taskDistributor.DistributeTaskSendVerifyEmail(
+				ctx,
+				&worker.PayloadSendVerifyEmail{UserId: user.UserID},
+				opts...,
+			)
+		},
+	}
+
+	result, err := s.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code.Name() == "unique_violation" {
@@ -90,7 +112,8 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 		}
 		return User{}, Wrap(err, ErrInternal.Code, "failed to create user")
 	}
-	return NewUser(user), nil
+
+	return NewUser(result.User), nil
 }
 
 func (s *AuthService) SignIn(ctx context.Context, input SignInInput) (SignInResult, error) {
@@ -224,6 +247,47 @@ func (s *AuthService) RenewAccessToken(ctx context.Context, input RenewAccessTok
 	return RenewAccessTokenResult{
 		AccessToken:          accessToken,
 		AccessTokenExpiresAt: accessPayload.ExpiredAt,
+	}, nil
+}
+
+func (s *AuthService) VerifyEmail(ctx context.Context, input VerifyEmailInput) (VerifyEmailResult, error) {
+	if input.EmailID <= 0 {
+		return VerifyEmailResult{}, Wrap(errors.New("email_id is required"), ErrInvalidInput.Code, "email_id is required")
+	}
+	if strings.TrimSpace(input.SecretCode) == "" {
+		return VerifyEmailResult{}, Wrap(errors.New("secret_code is required"), ErrInvalidInput.Code, "secret_code is required")
+	}
+
+	verifyEmail, err := s.store.GetVerifyEmail(ctx, input.EmailID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return VerifyEmailResult{}, Wrap(err, ErrInvalidInput.Code, "invalid or expired verification link")
+		}
+		return VerifyEmailResult{}, Wrap(err, ErrInternal.Code, "failed to get verification email")
+	}
+
+	if verifyEmail.IsUsed || time.Now().After(verifyEmail.ExpiredAt) {
+		return VerifyEmailResult{}, Wrap(errors.New("verification link is expired or already used"), ErrInvalidInput.Code, "invalid or expired verification link")
+	}
+
+	if err := util.CheckPassword(input.SecretCode, verifyEmail.SecretCodeHash); err != nil {
+		return VerifyEmailResult{}, Wrap(err, ErrInvalidInput.Code, "invalid or expired verification link")
+	}
+
+	result, err := s.store.VerifyEmailTx(ctx, db.VerifyEmailTxParams{
+		EmailID:        verifyEmail.ID,
+		UserID:         verifyEmail.UserID,
+		SecretCodeHash: verifyEmail.SecretCodeHash,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return VerifyEmailResult{}, Wrap(err, ErrInvalidInput.Code, "invalid or expired verification link")
+		}
+		return VerifyEmailResult{}, Wrap(err, ErrInternal.Code, "failed to verify email")
+	}
+
+	return VerifyEmailResult{
+		User: NewUser(result.User),
 	}, nil
 }
 

@@ -143,3 +143,13 @@ type UserSubscription struct {
 	CreatedAt      sql.NullTime
 	UpdatedAt      sql.NullTime
 }
+
+type VerifyEmail struct {
+	ID             int64
+	UserID         int32
+	Email          string
+	SecretCodeHash string
+	IsUsed         bool
+	CreatedAt      time.Time
+	ExpiredAt      time.Time
+}

@@ -111,7 +111,7 @@ func TestAuthMiddleware(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
-			server := newTestServer(t, &db.Store{})
+			server := newTestServer(t, db.NewStore(nil))
 
 			authPath := "/auth"
 			server.router.GET(

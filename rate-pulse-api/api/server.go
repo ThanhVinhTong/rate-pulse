@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -16,23 +15,23 @@ import (
 // Serve all HTTP requests for our rate pulse service
 type Server struct {
 	config     util.Config
-	store      *db.Store
+	store      db.Store
 	tokenMaker token.Maker
 	services   *service.Services
 	router     *gin.Engine
 }
 
-func NewServer(config util.Config, store *db.Store) (*Server, error) {
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create token maker: %w", err)
-	}
-
+func NewServer(
+	config util.Config,
+	store db.Store,
+	services *service.Services,
+	tokenMaker token.Maker,
+) (*Server, error) {
 	server := &Server{
 		config:     config,
 		store:      store,
 		tokenMaker: tokenMaker,
-		services:   service.NewServices(config, store, tokenMaker),
+		services:   services,
 	}
 
 	server.setupRouter()
@@ -40,7 +39,13 @@ func NewServer(config util.Config, store *db.Store) (*Server, error) {
 }
 
 func (server *Server) setupRouter() {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(ginRecovery())
+	router.Use(requestIDMiddleware())
+	router.Use(ginLogger())
+	if err := router.SetTrustedProxies(nil); err != nil {
+		return
+	}
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
@@ -57,6 +62,7 @@ func (server *Server) setupRouter() {
 	router.POST("/users/signin", server.loginUser)
 	router.POST("/users/signout", server.logoutUser)
 	router.POST("/users/renew-access-token", server.renewAccessToken)
+	router.POST("/users/verify-email", server.verifyEmail)
 
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})

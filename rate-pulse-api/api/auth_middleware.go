@@ -54,7 +54,6 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 			return
 		}
 
-		// Optionally set payload to context if used later
 		ctx.Set(authorizationPayloadKey, payload)
 		ctx.Next()
 	}

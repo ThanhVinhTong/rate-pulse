@@ -49,6 +49,11 @@ type RenewAccessTokenInput struct {
 	RefreshToken string
 }
 
+type VerifyEmailInput struct {
+	EmailID    int64
+	SecretCode string
+}
+
 type SignInResult struct {
 	SessionID             uuid.UUID
 	AccessToken           string
@@ -61,6 +66,10 @@ type SignInResult struct {
 type RenewAccessTokenResult struct {
 	AccessToken          string
 	AccessTokenExpiresAt time.Time
+}
+
+type VerifyEmailResult struct {
+	User User
 }
 
 /*

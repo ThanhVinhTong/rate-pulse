@@ -14,11 +14,11 @@ const (
 )
 
 type HealthService struct {
-	store     *db.Store
+	store     db.Store
 	startedAt time.Time
 }
 
-func NewHealthService(store *db.Store) *HealthService {
+func NewHealthService(store db.Store) *HealthService {
 	return &HealthService{
 		store:     store,
 		startedAt: time.Now(),

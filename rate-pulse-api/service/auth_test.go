@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -10,11 +11,29 @@ import (
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
+	"github.com/ThanhVinhTong/rate-pulse/worker"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 )
 
-func newTestAuthService(t *testing.T) (*AuthService, sqlmock.Sqlmock, token.Maker) {
+type fakeTaskDistributor struct {
+	called  bool
+	payload *worker.PayloadSendVerifyEmail
+	err     error
+}
+
+func (f *fakeTaskDistributor) DistributeTaskSendVerifyEmail(
+	ctx context.Context,
+	payload *worker.PayloadSendVerifyEmail,
+	opts ...asynq.Option,
+) error {
+	f.called = true
+	f.payload = payload
+	return f.err
+}
+
+func newTestAuthService(t *testing.T) (*AuthService, sqlmock.Sqlmock, token.Maker, *fakeTaskDistributor) {
 	t.Helper()
 
 	sqlDB, mock, err := sqlmock.New()
@@ -34,8 +53,9 @@ func newTestAuthService(t *testing.T) (*AuthService, sqlmock.Sqlmock, token.Make
 	require.NoError(t, err)
 
 	store := db.NewStore(sqlDB)
+	taskDistributor := &fakeTaskDistributor{}
 
-	return NewAuthService(config, store, tokenMaker), mock, tokenMaker
+	return NewAuthService(config, store, tokenMaker, taskDistributor), mock, tokenMaker, taskDistributor
 }
 
 func requireServiceErrorCode(t *testing.T, err error, expectedCode string) {
@@ -44,6 +64,60 @@ func requireServiceErrorCode(t *testing.T, err error, expectedCode string) {
 	require.Error(t, err)
 	require.True(t, IsServiceError(err))
 	require.Equal(t, expectedCode, ServiceErrorCode(err))
+}
+
+func validCreateUserInput() CreateUserInput {
+	return CreateUserInput{
+		Username:           "testuser",
+		Email:              "test@example.com",
+		Password:           "StrongPass123!xyz",
+		TimeZone:           "Australia/Perth",
+		LanguagePreference: "en",
+		CountryOfResidence: "AU",
+		CountryOfBirth:     "VN",
+		FirstName:          "Test",
+		LastName:           "User",
+	}
+}
+
+func newCreateUserRows(userID int32, now time.Time) *sqlmock.Rows {
+	return newCreateUserRowsWithEmailVerified(userID, now, false)
+}
+
+func newCreateUserRowsWithEmailVerified(userID int32, now time.Time, emailVerified bool) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{
+		"user_id",
+		"username",
+		"email",
+		"password",
+		"user_type",
+		"email_verified",
+		"time_zone",
+		"language_preference",
+		"country_of_residence",
+		"country_of_birth",
+		"is_active",
+		"created_at",
+		"updated_at",
+		"first_name",
+		"last_name",
+	}).AddRow(
+		userID,
+		"testuser",
+		"test@example.com",
+		"hashed-password",
+		sql.NullString{String: "free", Valid: true},
+		sql.NullBool{Bool: emailVerified, Valid: true},
+		sql.NullString{String: "Australia/Perth", Valid: true},
+		sql.NullString{String: "en", Valid: true},
+		sql.NullString{String: "AU", Valid: true},
+		sql.NullString{String: "VN", Valid: true},
+		sql.NullBool{Bool: true, Valid: true},
+		sql.NullTime{Time: now, Valid: true},
+		sql.NullTime{Time: now, Valid: true},
+		sql.NullString{String: "Test", Valid: true},
+		sql.NullString{String: "User", Valid: true},
+	)
 }
 
 func TestAuthServiceCreateUserValidation(t *testing.T) {
@@ -65,7 +139,7 @@ func TestAuthServiceCreateUserValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authService, mock, _ := newTestAuthService(t)
+			authService, mock, _, _ := newTestAuthService(t)
 
 			user, err := authService.CreateUser(context.Background(), tt.input)
 
@@ -74,6 +148,42 @@ func TestAuthServiceCreateUserValidation(t *testing.T) {
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestAuthServiceCreateUserSuccess(t *testing.T) {
+	authService, mock, _, taskDistributor := newTestAuthService(t)
+
+	userID := int32(42)
+	mock.ExpectBegin()
+	mock.ExpectQuery("INSERT INTO users").
+		WillReturnRows(newCreateUserRows(userID, time.Now()))
+	mock.ExpectCommit()
+
+	user, err := authService.CreateUser(context.Background(), validCreateUserInput())
+
+	require.NoError(t, err)
+	require.Equal(t, userID, user.UserID)
+	require.True(t, taskDistributor.called)
+	require.NotNil(t, taskDistributor.payload)
+	require.Equal(t, userID, taskDistributor.payload.UserId)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAuthServiceCreateUserRollbackWhenTaskDistributionFails(t *testing.T) {
+	authService, mock, _, taskDistributor := newTestAuthService(t)
+	taskDistributor.err = errors.New("redis unavailable")
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("INSERT INTO users").
+		WillReturnRows(newCreateUserRows(42, time.Now()))
+	mock.ExpectRollback()
+
+	user, err := authService.CreateUser(context.Background(), validCreateUserInput())
+
+	requireServiceErrorCode(t, err, ErrInternal.Code)
+	require.Empty(t, user)
+	require.True(t, taskDistributor.called)
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestAuthServiceSignInValidation(t *testing.T) {
@@ -108,7 +218,7 @@ func TestAuthServiceSignInValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authService, mock, _ := newTestAuthService(t)
+			authService, mock, _, _ := newTestAuthService(t)
 
 			result, err := authService.SignIn(context.Background(), tt.input)
 
@@ -120,7 +230,7 @@ func TestAuthServiceSignInValidation(t *testing.T) {
 }
 
 func TestAuthServiceSignInUserNotFound(t *testing.T) {
-	authService, mock, _ := newTestAuthService(t)
+	authService, mock, _, _ := newTestAuthService(t)
 
 	mock.ExpectQuery("SELECT user_id, username, email, password").
 		WithArgs("missing@example.com").
@@ -137,7 +247,7 @@ func TestAuthServiceSignInUserNotFound(t *testing.T) {
 }
 
 func TestAuthServiceRenewAccessTokenSessionNotFound(t *testing.T) {
-	authService, mock, tokenMaker := newTestAuthService(t)
+	authService, mock, tokenMaker, _ := newTestAuthService(t)
 
 	refreshToken, refreshPayload, err := tokenMaker.CreateToken(
 		42,
@@ -162,7 +272,7 @@ func TestAuthServiceRenewAccessTokenSessionNotFound(t *testing.T) {
 }
 
 func TestAuthServiceRenewAccessTokenSuccess(t *testing.T) {
-	authService, mock, tokenMaker := newTestAuthService(t)
+	authService, mock, tokenMaker, _ := newTestAuthService(t)
 
 	refreshToken, refreshPayload, err := tokenMaker.CreateToken(
 		42,
@@ -207,8 +317,115 @@ func TestAuthServiceRenewAccessTokenSuccess(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func newVerifyEmailRows(emailID int64, userID int32, secretCodeHash string, isUsed bool, expiresAt time.Time) *sqlmock.Rows {
+	now := time.Now()
+	return sqlmock.NewRows([]string{
+		"id",
+		"user_id",
+		"email",
+		"secret_code_hash",
+		"is_used",
+		"created_at",
+		"expired_at",
+	}).AddRow(
+		emailID,
+		userID,
+		"test@example.com",
+		secretCodeHash,
+		isUsed,
+		now,
+		expiresAt,
+	)
+}
+
+func TestAuthServiceVerifyEmailValidation(t *testing.T) {
+	tests := []struct {
+		name  string
+		input VerifyEmailInput
+	}{
+		{
+			name: "missing email id",
+			input: VerifyEmailInput{
+				SecretCode: "secret",
+			},
+		},
+		{
+			name: "missing secret code",
+			input: VerifyEmailInput{
+				EmailID: 42,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			authService, mock, _, _ := newTestAuthService(t)
+
+			result, err := authService.VerifyEmail(context.Background(), tt.input)
+
+			requireServiceErrorCode(t, err, ErrInvalidInput.Code)
+			require.Empty(t, result)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestAuthServiceVerifyEmailSuccess(t *testing.T) {
+	authService, mock, _, _ := newTestAuthService(t)
+
+	const secretCode = "plain-secret-code"
+	const emailID = int64(42)
+	const userID = int32(7)
+	secretCodeHash, err := util.HashPassword(secretCode)
+	require.NoError(t, err)
+
+	mock.ExpectQuery("SELECT (.+) FROM verify_emails").
+		WithArgs(emailID).
+		WillReturnRows(newVerifyEmailRows(emailID, userID, secretCodeHash, false, time.Now().Add(time.Minute)))
+	mock.ExpectBegin()
+	mock.ExpectQuery("UPDATE verify_emails").
+		WithArgs(emailID, userID, secretCodeHash).
+		WillReturnRows(newVerifyEmailRows(emailID, userID, secretCodeHash, true, time.Now().Add(time.Minute)))
+	mock.ExpectQuery("UPDATE users").
+		WithArgs(userID).
+		WillReturnRows(newCreateUserRowsWithEmailVerified(userID, time.Now(), true))
+	mock.ExpectCommit()
+
+	result, err := authService.VerifyEmail(context.Background(), VerifyEmailInput{
+		EmailID:    emailID,
+		SecretCode: secretCode,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, userID, result.User.UserID)
+	require.True(t, result.User.EmailVerified)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAuthServiceVerifyEmailRejectsWrongSecret(t *testing.T) {
+	authService, mock, _, _ := newTestAuthService(t)
+
+	const emailID = int64(42)
+	const userID = int32(7)
+	secretCodeHash, err := util.HashPassword("expected-secret")
+	require.NoError(t, err)
+
+	mock.ExpectQuery("SELECT (.+) FROM verify_emails").
+		WithArgs(emailID).
+		WillReturnRows(newVerifyEmailRows(emailID, userID, secretCodeHash, false, time.Now().Add(time.Minute)))
+
+	result, err := authService.VerifyEmail(context.Background(), VerifyEmailInput{
+		EmailID:    emailID,
+		SecretCode: "wrong-secret",
+	})
+
+	requireServiceErrorCode(t, err, ErrInvalidInput.Code)
+	require.Empty(t, result)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestAuthServiceSignInSuccess(t *testing.T) {
-	authService, mock, _ := newTestAuthService(t)
+	authService, mock, _, _ := newTestAuthService(t)
 
 	const password = "correct horse battery staple"
 
