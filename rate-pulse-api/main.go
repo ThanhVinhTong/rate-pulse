@@ -56,8 +56,9 @@ func main() {
 	store := db.NewStore(conn)
 
 	// Initialize task distributor and processor for handling asynchronous tasks.
-	redisOpt := asynq.RedisClientOpt{
-		Addr: config.RedisAddress,
+	redisOpt, err := worker.NewRedisClientOpt(config)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Cannot configure Redis")
 	}
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 

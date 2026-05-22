@@ -14,6 +14,9 @@ type Config struct {
 	HTTPServerAddress      string        `mapstructure:"HTTP_SERVER_ADDRESS"`
 	GRPCServerAddress      string        `mapstructure:"GRPC_SERVER_ADDRESS"`
 	RedisAddress           string        `mapstructure:"REDIS_ADDRESS"`
+	RedisUsername          string        `mapstructure:"REDIS_USERNAME"`
+	RedisPassword          string        `mapstructure:"REDIS_PASSWORD"`
+	RedisTLS               bool          `mapstructure:"REDIS_TLS"`
 	TokenSymmetricKey      string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration    time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration   time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
@@ -36,6 +39,9 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("HTTP_SERVER_ADDRESS")
 	viper.BindEnv("GRPC_SERVER_ADDRESS")
 	viper.BindEnv("REDIS_ADDRESS")
+	viper.BindEnv("REDIS_USERNAME")
+	viper.BindEnv("REDIS_PASSWORD")
+	viper.BindEnv("REDIS_TLS")
 	viper.BindEnv("TOKEN_SYMMETRIC_KEY")
 	viper.BindEnv("ACCESS_TOKEN_DURATION")
 	viper.BindEnv("REFRESH_TOKEN_DURATION")

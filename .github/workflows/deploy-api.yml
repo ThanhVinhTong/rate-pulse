@@ -76,6 +76,10 @@ jobs:
               --from-literal=EMAIL_SENDER_ADDRESS='${{ secrets.EMAIL_SENDER_ADDRESS }}' \
               --from-literal=EMAIL_SENDER_PASSWORD='${{ secrets.EMAIL_SENDER_PASSWORD }}' \
               --from-literal=FRONTEND_VERIFY_EMAIL_URL='${{ secrets.FRONTEND_VERIFY_EMAIL_URL }}' \
+              --from-literal=REDIS_ADDRESS='${{ secrets.REDIS_ADDRESS }}' \
+              --from-literal=REDIS_USERNAME='${{ secrets.REDIS_USERNAME }}' \
+              --from-literal=REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+              --from-literal=REDIS_TLS='${{ secrets.REDIS_TLS }}' \
               --dry-run=client -o yaml | kubectl apply -f -
             
             # 2. Docker Hub pull secret (same credentials as the build job)
