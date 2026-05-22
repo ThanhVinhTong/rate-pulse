@@ -72,6 +72,10 @@ jobs:
               --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
               --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
               --from-literal=REFRESH_TOKEN_DURATION='${{ secrets.REFRESH_TOKEN_DURATION }}' \
+              --from-literal=EMAIL_SENDER_NAME='${{ secrets.EMAIL_SENDER_NAME }}' \
+              --from-literal=EMAIL_SENDER_ADDRESS='${{ secrets.EMAIL_SENDER_ADDRESS }}' \
+              --from-literal=EMAIL_SENDER_PASSWORD='${{ secrets.EMAIL_SENDER_PASSWORD }}' \
+              --from-literal=FRONTEND_VERIFY_EMAIL_URL='${{ secrets.FRONTEND_VERIFY_EMAIL_URL }}' \
               --dry-run=client -o yaml | kubectl apply -f -
             
             # 2. Docker Hub pull secret (same credentials as the build job)
