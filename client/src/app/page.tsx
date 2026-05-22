@@ -50,8 +50,8 @@ const workflowSteps = [
     icon: Newspaper,
   },
   {
-    title: "Refresh the view",
-    body: "Return to the live views after signing in for the latest available data.",
+    title: "Stay updated",
+    body: "Quickly refresh the rates board to see the latest available quotes.",
     icon: RefreshCw,
   },
 ] as const;
@@ -68,8 +68,8 @@ const valueProps = [
     icon: Newspaper,
   },
   {
-    title: "Signed-in data",
-    body: "Live figures come from your authenticated session to the API, not the hero preview.",
+    title: "Secure access",
+    body: "Create an account to securely access your workspace and monitor currency pairs.",
     icon: ShieldCheck,
   },
 ] as const;
@@ -108,7 +108,7 @@ export default async function Home() {
       <Panel variant="hero" className="relative" id="introduction" aria-labelledby="hero-heading">
         <HeroGradientBackdrop />
         <div className="relative grid gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-12 lg:px-12 lg:py-16">
-          <div>
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
             <Text variant="overline">FX &amp; macro monitor</Text>
 
             <h1
@@ -122,12 +122,12 @@ export default async function Home() {
               sit beside your FX workflow.
             </Text>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <TextLink className="text-white" href="/exchange-rates" variant="cta">
+            <div className="mt-10 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center sm:justify-center lg:justify-start">
+              <TextLink className="w-full text-white sm:w-auto" href="/exchange-rates" variant="cta">
                 View exchange rates
               </TextLink>
-              <TextLink href="/login" variant="subtle">
-                Sign in for live data
+              <TextLink className="w-full sm:w-auto" href="/login" variant="subtle">
+                Log in to workspace
               </TextLink>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default async function Home() {
             Built for rate comparison
           </Heading>
           <Text variant="muted" className="mt-2">
-            Each primary view keeps the rate source, market context, and user session clear.
+            Each primary view keeps the rate source, market context, and pair details clear.
           </Text>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">

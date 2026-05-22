@@ -16,7 +16,7 @@ const WORKSPACE_PREVIEW = [
 
 export function HomeHeroShowcase() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 min-w-0 w-full">
       <Text variant="labelUpper" className="text-center text-[11px]">
         Illustrative only - not live or executable prices
       </Text>
