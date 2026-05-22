@@ -11,6 +11,7 @@ type Store interface {
 	Querier
 	PingContext(ctx context.Context) error
 	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
+	VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error)
 	RefreshExchangeRatesTx(ctx context.Context, arg RefreshExchangeRatesParams) (RefreshExchangeRatesResult, error)
 }
 
@@ -29,6 +30,51 @@ func NewStore(db *sql.DB) Store {
 
 func (store *SQLStore) PingContext(ctx context.Context) error {
 	return store.db.PingContext(ctx)
+}
+
+// VerifyEmailTxParams defines the input for atomically consuming a verification
+// email record and marking the owning user as email verified.
+type VerifyEmailTxParams struct {
+	EmailID        int64
+	UserID         int32
+	SecretCodeHash string
+}
+
+// VerifyEmailTxResult contains the consumed verification record and updated user.
+type VerifyEmailTxResult struct {
+	VerifyEmail VerifyEmail
+	User        User
+}
+
+// VerifyEmailTx marks a valid, unused verification email as used and marks the
+// associated user as email verified in one transaction.
+func (store *SQLStore) VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error) {
+	var result VerifyEmailTxResult
+
+	err := store.execTx(ctx, func(q *Queries) error {
+		verifyEmail, err := q.UpdateVerifyEmail(ctx, UpdateVerifyEmailParams{
+			ID:             arg.EmailID,
+			UserID:         arg.UserID,
+			SecretCodeHash: arg.SecretCodeHash,
+		})
+		if err != nil {
+			return err
+		}
+
+		user, err := q.UpdateUserEmailVerified(ctx, verifyEmail.UserID)
+		if err != nil {
+			return err
+		}
+
+		result.VerifyEmail = verifyEmail
+		result.User = user
+		return nil
+	})
+	if err != nil {
+		return VerifyEmailTxResult{}, err
+	}
+
+	return result, nil
 }
 
 // execTx executes a function within a database transaction (unexported)

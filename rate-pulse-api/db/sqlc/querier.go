@@ -87,6 +87,7 @@ type Querier interface {
 	GetUserSubscriptionByID(ctx context.Context, subscriptionID int32) (UserSubscription, error)
 	GetUserSubscriptionsByStatus(ctx context.Context, status sql.NullString) ([]UserSubscription, error)
 	GetUserSubscriptionsByUserID(ctx context.Context, userID int32) ([]UserSubscription, error)
+	GetVerifyEmail(ctx context.Context, id int64) (VerifyEmail, error)
 	ListExchangeRateTypes(ctx context.Context) ([]ExchangeRateType, error)
 	ListRateSourceMetadata(ctx context.Context) ([]ListRateSourceMetadataRow, error)
 	ListRateSources(ctx context.Context) ([]ListRateSourcesRow, error)

@@ -35,6 +35,7 @@ type AuthUseCase interface {
 	CreateUser(ctx context.Context, input CreateUserInput) (User, error)
 	SignIn(ctx context.Context, input SignInInput) (SignInResult, error)
 	RenewAccessToken(ctx context.Context, input RenewAccessTokenInput) (RenewAccessTokenResult, error)
+	VerifyEmail(ctx context.Context, input VerifyEmailInput) (VerifyEmailResult, error)
 	SignOut(ctx context.Context, refreshToken string) error
 }
 

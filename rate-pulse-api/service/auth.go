@@ -250,6 +250,47 @@ func (s *AuthService) RenewAccessToken(ctx context.Context, input RenewAccessTok
 	}, nil
 }
 
+func (s *AuthService) VerifyEmail(ctx context.Context, input VerifyEmailInput) (VerifyEmailResult, error) {
+	if input.EmailID <= 0 {
+		return VerifyEmailResult{}, Wrap(errors.New("email_id is required"), ErrInvalidInput.Code, "email_id is required")
+	}
+	if strings.TrimSpace(input.SecretCode) == "" {
+		return VerifyEmailResult{}, Wrap(errors.New("secret_code is required"), ErrInvalidInput.Code, "secret_code is required")
+	}
+
+	verifyEmail, err := s.store.GetVerifyEmail(ctx, input.EmailID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return VerifyEmailResult{}, Wrap(err, ErrInvalidInput.Code, "invalid or expired verification link")
+		}
+		return VerifyEmailResult{}, Wrap(err, ErrInternal.Code, "failed to get verification email")
+	}
+
+	if verifyEmail.IsUsed || time.Now().After(verifyEmail.ExpiredAt) {
+		return VerifyEmailResult{}, Wrap(errors.New("verification link is expired or already used"), ErrInvalidInput.Code, "invalid or expired verification link")
+	}
+
+	if err := util.CheckPassword(input.SecretCode, verifyEmail.SecretCodeHash); err != nil {
+		return VerifyEmailResult{}, Wrap(err, ErrInvalidInput.Code, "invalid or expired verification link")
+	}
+
+	result, err := s.store.VerifyEmailTx(ctx, db.VerifyEmailTxParams{
+		EmailID:        verifyEmail.ID,
+		UserID:         verifyEmail.UserID,
+		SecretCodeHash: verifyEmail.SecretCodeHash,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return VerifyEmailResult{}, Wrap(err, ErrInvalidInput.Code, "invalid or expired verification link")
+		}
+		return VerifyEmailResult{}, Wrap(err, ErrInternal.Code, "failed to verify email")
+	}
+
+	return VerifyEmailResult{
+		User: NewUser(result.User),
+	}, nil
+}
+
 func (s *AuthService) SignOut(ctx context.Context, refreshToken string) error {
 	// TODO: Implement real signout after adding a query to block or revoke sessions.
 	if refreshToken == "" {

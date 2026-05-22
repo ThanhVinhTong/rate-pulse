@@ -62,6 +62,7 @@ func (server *Server) setupRouter() {
 	router.POST("/users/signin", server.loginUser)
 	router.POST("/users/signout", server.logoutUser)
 	router.POST("/users/renew-access-token", server.renewAccessToken)
+	router.POST("/users/verify-email", server.verifyEmail)
 
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "OK"})

@@ -2,8 +2,12 @@ package worker
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/util"
@@ -53,7 +57,12 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	secretCodeHash, err := util.HashPassword(util.RandomString(32))
+	secretCode, err := newVerifyEmailSecret()
+	if err != nil {
+		return fmt.Errorf("failed to generate verification secret: %w", err)
+	}
+
+	secretCodeHash, err := util.HashPassword(secretCode)
 	if err != nil {
 		return fmt.Errorf("failed to generate hashed secret: %w", err)
 	}
@@ -69,12 +78,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 
 	// Process the verify email task for the retrieved user
 	subject := "Welcome to Rate Pulse"
-	verifyUrl := fmt.Sprintf(
-		"%s?email_id=%d&secret_code=%s",
-		processor.config.FrontendVerifyEmailURL,
-		verifyEmail.ID,
-		verifyEmail.SecretCodeHash,
-	)
+	verifyUrl := buildVerifyEmailURL(processor.config.FrontendVerifyEmailURL, verifyEmail.ID, secretCode)
 	content := fmt.Sprintf(`Hello %s,<br/>
 	Thank you for registering with us!<br/>
 	Please <a href="%s">click here</a> to verify your email address.<br/>
@@ -97,4 +101,22 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 		Str("email", user.Email).Msg("sent verify email")
 
 	return nil
+}
+
+func buildVerifyEmailURL(baseURL string, emailID int64, secretCode string) string {
+	if strings.TrimSpace(baseURL) == "" {
+		baseURL = "https://rate-pulse.me/verify_email"
+	}
+
+	baseURL = strings.TrimRight(baseURL, "?&")
+	return fmt.Sprintf("%s?email_id=%d&secret_code=%s", baseURL, emailID, url.QueryEscape(secretCode))
+}
+
+func newVerifyEmailSecret() (string, error) {
+	secretBytes := make([]byte, 32)
+	if _, err := rand.Read(secretBytes); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(secretBytes), nil
 }

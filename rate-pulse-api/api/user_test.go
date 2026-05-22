@@ -172,6 +172,36 @@ func TestLogoutUserValidation(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestVerifyEmailValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		payload map[string]any
+	}{
+		{
+			name:    "missing email id",
+			payload: map[string]any{"secret_code": "secret"},
+		},
+		{
+			name:    "missing secret code",
+			payload: map[string]any{"email_id": 42},
+		},
+		{
+			name:    "invalid email id",
+			payload: map[string]any{"email_id": 0, "secret_code": "secret"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestServer(t, db.NewStore(nil))
+			req := makeJSONRequest(t, http.MethodPost, "/users/verify-email", tt.payload)
+			w := serveRequest(server, req)
+
+			require.Equal(t, http.StatusBadRequest, w.Code)
+		})
+	}
+}
+
 func TestProtectedUserRoutesRequireAuth(t *testing.T) {
 	tests := []struct {
 		name   string

@@ -15,6 +15,19 @@ RETURNING
     created_at,
     expired_at;
 
+-- name: GetVerifyEmail :one
+SELECT
+    id,
+    user_id,
+    email,
+    secret_code_hash,
+    is_used,
+    created_at,
+    expired_at
+FROM verify_emails
+WHERE id = $1
+LIMIT 1;
+
 -- name: UpdateVerifyEmail :one
 UPDATE verify_emails
 SET

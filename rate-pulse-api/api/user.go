@@ -49,6 +49,11 @@ type logoutRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+type verifyEmailRequest struct {
+	EmailID    int64  `json:"email_id" binding:"required,min=1"`
+	SecretCode string `json:"secret_code" binding:"required"`
+}
+
 // newUserResponse creates a userResponse from a db.User, excluding sensitive data.
 func newUserResponse(user db.User) userResponse {
 	return userResponse{
@@ -414,6 +419,28 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		User:                  newUserResponseFromServiceUser(args.User),
 	}
 	ctx.JSON(http.StatusOK, res)
+}
+
+func (server *Server) verifyEmail(ctx *gin.Context) {
+	var req verifyEmailRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	result, err := server.services.Auth.VerifyEmail(ctx, service.VerifyEmailInput{
+		EmailID:    req.EmailID,
+		SecretCode: req.SecretCode,
+	})
+	if err != nil {
+		RespondServiceError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Email verified successfully",
+		"user":    newUserResponseFromServiceUser(result.User),
+	})
 }
 
 // logoutUser handles user sign out by revoking the current session.

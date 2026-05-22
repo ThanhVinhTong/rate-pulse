@@ -81,6 +81,10 @@ func validCreateUserInput() CreateUserInput {
 }
 
 func newCreateUserRows(userID int32, now time.Time) *sqlmock.Rows {
+	return newCreateUserRowsWithEmailVerified(userID, now, false)
+}
+
+func newCreateUserRowsWithEmailVerified(userID int32, now time.Time, emailVerified bool) *sqlmock.Rows {
 	return sqlmock.NewRows([]string{
 		"user_id",
 		"username",
@@ -103,7 +107,7 @@ func newCreateUserRows(userID int32, now time.Time) *sqlmock.Rows {
 		"test@example.com",
 		"hashed-password",
 		sql.NullString{String: "free", Valid: true},
-		sql.NullBool{Bool: false, Valid: true},
+		sql.NullBool{Bool: emailVerified, Valid: true},
 		sql.NullString{String: "Australia/Perth", Valid: true},
 		sql.NullString{String: "en", Valid: true},
 		sql.NullString{String: "AU", Valid: true},
@@ -310,6 +314,113 @@ func TestAuthServiceRenewAccessTokenSuccess(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, result.AccessToken)
 	require.True(t, result.AccessTokenExpiresAt.After(time.Now()))
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func newVerifyEmailRows(emailID int64, userID int32, secretCodeHash string, isUsed bool, expiresAt time.Time) *sqlmock.Rows {
+	now := time.Now()
+	return sqlmock.NewRows([]string{
+		"id",
+		"user_id",
+		"email",
+		"secret_code_hash",
+		"is_used",
+		"created_at",
+		"expired_at",
+	}).AddRow(
+		emailID,
+		userID,
+		"test@example.com",
+		secretCodeHash,
+		isUsed,
+		now,
+		expiresAt,
+	)
+}
+
+func TestAuthServiceVerifyEmailValidation(t *testing.T) {
+	tests := []struct {
+		name  string
+		input VerifyEmailInput
+	}{
+		{
+			name: "missing email id",
+			input: VerifyEmailInput{
+				SecretCode: "secret",
+			},
+		},
+		{
+			name: "missing secret code",
+			input: VerifyEmailInput{
+				EmailID: 42,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			authService, mock, _, _ := newTestAuthService(t)
+
+			result, err := authService.VerifyEmail(context.Background(), tt.input)
+
+			requireServiceErrorCode(t, err, ErrInvalidInput.Code)
+			require.Empty(t, result)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestAuthServiceVerifyEmailSuccess(t *testing.T) {
+	authService, mock, _, _ := newTestAuthService(t)
+
+	const secretCode = "plain-secret-code"
+	const emailID = int64(42)
+	const userID = int32(7)
+	secretCodeHash, err := util.HashPassword(secretCode)
+	require.NoError(t, err)
+
+	mock.ExpectQuery("SELECT (.+) FROM verify_emails").
+		WithArgs(emailID).
+		WillReturnRows(newVerifyEmailRows(emailID, userID, secretCodeHash, false, time.Now().Add(time.Minute)))
+	mock.ExpectBegin()
+	mock.ExpectQuery("UPDATE verify_emails").
+		WithArgs(emailID, userID, secretCodeHash).
+		WillReturnRows(newVerifyEmailRows(emailID, userID, secretCodeHash, true, time.Now().Add(time.Minute)))
+	mock.ExpectQuery("UPDATE users").
+		WithArgs(userID).
+		WillReturnRows(newCreateUserRowsWithEmailVerified(userID, time.Now(), true))
+	mock.ExpectCommit()
+
+	result, err := authService.VerifyEmail(context.Background(), VerifyEmailInput{
+		EmailID:    emailID,
+		SecretCode: secretCode,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, userID, result.User.UserID)
+	require.True(t, result.User.EmailVerified)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAuthServiceVerifyEmailRejectsWrongSecret(t *testing.T) {
+	authService, mock, _, _ := newTestAuthService(t)
+
+	const emailID = int64(42)
+	const userID = int32(7)
+	secretCodeHash, err := util.HashPassword("expected-secret")
+	require.NoError(t, err)
+
+	mock.ExpectQuery("SELECT (.+) FROM verify_emails").
+		WithArgs(emailID).
+		WillReturnRows(newVerifyEmailRows(emailID, userID, secretCodeHash, false, time.Now().Add(time.Minute)))
+
+	result, err := authService.VerifyEmail(context.Background(), VerifyEmailInput{
+		EmailID:    emailID,
+		SecretCode: "wrong-secret",
+	})
+
+	requireServiceErrorCode(t, err, ErrInvalidInput.Code)
+	require.Empty(t, result)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
