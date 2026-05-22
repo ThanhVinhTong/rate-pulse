@@ -49,6 +49,7 @@ func (server *Server) createCountry(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyCountries)
 	ctx.JSON(http.StatusOK, country)
 }
 
@@ -136,13 +137,9 @@ func (server *Server) getCountryByCode(ctx *gin.Context) {
 //   - 200 OK: Countries retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCountry(ctx *gin.Context) {
-	countries, err := server.store.GetAllCountries(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, countries)
+	server.cachedStoreJSON(ctx, cacheKeyCountries, cacheTTLReferenceData, func() (any, error) {
+		return server.store.GetAllCountries(ctx)
+	})
 }
 
 // updateCountryRequest represents the request body for updating a country.
@@ -194,6 +191,7 @@ func (server *Server) updateCountry(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyCountries)
 	ctx.JSON(http.StatusOK, country)
 }
 
@@ -229,5 +227,6 @@ func (server *Server) deleteCountry(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyCountries)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Country deleted successfully"})
 }

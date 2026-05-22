@@ -52,6 +52,7 @@ func (server *Server) createRateSource(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyRateSources, cacheKeyRateSourceMetadata)
 	ctx.JSON(http.StatusOK, rateSource)
 }
 
@@ -100,13 +101,9 @@ func (server *Server) getRateSource(ctx *gin.Context) {
 //   - 200 OK: Rate source metadata retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listRateSourceMetadata(ctx *gin.Context) {
-	rateSourceMetadata, err := server.store.ListRateSourceMetadata(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, rateSourceMetadata)
+	server.cachedStoreJSON(ctx, cacheKeyRateSourceMetadata, cacheTTLReferenceData, func() (any, error) {
+		return server.store.ListRateSourceMetadata(ctx)
+	})
 }
 
 // Response: Array of RateSource objects on success, error message on failure
@@ -114,13 +111,9 @@ func (server *Server) listRateSourceMetadata(ctx *gin.Context) {
 //   - 200 OK: Rate sources retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listRateSource(ctx *gin.Context) {
-	rateSources, err := server.store.ListRateSources(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, rateSources)
+	server.cachedStoreJSON(ctx, cacheKeyRateSources, cacheTTLReferenceData, func() (any, error) {
+		return server.store.ListRateSources(ctx)
+	})
 }
 
 // updateRateSourceRequest represents the request body for updating a rate source.
@@ -176,6 +169,7 @@ func (server *Server) updateRateSource(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyRateSources, cacheKeyRateSourceMetadata)
 	ctx.JSON(http.StatusOK, rateSource)
 }
 
@@ -211,5 +205,6 @@ func (server *Server) deleteRateSource(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyRateSources, cacheKeyRateSourceMetadata)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Rate source deleted successfully"})
 }

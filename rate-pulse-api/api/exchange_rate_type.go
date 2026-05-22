@@ -1,10 +1,6 @@
 package api
 
-import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-)
+import "github.com/gin-gonic/gin"
 
 type exchangeRateTypeDTO struct {
 	TypeID   int32  `json:"type_id"`
@@ -15,19 +11,20 @@ type exchangeRateTypeDTO struct {
 //
 // GET /exchange-rate-types
 func (server *Server) listExchangeRateTypes(ctx *gin.Context) {
-	rows, err := server.store.ListExchangeRateTypes(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
+	server.cachedStoreJSON(ctx, cacheKeyExchangeRateTypes, cacheTTLReferenceData, func() (any, error) {
+		rows, err := server.store.ListExchangeRateTypes(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	out := make([]exchangeRateTypeDTO, 0, len(rows))
-	for _, row := range rows {
-		out = append(out, exchangeRateTypeDTO{
-			TypeID:   row.TypeID,
-			TypeName: row.TypeName,
-		})
-	}
+		out := make([]exchangeRateTypeDTO, 0, len(rows))
+		for _, row := range rows {
+			out = append(out, exchangeRateTypeDTO{
+				TypeID:   row.TypeID,
+				TypeName: row.TypeName,
+			})
+		}
 
-	ctx.JSON(http.StatusOK, out)
+		return out, nil
+	})
 }

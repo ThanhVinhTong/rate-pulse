@@ -90,9 +90,8 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) (Us
 		},
 		AfterCreate: func(user db.User) error {
 			opts := []asynq.Option{
-				asynq.MaxRetry(10),
-				asynq.Timeout(30 * time.Second),
-				asynq.ProcessIn(5 * time.Second),
+				asynq.MaxRetry(3),
+				asynq.Timeout(15 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
 

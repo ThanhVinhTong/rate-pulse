@@ -112,16 +112,12 @@ func (server *Server) listExchangeRateToday(ctx *gin.Context) {
 		return
 	}
 
-	exchangeRates, err := server.services.FX.ListLatestExchangeRates(ctx, service.ListLatestExchangeRatesInput{
-		SourceCurrencyID: req.SourceCurrencyID,
-		Limit:            req.Limit,
+	server.cachedJSON(ctx, cacheKeyForRequest(ctx, "exchange-rates-latest"), cacheTTLExchangeRatesLatest, func() (any, error) {
+		return server.services.FX.ListLatestExchangeRates(ctx, service.ListLatestExchangeRatesInput{
+			SourceCurrencyID: req.SourceCurrencyID,
+			Limit:            req.Limit,
+		})
 	})
-	if err != nil {
-		RespondServiceError(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, exchangeRates)
 }
 
 // updateExchangeRateRequest represents the request body for updating an exchange rate.
@@ -253,18 +249,14 @@ func (server *Server) getHistoricalData(ctx *gin.Context) {
 		return
 	}
 
-	rows, err := server.services.FX.GetHistoricalData(ctx, service.GetHistoricalDataInput{
-		SourceCurrencyID:      req.SourceCurrencyID,
-		DestinationCurrencyID: req.DestinationCurrencyID,
-		SourceID:              req.SourceID,
-		TypeID:                req.TypeID,
-		TimeRange:             req.TimeRange,
-		DataPoints:            req.DataPoints,
+	server.cachedJSON(ctx, cacheKeyForRequest(ctx, "exchange-rates:historical"), cacheTTLHistoricalData, func() (any, error) {
+		return server.services.FX.GetHistoricalData(ctx, service.GetHistoricalDataInput{
+			SourceCurrencyID:      req.SourceCurrencyID,
+			DestinationCurrencyID: req.DestinationCurrencyID,
+			SourceID:              req.SourceID,
+			TypeID:                req.TypeID,
+			TimeRange:             req.TimeRange,
+			DataPoints:            req.DataPoints,
+		})
 	})
-	if err != nil {
-		RespondServiceError(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, rows)
 }

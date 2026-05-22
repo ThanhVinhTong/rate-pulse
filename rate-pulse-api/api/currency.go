@@ -48,6 +48,7 @@ func (server *Server) createCurrency(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyCurrencies, cacheKeyCurrencyCodesNames)
 	ctx.JSON(http.StatusOK, currency)
 }
 
@@ -96,13 +97,9 @@ func (server *Server) getCurrency(ctx *gin.Context) {
 //   - 200 OK: Currency codes and names retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCurrencyCodesAndNames(ctx *gin.Context) {
-	currencies, err := server.store.GetAllCurrencyCodesAndNames(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, currencies)
+	server.cachedStoreJSON(ctx, cacheKeyCurrencyCodesNames, cacheTTLReferenceData, func() (any, error) {
+		return server.store.GetAllCurrencyCodesAndNames(ctx)
+	})
 }
 
 // listCurrency retrieves a list of all currencies.
@@ -114,13 +111,9 @@ func (server *Server) listCurrencyCodesAndNames(ctx *gin.Context) {
 //   - 200 OK: Currencies retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCurrency(ctx *gin.Context) {
-	currencies, err := server.store.GetAllCurrencies(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, currencies)
+	server.cachedStoreJSON(ctx, cacheKeyCurrencies, cacheTTLReferenceData, func() (any, error) {
+		return server.store.GetAllCurrencies(ctx)
+	})
 }
 
 // updateCurrencyRequest represents the request body for updating a currency.
@@ -172,6 +165,7 @@ func (server *Server) updateCurrency(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyCurrencies, cacheKeyCurrencyCodesNames)
 	ctx.JSON(http.StatusOK, currency)
 }
 
@@ -207,5 +201,6 @@ func (server *Server) deleteCurrency(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeys(ctx, cacheKeyCurrencies, cacheKeyCurrencyCodesNames)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Currency deleted successfully"})
 }

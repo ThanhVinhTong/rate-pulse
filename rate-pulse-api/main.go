@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
+	responsecache "github.com/ThanhVinhTong/rate-pulse/cache"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/email"
 	"github.com/ThanhVinhTong/rate-pulse/gapi"
@@ -61,6 +62,10 @@ func main() {
 		log.Fatal().Err(err).Msg("Cannot configure Redis")
 	}
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+	responseCache, err := responsecache.NewRedisResponseCache(config)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Cannot configure response cache")
+	}
 
 	// Create token maker for both gRPC and HTTP servers
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
@@ -85,7 +90,7 @@ func main() {
 	// Start Task Processor and gRPC server in separate goroutines, while the main goroutine runs the HTTP server.
 	go runTaskProcessor(config, redisOpt, store, emailSender)
 	go runGrpcServer(config, services, tokenMaker)
-	runGinServer(config, store, services, tokenMaker)
+	runGinServer(config, store, services, tokenMaker, responseCache)
 }
 
 func runGinServer(
@@ -93,11 +98,13 @@ func runGinServer(
 	store db.Store,
 	services *service.Services,
 	tokenMaker token.Maker,
+	responseCache responsecache.ResponseCache,
 ) {
 	server, err := api.NewServer(config, store, services, tokenMaker)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Cannot create server")
 	}
+	server.SetResponseCache(responseCache)
 
 	log.Info().Msgf("HTTP server started on %s", config.HTTPServerAddress)
 	if err := server.Start(config.HTTPServerAddress); err != nil {

@@ -37,11 +37,9 @@ func NewRedisTaskProcessor(
 	server := asynq.NewServer(
 		redisOpt,
 		asynq.Config{
-			Concurrency: 10,
+			Concurrency: 1,
 			Queues: map[string]int{
-				QueueCritical: 6,
-				QueueDefault:  3,
-				QueueLow:      1,
+				QueueCritical: 1,
 			},
 			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
 				log.Error().Err(err).Str("type", task.Type()).

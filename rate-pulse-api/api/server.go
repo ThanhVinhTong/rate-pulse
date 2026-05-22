@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ThanhVinhTong/rate-pulse/cache"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/ThanhVinhTong/rate-pulse/token"
@@ -14,11 +15,12 @@ import (
 
 // Serve all HTTP requests for our rate pulse service
 type Server struct {
-	config     util.Config
-	store      db.Store
-	tokenMaker token.Maker
-	services   *service.Services
-	router     *gin.Engine
+	config        util.Config
+	store         db.Store
+	tokenMaker    token.Maker
+	services      *service.Services
+	responseCache cache.ResponseCache
+	router        *gin.Engine
 }
 
 func NewServer(
@@ -28,14 +30,23 @@ func NewServer(
 	tokenMaker token.Maker,
 ) (*Server, error) {
 	server := &Server{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
-		services:   services,
+		config:        config,
+		store:         store,
+		tokenMaker:    tokenMaker,
+		services:      services,
+		responseCache: cache.NoopResponseCache{},
 	}
 
 	server.setupRouter()
 	return server, nil
+}
+
+func (server *Server) SetResponseCache(responseCache cache.ResponseCache) {
+	if responseCache == nil {
+		return
+	}
+
+	server.responseCache = responseCache
 }
 
 func (server *Server) setupRouter() {
