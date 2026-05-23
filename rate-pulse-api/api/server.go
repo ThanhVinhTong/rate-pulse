@@ -6,11 +6,13 @@ import (
 
 	"github.com/ThanhVinhTong/rate-pulse/cache"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
+	"github.com/ThanhVinhTong/rate-pulse/ratelimit"
 	"github.com/ThanhVinhTong/rate-pulse/service"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 // Serve all HTTP requests for our rate pulse service
@@ -20,6 +22,7 @@ type Server struct {
 	tokenMaker    token.Maker
 	services      *service.Services
 	responseCache cache.ResponseCache
+	rateLimiter   *ratelimit.RateLimiter
 	router        *gin.Engine
 }
 
@@ -28,13 +31,21 @@ func NewServer(
 	store db.Store,
 	services *service.Services,
 	tokenMaker token.Maker,
+	redisClient *redis.Client,
 ) (*Server, error) {
+	// Initialize rate limiter with default 300 req/min if not configured
+	requestsPerMin := config.RateLimitPerMinute
+	if requestsPerMin <= 0 {
+		requestsPerMin = 300
+	}
+
 	server := &Server{
 		config:        config,
 		store:         store,
 		tokenMaker:    tokenMaker,
 		services:      services,
 		responseCache: cache.NoopResponseCache{},
+		rateLimiter:   ratelimit.NewRateLimiter(redisClient, requestsPerMin),
 	}
 
 	server.setupRouter()
@@ -54,6 +65,7 @@ func (server *Server) setupRouter() {
 	router.Use(ginRecovery())
 	router.Use(requestIDMiddleware())
 	router.Use(ginLogger())
+	router.Use(server.rateLimitMiddleware())
 	if err := router.SetTrustedProxies(nil); err != nil {
 		return
 	}

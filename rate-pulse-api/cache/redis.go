@@ -16,6 +16,24 @@ type RedisResponseCache struct {
 	client *redis.Client
 }
 
+// NewRedisClient creates a Redis client for general use (e.g., rate limiting)
+func NewRedisClient(config util.Config) (*redis.Client, error) {
+	if strings.TrimSpace(config.RedisAddress) == "" {
+		return nil, errors.New("REDIS_ADDRESS is required")
+	}
+
+	opt := &redis.Options{
+		Addr:     strings.TrimSpace(config.RedisAddress),
+		Username: strings.TrimSpace(config.RedisUsername),
+		Password: config.RedisPassword,
+	}
+	if config.RedisTLS {
+		opt.TLSConfig = redisTLSConfig(opt.Addr)
+	}
+
+	return redis.NewClient(opt), nil
+}
+
 func NewRedisResponseCache(config util.Config) (*RedisResponseCache, error) {
 	if strings.TrimSpace(config.RedisAddress) == "" {
 		return nil, errors.New("REDIS_ADDRESS is required")

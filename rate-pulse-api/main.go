@@ -21,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -67,6 +68,12 @@ func main() {
 		log.Fatal().Err(err).Msg("Cannot configure response cache")
 	}
 
+	// Create a Redis client for rate limiting
+	redisClient, err := responsecache.NewRedisClient(config)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Cannot configure Redis client for rate limiting")
+	}
+
 	// Create token maker for both gRPC and HTTP servers
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
@@ -90,7 +97,7 @@ func main() {
 	// Start Task Processor and gRPC server in separate goroutines, while the main goroutine runs the HTTP server.
 	go runTaskProcessor(config, redisOpt, store, emailSender)
 	go runGrpcServer(config, services, tokenMaker)
-	runGinServer(config, store, services, tokenMaker, responseCache)
+	runGinServer(config, store, services, tokenMaker, responseCache, redisClient)
 }
 
 func runGinServer(
@@ -99,8 +106,9 @@ func runGinServer(
 	services *service.Services,
 	tokenMaker token.Maker,
 	responseCache responsecache.ResponseCache,
+	redisClient *redis.Client,
 ) {
-	server, err := api.NewServer(config, store, services, tokenMaker)
+	server, err := api.NewServer(config, store, services, tokenMaker, redisClient)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Cannot create server")
 	}
