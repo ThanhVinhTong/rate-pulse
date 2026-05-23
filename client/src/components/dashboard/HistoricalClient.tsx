@@ -90,6 +90,7 @@ function formatChartLabel(iso: string, timeRange: (typeof TIME_RANGES)[number]):
 
   return date.toLocaleDateString("en-GB", {
     timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
     month: "short",
     year: "2-digit",
   });

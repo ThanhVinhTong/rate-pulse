@@ -24,6 +24,7 @@ type Config struct {
 	EmailSenderAddress     string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
 	EmailSenderPassword    string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
 	FrontendVerifyEmailURL string        `mapstructure:"FRONTEND_VERIFY_EMAIL_URL"`
+	RateLimitPerMinute     int           `mapstructure:"RATE_LIMIT_PER_MINUTE"`
 }
 
 // LoadConfig loads the configuration from the environment variables
@@ -49,6 +50,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("EMAIL_SENDER_ADDRESS")
 	viper.BindEnv("EMAIL_SENDER_PASSWORD")
 	viper.BindEnv("FRONTEND_VERIFY_EMAIL_URL")
+	viper.BindEnv("RATE_LIMIT_PER_MINUTE")
 
 	err = viper.ReadInConfig()
 	if err != nil {
