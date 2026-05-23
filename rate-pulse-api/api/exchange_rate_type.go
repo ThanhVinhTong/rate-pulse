@@ -11,7 +11,7 @@ type exchangeRateTypeDTO struct {
 //
 // GET /exchange-rate-types
 func (server *Server) listExchangeRateTypes(ctx *gin.Context) {
-	server.cachedStoreJSON(ctx, cacheKeyExchangeRateTypes, cacheTTLReferenceData, func() (any, error) {
+	server.cachedStoreJSON(ctx, cacheKeyExchangeRateTypes, cacheTTLReferenceDataMonth, func() (any, error) {
 		rows, err := server.store.ListExchangeRateTypes(ctx)
 		if err != nil {
 			return nil, err

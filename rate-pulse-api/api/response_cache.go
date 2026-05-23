@@ -12,9 +12,10 @@ import (
 const (
 	cacheKeyPrefix = "rate-pulse:http:v1:"
 
-	cacheTTLExchangeRatesLatest = time.Minute
-	cacheTTLHistoricalData      = 5 * time.Minute
-	cacheTTLReferenceData       = 24 * time.Hour
+	cacheTTLExchangeRatesLatest = 2 * time.Hour
+	cacheTTLHistoricalData      = 24 * time.Hour
+	cacheTTLReferenceDataMonth  = 30 * 24 * time.Hour
+	cacheTTLRateSources         = 7 * 24 * time.Hour
 )
 
 const (

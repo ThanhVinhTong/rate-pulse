@@ -101,7 +101,7 @@ func (server *Server) getRateSource(ctx *gin.Context) {
 //   - 200 OK: Rate source metadata retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listRateSourceMetadata(ctx *gin.Context) {
-	server.cachedStoreJSON(ctx, cacheKeyRateSourceMetadata, cacheTTLReferenceData, func() (any, error) {
+	server.cachedStoreJSON(ctx, cacheKeyRateSourceMetadata, cacheTTLRateSources, func() (any, error) {
 		return server.store.ListRateSourceMetadata(ctx)
 	})
 }
@@ -111,7 +111,7 @@ func (server *Server) listRateSourceMetadata(ctx *gin.Context) {
 //   - 200 OK: Rate sources retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listRateSource(ctx *gin.Context) {
-	server.cachedStoreJSON(ctx, cacheKeyRateSources, cacheTTLReferenceData, func() (any, error) {
+	server.cachedStoreJSON(ctx, cacheKeyRateSources, cacheTTLRateSources, func() (any, error) {
 		return server.store.ListRateSources(ctx)
 	})
 }

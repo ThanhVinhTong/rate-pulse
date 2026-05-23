@@ -97,7 +97,7 @@ func (server *Server) getCurrency(ctx *gin.Context) {
 //   - 200 OK: Currency codes and names retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCurrencyCodesAndNames(ctx *gin.Context) {
-	server.cachedStoreJSON(ctx, cacheKeyCurrencyCodesNames, cacheTTLReferenceData, func() (any, error) {
+	server.cachedStoreJSON(ctx, cacheKeyCurrencyCodesNames, cacheTTLReferenceDataMonth, func() (any, error) {
 		return server.store.GetAllCurrencyCodesAndNames(ctx)
 	})
 }
@@ -111,7 +111,7 @@ func (server *Server) listCurrencyCodesAndNames(ctx *gin.Context) {
 //   - 200 OK: Currencies retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCurrency(ctx *gin.Context) {
-	server.cachedStoreJSON(ctx, cacheKeyCurrencies, cacheTTLReferenceData, func() (any, error) {
+	server.cachedStoreJSON(ctx, cacheKeyCurrencies, cacheTTLReferenceDataMonth, func() (any, error) {
 		return server.store.GetAllCurrencies(ctx)
 	})
 }

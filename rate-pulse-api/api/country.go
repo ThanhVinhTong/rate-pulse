@@ -137,7 +137,7 @@ func (server *Server) getCountryByCode(ctx *gin.Context) {
 //   - 200 OK: Countries retrieved successfully
 //   - 500 Internal Server Error: Database or server error
 func (server *Server) listCountry(ctx *gin.Context) {
-	server.cachedStoreJSON(ctx, cacheKeyCountries, cacheTTLReferenceData, func() (any, error) {
+	server.cachedStoreJSON(ctx, cacheKeyCountries, cacheTTLReferenceDataMonth, func() (any, error) {
 		return server.store.GetAllCountries(ctx)
 	})
 }
