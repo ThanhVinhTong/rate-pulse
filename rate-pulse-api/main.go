@@ -4,8 +4,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
@@ -37,6 +40,9 @@ func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {
 		log.Fatal().Err(err).Msg("Cannot load config")
+	}
+	if err := validateRuntimeFlags(config); err != nil {
+		log.Fatal().Err(err).Msg("Invalid runtime config")
 	}
 
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
@@ -84,20 +90,30 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	services := service.NewServices(config, store, tokenMaker, taskDistributor)
 
-	// Initialize Email Sender
-	emailSender, err := email.NewGmailSender(
-		config.EmailSenderName,
-		config.EmailSenderAddress,
-		config.EmailSenderPassword,
-	)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Cannot create email sender")
+	var emailSender email.Sender
+	if config.EnableTaskProcessor {
+		emailSender, err = email.NewGmailSender(
+			config.EmailSenderName,
+			config.EmailSenderAddress,
+			config.EmailSenderPassword,
+		)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Cannot create email sender")
+		}
 	}
 
 	// Start Task Processor and gRPC server in separate goroutines, while the main goroutine runs the HTTP server.
-	go runTaskProcessor(config, redisOpt, store, emailSender)
-	go runGrpcServer(config, services, tokenMaker)
-	runGinServer(config, store, services, tokenMaker, responseCache, redisClient)
+	if config.EnableTaskProcessor {
+		go runTaskProcessor(config, redisOpt, store, emailSender)
+	}
+	if config.EnableGRPCServer {
+		go runGrpcServer(config, services, tokenMaker)
+	}
+	if config.EnableHTTPServer {
+		runGinServer(config, store, services, tokenMaker, responseCache, redisClient)
+		return
+	}
+	waitForShutdown()
 }
 
 func runGinServer(
@@ -151,4 +167,20 @@ func runTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, store d
 	if err := taskProcessor.Start(); err != nil {
 		log.Fatal().Err(err).Msg("cannot start task processor")
 	}
+}
+
+func waitForShutdown() {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	log.Info().Msg("background services started")
+	<-stop
+	log.Info().Msg("shutdown signal received")
+}
+
+func validateRuntimeFlags(config util.Config) error {
+	if !config.EnableHTTPServer && !config.EnableGRPCServer && !config.EnableTaskProcessor {
+		return errors.New("at least one runtime component must be enabled")
+	}
+	return nil
 }
