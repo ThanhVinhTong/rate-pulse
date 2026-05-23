@@ -2,10 +2,8 @@ package api
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,10 +15,10 @@ func (server *Server) rateLimitMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Determine the identifier: user ID if authenticated, otherwise IP
 		var identifier string
-		if userID, exists := ctx.Get("user_id"); exists {
-			identifier = fmt.Sprintf("user:%v", userID)
+		if payload, ok := authPayloadFromGinContext(ctx); ok {
+			identifier = fmt.Sprintf("user:%d", payload.UserID)
 		} else {
-			identifier = getClientIP(ctx)
+			identifier = ctx.ClientIP()
 		}
 
 		if identifier == "" {
@@ -51,28 +49,4 @@ func (server *Server) rateLimitMiddleware() gin.HandlerFunc {
 
 		ctx.Next()
 	}
-}
-
-// getClientIP extracts the real client IP address
-// Handles X-Forwarded-For, X-Real-IP headers for proxied requests
-func getClientIP(ctx *gin.Context) string {
-	// Check X-Forwarded-For header (multiple proxies)
-	if xff := ctx.GetHeader("X-Forwarded-For"); xff != "" {
-		ips := strings.Split(xff, ",")
-		if ip := strings.TrimSpace(ips[0]); ip != "" {
-			return ip
-		}
-	}
-
-	// Check X-Real-IP header
-	if xri := ctx.GetHeader("X-Real-IP"); xri != "" {
-		return xri
-	}
-
-	// Fall back to RemoteAddr
-	ip, _, err := net.SplitHostPort(ctx.Request.RemoteAddr)
-	if err != nil {
-		return ctx.Request.RemoteAddr
-	}
-	return ip
 }
