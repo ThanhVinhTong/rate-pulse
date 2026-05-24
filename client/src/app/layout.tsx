@@ -36,7 +36,7 @@ export default async function RootLayout({
   const session = await getUserFromCookie();
 
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" data-scroll-behavior="smooth" className="dark" suppressHydrationWarning>
       <body className={`${poppins.variable} bg-surface font-sans text-text-primary antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <div className="flex min-h-screen flex-col">

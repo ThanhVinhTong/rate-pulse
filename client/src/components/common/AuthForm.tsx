@@ -35,10 +35,6 @@ export function AuthForm({ mode, action }: AuthFormProps) {
         <Heading level="h1" className="mt-3">
           {isSignup ? "Create your Rate-pulse account" : "Sign in to Rate-pulse"}
         </Heading>
-        <Text variant="body" className="mt-3">
-          Demo access is mocked. Use any credentials, or include{" "}
-          <span className="font-medium text-primary">admin</span> in the email to unlock the admin view.
-        </Text>
       </div>
 
       <form action={formAction} className="space-y-4">
@@ -67,10 +63,28 @@ export function AuthForm({ mode, action }: AuthFormProps) {
 
         <FieldLabel>
           <FieldCaption>Password</FieldCaption>
-          <Input required type="password" name="password" placeholder="Enter a secure password" />
+          <Input
+            required
+            type="password"
+            name="password"
+            minLength={isSignup ? 15 : undefined}
+            autoComplete={isSignup ? "new-password" : "current-password"}
+            placeholder={isSignup ? "At least 15 characters" : "Enter your password"}
+          />
+          {isSignup ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-text-muted">
+              <li>Use a unique passphrase that is hard to guess, such as four or more unrelated words.</li>
+              <li>Symbols, numbers, and uppercase letters are optional.</li>
+            </ul>
+          ) : null}
         </FieldLabel>
 
         {state.status === "error" ? <Alert>{state.message}</Alert> : null}
+        {state.status === "success" ? (
+          <Alert className="border-status-success/30 bg-status-success/10 text-status-success">
+            {state.message}
+          </Alert>
+        ) : null}
 
         <SubmitButton className="w-full" pendingLabel={isSignup ? "Creating account..." : "Signing in..."}>
           {isSignup ? "Create account" : "Sign in"}

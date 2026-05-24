@@ -24,6 +24,20 @@ function toSessionRole(userType: string): AuthSession["role"] {
   }
 }
 
+function readApiErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object") {
+    if ("message" in error && typeof error.message === "string") {
+      return error.message;
+    }
+
+    if ("error" in error && typeof error.error === "string") {
+      return error.error;
+    }
+  }
+
+  return fallback;
+}
+
 export async function loginAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "").trim();
@@ -47,10 +61,10 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     });
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: "Login failed" }));
+      const error = await res.json().catch(() => null);
       return {
         status: "error",
-        message: error.error || "Login failed. Please check your credentials.",
+        message: readApiErrorMessage(error, "Login failed. Please check your credentials."),
       };
     }
 
@@ -89,7 +103,6 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
   const firstName = String(formData.get("first_name") ?? "").trim();
   const lastName = String(formData.get("last_name") ?? "").trim();
   const username = email.includes("@") ? (email.split("@")[0] ?? "") : email;
-  let redirectTo = "/profile";
 
   if (!firstName || !lastName || !email || !password) {
     return {
@@ -112,59 +125,26 @@ export async function signupAction(_: ActionState, formData: FormData): Promise<
     });
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: "Signup failed" }));
+      const error = await res.json().catch(() => null);
       return {
         status: "error",
-        message: error.error || "Signup failed. Please try again.",
+        message: readApiErrorMessage(error, "Signup failed. Please try again."),
       };
     }
 
     await res.json();
-
-    // After signup, login the user
-    const loginRes = await fetch(`${API_BASE_URL}/users/signin`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    });
-
-    if (!loginRes.ok) {
-      return {
-        status: "error",
-        message: "Account created but login failed. Please try logging in.",
-      };
-    }
-
-    const loginData = await loginRes.json();
-    const loginUser = loginData.user ?? loginData;
-    const loginUserType = loginUser.user_type ?? "free";
-
-    const session: AuthSession = {
-      email: loginUser.email,
-      name: loginUser.username,
-      firstName: loginUser.first_name,
-      lastName: loginUser.last_name,
-      role: toSessionRole(loginUserType),
-      sessionId: loginData.session_id,
-      accessToken: loginData.access_token,
-      accessTokenExpiresAt: loginData.access_token_expires_at,
-      refreshToken: loginData.refresh_token,
-      refreshTokenExpiresAt: loginData.refresh_token_expires_at,
+    return {
+      status: "success",
+      message: `We are sending your verification email now. 
+      It may take several minutes to arrive because email delivery is handled asynchronously. 
+      Please check your inbox and spam folder before signing in.`,
     };
-
-    await createSession(session);
-    redirectTo = "/profile";
   } catch (err) {
     return {
       status: "error",
       message: err instanceof Error ? err.message : String(err),
     };
   }
-
-  redirect(redirectTo);
 }
 
 export async function logoutAction() {
