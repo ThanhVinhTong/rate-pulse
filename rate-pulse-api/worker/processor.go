@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"time"
 
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/email"
@@ -37,7 +38,12 @@ func NewRedisTaskProcessor(
 	server := asynq.NewServer(
 		redisOpt,
 		asynq.Config{
-			Concurrency: 1,
+			Concurrency:              1,
+			TaskCheckInterval:        60 * time.Second,
+			DelayedTaskCheckInterval: 10 * time.Minute,
+			JanitorInterval:          6 * time.Hour,
+			JanitorBatchSize:         10,
+			HealthCheckInterval:      time.Hour,
 			Queues: map[string]int{
 				QueueCritical: 1,
 			},

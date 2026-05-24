@@ -460,7 +460,7 @@ func TestAuthServiceSignInSuccess(t *testing.T) {
 			"test@example.com",
 			hashedPassword,
 			sql.NullString{String: "free", Valid: true},
-			sql.NullBool{Bool: false, Valid: true},
+			sql.NullBool{Bool: true, Valid: true},
 			sql.NullString{String: "UTC", Valid: true},
 			sql.NullString{String: "en", Valid: true},
 			sql.NullString{String: "AU", Valid: true},
@@ -516,5 +516,63 @@ func TestAuthServiceSignInSuccess(t *testing.T) {
 	require.NotEmpty(t, result.RefreshToken)
 	require.Equal(t, userID, result.User.UserID)
 	require.Equal(t, "test@example.com", result.User.Email)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAuthServiceSignInEmailNotVerified(t *testing.T) {
+	authService, mock, _, _ := newTestAuthService(t)
+
+	const password = "correct horse battery staple"
+
+	hashedPassword, err := util.HashPassword(password)
+	require.NoError(t, err)
+
+	now := time.Now()
+
+	mock.ExpectQuery("SELECT user_id, username, email, password").
+		WithArgs("test@example.com").
+		WillReturnRows(sqlmock.NewRows([]string{
+			"user_id",
+			"username",
+			"email",
+			"password",
+			"user_type",
+			"email_verified",
+			"time_zone",
+			"language_preference",
+			"country_of_residence",
+			"country_of_birth",
+			"is_active",
+			"created_at",
+			"updated_at",
+			"first_name",
+			"last_name",
+		}).AddRow(
+			int32(42),
+			"testuser",
+			"test@example.com",
+			hashedPassword,
+			sql.NullString{String: "free", Valid: true},
+			sql.NullBool{Bool: false, Valid: true},
+			sql.NullString{String: "UTC", Valid: true},
+			sql.NullString{String: "en", Valid: true},
+			sql.NullString{String: "AU", Valid: true},
+			sql.NullString{String: "VN", Valid: true},
+			sql.NullBool{Bool: true, Valid: true},
+			sql.NullTime{Time: now, Valid: true},
+			sql.NullTime{Time: now, Valid: true},
+			sql.NullString{String: "Test", Valid: true},
+			sql.NullString{String: "User", Valid: true},
+		))
+
+	result, err := authService.SignIn(context.Background(), SignInInput{
+		Email:     "test@example.com",
+		Password:  password,
+		UserAgent: "test-agent",
+		ClientIP:  "127.0.0.1",
+	})
+
+	requireServiceErrorCode(t, err, ErrEmailNotVerified.Code)
+	require.Empty(t, result)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

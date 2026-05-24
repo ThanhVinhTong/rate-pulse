@@ -34,6 +34,8 @@ func RespondServiceError(ctx *gin.Context, err error) {
 		service.ErrSessionBlocked.Code,
 		service.ErrSessionExpired.Code:
 		ctx.JSON(http.StatusUnauthorized, serviceErrorResponse(err))
+	case service.ErrEmailNotVerified.Code:
+		ctx.JSON(http.StatusForbidden, serviceErrorResponse(err))
 	case service.ErrNotFound.Code:
 		ctx.JSON(http.StatusNotFound, serviceErrorResponse(err))
 	case service.ErrDuplicateEmail.Code,

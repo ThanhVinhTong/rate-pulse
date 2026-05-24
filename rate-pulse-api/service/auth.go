@@ -145,7 +145,13 @@ func (s *AuthService) SignIn(ctx context.Context, input SignInInput) (SignInResu
 	}
 
 	// Check if the user is email verified
-	// TODO: Implement this check after finishing email verification
+	if !user.EmailVerified.Valid || !user.EmailVerified.Bool {
+		return SignInResult{}, Wrap(
+			errors.New("email is not verified"),
+			ErrEmailNotVerified.Code,
+			"please verify your email before signing in",
+		)
+	}
 
 	// Check if the user is active
 	if user.IsActive.Valid && !user.IsActive.Bool {

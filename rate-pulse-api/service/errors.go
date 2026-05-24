@@ -16,6 +16,7 @@ var (
 	// Authentication / Authorization (4xx)
 	ErrInvalidCredentials = NewError("INVALID_CREDENTIALS", "invalid email or password") // 401
 	ErrUnauthorized       = NewError("UNAUTHORIZED", "unauthorized")                     // 401
+	ErrEmailNotVerified   = NewError("EMAIL_NOT_VERIFIED", "email is not verified")      // 403
 	ErrInactiveUser       = NewError("INACTIVE_USER", "user is inactive")                // 401
 	ErrSessionNotFound    = NewError("SESSION_NOT_FOUND", "session not found")           // 401
 	ErrSessionBlocked     = NewError("SESSION_BLOCKED", "session is blocked")            // 401
