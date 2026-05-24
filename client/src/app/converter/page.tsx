@@ -50,8 +50,8 @@ export default async function ConverterPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-text-muted">
           Compare transfer scenarios by bank, base currency, and target
-          currency. Buy and sell calculations will use the latest available
-          rates once wired to market data.
+          currency. Buy and sell calculations use the latest available rates
+          returned by the Rate Pulse API.
         </p>
       </div>
 

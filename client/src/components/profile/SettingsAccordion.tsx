@@ -102,7 +102,7 @@ export function SettingsAccordion({ sections }: SettingsAccordionProps) {
                 <textarea
                   name={`${activeSection.id}-notes`}
                   rows={4}
-                  defaultValue={`Rate-pulse mock configuration for ${activeSection.title.toLowerCase()}.`}
+                  defaultValue={`Notes for ${activeSection.title.toLowerCase()} preferences.`}
                   className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>

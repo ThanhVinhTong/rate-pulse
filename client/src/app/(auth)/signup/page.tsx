@@ -21,7 +21,8 @@ export default function SignupPage() {
           Start comparing exchange rates
         </Heading>
         <Text variant="body" className="mt-4 leading-7">
-          Create an account for saved preferences, protected pages, and role-aware account flows.
+          Create an account to save preferences, manage your profile, and access protected features.
+          You will need to verify your email address before signing in.
         </Text>
       </Panel>
     </div>

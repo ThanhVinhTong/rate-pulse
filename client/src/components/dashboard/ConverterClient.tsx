@@ -491,8 +491,7 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
               Compare buy and sell transfer rates
             </Heading>
             <Text variant="muted" className="mt-2 max-w-2xl">
-              Choose a bank, base currency, and target currency. Rate calculations and market bests can be wired to the
-              latest data later.
+              Choose a bank, base currency, and target currency to compare current transfer estimates and market bests.
             </Text>
           </div>
 

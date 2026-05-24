@@ -185,7 +185,7 @@ export async function updateProfileAction(
 
   return {
     status: "success",
-    message: "Profile preferences updated for this demo workspace.",
+    message: "Profile preferences updated successfully.",
   };
 }
 

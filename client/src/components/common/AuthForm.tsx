@@ -57,7 +57,7 @@ export function AuthForm({ mode, action }: AuthFormProps) {
             required
             type="email"
             name="email"
-            placeholder={isSignup ? "trader@rate-pulse.trade" : "admin@rate-pulse.trade"}
+            placeholder={isSignup ? "you@example.com" : "you@example.com"}
           />
         </FieldLabel>
 

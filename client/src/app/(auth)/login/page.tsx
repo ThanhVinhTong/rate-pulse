@@ -21,8 +21,8 @@ export default function LoginPage() {
           Compare rates with confidence
         </Heading>
         <Text variant="body" className="mt-4 leading-7">
-          Sign in to access your profile, saved preferences, and role-based dashboards. Admin access is
-          enabled automatically when the email contains the word <span className="font-medium text-primary">admin</span>.
+          Sign in to access your profile, saved preferences, and account settings.
+          Admin tools are available only to authorized accounts.
         </Text>
       </Panel>
 
