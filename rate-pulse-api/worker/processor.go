@@ -39,7 +39,7 @@ func NewRedisTaskProcessor(
 		redisOpt,
 		asynq.Config{
 			Concurrency:              1,
-			TaskCheckInterval:        60 * time.Second,
+			TaskCheckInterval:        30 * time.Second,
 			DelayedTaskCheckInterval: 10 * time.Minute,
 			JanitorInterval:          6 * time.Hour,
 			JanitorBatchSize:         10,
