@@ -2,15 +2,17 @@ package api
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 // rateLimitMiddleware enforces rate limiting on all requests
-// Uses IP address for public requests, user ID for authenticated requests
+// Uses an existing auth payload when one is available, otherwise the client address.
 func (server *Server) rateLimitMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Determine the identifier: user ID if authenticated, otherwise IP
@@ -18,12 +20,7 @@ func (server *Server) rateLimitMiddleware() gin.HandlerFunc {
 		if payload, ok := authPayloadFromGinContext(ctx); ok {
 			identifier = fmt.Sprintf("user:%d", payload.UserID)
 		} else {
-			identifier = ctx.ClientIP()
-		}
-
-		if identifier == "" {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Unable to identify client"})
-			return
+			identifier = clientIdentifier(ctx)
 		}
 
 		// Check rate limit
@@ -49,4 +46,23 @@ func (server *Server) rateLimitMiddleware() gin.HandlerFunc {
 
 		ctx.Next()
 	}
+}
+
+func clientIdentifier(ctx *gin.Context) string {
+	clientIP := strings.TrimSpace(ctx.ClientIP())
+	if clientIP != "" {
+		return clientIP
+	}
+
+	remoteAddr := strings.TrimSpace(ctx.Request.RemoteAddr)
+	if remoteAddr == "" {
+		return "unknown"
+	}
+
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err == nil && strings.TrimSpace(host) != "" {
+		return host
+	}
+
+	return remoteAddr
 }

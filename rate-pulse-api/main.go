@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -92,11 +93,7 @@ func main() {
 
 	var emailSender email.Sender
 	if config.EnableTaskProcessor {
-		emailSender, err = email.NewGmailSender(
-			config.EmailSenderName,
-			config.EmailSenderAddress,
-			config.EmailSenderPassword,
-		)
+		emailSender, err = email.NewBrevoSender(buildBrevoSenderConfig(config))
 		if err != nil {
 			log.Fatal().Err(err).Msg("Cannot create email sender")
 		}
@@ -176,6 +173,26 @@ func waitForShutdown() {
 	log.Info().Msg("background services started")
 	<-stop
 	log.Info().Msg("shutdown signal received")
+}
+
+func buildBrevoSenderConfig(config util.Config) email.BrevoSenderConfig {
+	return email.BrevoSenderConfig{
+		SenderName:    config.EmailSenderName,
+		SenderAddress: config.EmailSenderAddress,
+		SMTPHost:      config.EmailSMTPHost,
+		SMTPPort:      config.EmailSMTPPort,
+		SMTPUsername:  firstNonBlank(config.EmailSMTPUsername, config.EmailSenderAddress),
+		SMTPPassword:  config.EmailSMTPPassword,
+	}
+}
+
+func firstNonBlank(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func validateRuntimeFlags(config util.Config) error {

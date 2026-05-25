@@ -16,11 +16,15 @@ import (
 // mockSMTPClient captures messages for verification
 type mockSMTPClient struct {
 	sendMailFunc func(addr string, a smtp.Auth, from string, to []string, msg []byte) error
+	lastAddr     string
+	lastFrom     string
 	lastMessage  []byte   // Captures the raw email for assertions
 	lastTo       []string // Captures recipients
 }
 
 func (m *mockSMTPClient) SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	m.lastAddr = addr
+	m.lastFrom = from
 	m.lastMessage = append([]byte{}, msg...) // Deep copy
 	m.lastTo = append([]string{}, to...)
 
@@ -30,26 +34,88 @@ func (m *mockSMTPClient) SendMail(addr string, a smtp.Auth, from string, to []st
 	return nil
 }
 
-// ====================== NewGmailSender Tests ======================
+// ====================== NewBrevoSender Tests ======================
 
-func TestNewGmailSender(t *testing.T) {
+func TestNewBrevoSender(t *testing.T) {
 	tests := []struct {
 		name        string
-		senderName  string
-		email       string
-		password    string
+		config      BrevoSenderConfig
 		wantErr     bool
 		errContains string
 	}{
-		{"valid input", "John Doe", "john.doe@gmail.com", "app-password-xyz", false, ""},
-		{"empty name", "", "test@gmail.com", "pass", true, "email sender name is required"},
-		{"invalid email", "Test", "invalid-email", "pass", true, "email sender address is invalid"},
-		{"empty password", "Test", "test@gmail.com", "   ", true, "email sender password is required"},
+		{
+			name: "valid input",
+			config: BrevoSenderConfig{
+				SenderName:    "John Doe",
+				SenderAddress: "john.doe@example.com",
+				SMTPUsername:  "smtp-login@example.com",
+				SMTPPassword:  "smtp-key-xyz",
+			},
+		},
+		{
+			name: "defaults smtp username to sender address",
+			config: BrevoSenderConfig{
+				SenderName:    "John Doe",
+				SenderAddress: "john.doe@example.com",
+				SMTPPassword:  "smtp-key-xyz",
+			},
+		},
+		{
+			name: "empty name",
+			config: BrevoSenderConfig{
+				SenderAddress: "test@example.com",
+				SMTPPassword:  "smtp-key",
+			},
+			wantErr:     true,
+			errContains: "email sender name is required",
+		},
+		{
+			name: "invalid sender email",
+			config: BrevoSenderConfig{
+				SenderName:    "Test",
+				SenderAddress: "invalid-email",
+				SMTPPassword:  "smtp-key",
+			},
+			wantErr:     true,
+			errContains: "email sender address is invalid",
+		},
+		{
+			name: "invalid smtp username",
+			config: BrevoSenderConfig{
+				SenderName:    "Test",
+				SenderAddress: "sender@example.com",
+				SMTPUsername:  "invalid-login",
+				SMTPPassword:  "smtp-key",
+			},
+			wantErr:     true,
+			errContains: "smtp username is invalid",
+		},
+		{
+			name: "invalid smtp port",
+			config: BrevoSenderConfig{
+				SenderName:    "Test",
+				SenderAddress: "sender@example.com",
+				SMTPPort:      70000,
+				SMTPPassword:  "smtp-key",
+			},
+			wantErr:     true,
+			errContains: "smtp port",
+		},
+		{
+			name: "empty smtp key",
+			config: BrevoSenderConfig{
+				SenderName:    "Test",
+				SenderAddress: "test@example.com",
+				SMTPPassword:  "   ",
+			},
+			wantErr:     true,
+			errContains: "brevo smtp key is required",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sender, err := NewGmailSender(tt.senderName, tt.email, tt.password)
+			sender, err := NewBrevoSender(tt.config)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -57,9 +123,12 @@ func TestNewGmailSender(t *testing.T) {
 				assert.Nil(t, sender)
 			} else {
 				require.NoError(t, err)
-				gs := sender.(*GmailSender)
-				assert.Equal(t, tt.senderName, gs.name)
-				assert.Equal(t, tt.email, gs.fromEmailAddress)
+				bs := sender.(*BrevoSender)
+				assert.Equal(t, strings.TrimSpace(tt.config.SenderName), bs.name)
+				assert.Equal(t, strings.TrimSpace(tt.config.SenderAddress), bs.fromEmailAddress)
+				assert.NotEmpty(t, bs.smtpUsername)
+				assert.Equal(t, brevoSMTPHost, bs.smtpHost)
+				assert.Equal(t, brevoSMTPPort, bs.smtpPort)
 			}
 		})
 	}
@@ -75,7 +144,7 @@ func Test_validateRecipients(t *testing.T) {
 		wantErr     bool
 		errContains string
 	}{
-		{"valid to", "to", []string{"alice@gmail.com", "bob@gmail.com"}, false, ""},
+		{"valid to", "to", []string{"alice@example.com", "bob@example.com"}, false, ""},
 		{"empty to", "to", []string{}, true, "at least one recipient"},
 		{"empty cc allowed", "cc", []string{}, false, ""},
 		{"invalid email", "to", []string{"invalid-email"}, true, "recipient"},
@@ -129,17 +198,20 @@ func Test_validateAttachments(t *testing.T) {
 
 // ====================== SendEmail Tests ======================
 
-func TestGmailSender_SendEmail(t *testing.T) {
+func TestBrevoSender_SendEmail(t *testing.T) {
 	tmpDir := t.TempDir()
 	attachmentPath := filepath.Join(tmpDir, "invoice.pdf")
 	_ = os.WriteFile(attachmentPath, []byte("%PDF fake content"), 0644)
 
-	newSender := func() *GmailSender {
-		return &GmailSender{
-			name:              "Test Sender",
-			fromEmailAddress:  "sender@gmail.com",
-			fromEmailPassword: "app-password",
-			smtpClient:        &mockSMTPClient{},
+	newSender := func() *BrevoSender {
+		return &BrevoSender{
+			name:             "Test Sender",
+			fromEmailAddress: "sender@example.com",
+			smtpUsername:     "smtp-login@example.com",
+			smtpPassword:     "smtp-key",
+			smtpHost:         brevoSMTPHost,
+			smtpPort:         brevoSMTPPort,
+			smtpClient:       &mockSMTPClient{},
 		}
 	}
 
@@ -160,7 +232,7 @@ func TestGmailSender_SendEmail(t *testing.T) {
 			name:        "successful email with attachment",
 			subject:     "Monthly Report",
 			content:     "<h1>Hello</h1><p>This is a test email.</p>",
-			to:          []string{"recipient@gmail.com"},
+			to:          []string{"recipient@example.com"},
 			cc:          []string{"cc@example.com"},
 			bcc:         []string{"bcc@example.com"},
 			attachments: []string{attachmentPath},
@@ -173,7 +245,9 @@ func TestGmailSender_SendEmail(t *testing.T) {
 				assert.Contains(t, msgStr, "invoice.pdf")
 				assert.Contains(t, msgStr, "base64")
 				assert.Contains(t, msgStr, "Hello</h1>")
-				assert.Contains(t, strings.Join(mock.lastTo, ","), "recipient@gmail.com")
+				assert.Equal(t, "smtp-relay.brevo.com:587", mock.lastAddr)
+				assert.Equal(t, "sender@example.com", mock.lastFrom)
+				assert.Contains(t, strings.Join(mock.lastTo, ","), "recipient@example.com")
 			},
 		},
 		{
@@ -196,7 +270,7 @@ func TestGmailSender_SendEmail(t *testing.T) {
 			name:        "smtp error propagated",
 			subject:     "Test",
 			content:     "<p>test</p>",
-			to:          []string{"user@gmail.com"},
+			to:          []string{"user@example.com"},
 			mockErr:     errors.New("535-5.7.8 Username and Password not accepted"),
 			wantErr:     true,
 			errContains: "Username and Password",

@@ -9,11 +9,13 @@ import (
 	"mime"
 	"mime/multipart"
 	"mime/quotedprintable"
+	"net"
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -22,10 +24,10 @@ type smtpClient interface {
 }
 
 const (
-	smtpHost              = "smtp.gmail.com"     // Gmail SMTP server hostname
-	smtpAddress           = "smtp.gmail.com:587" // Gmail SMTP with STARTTLS port
-	maxAttachmentBytes    = 10 << 20             // Maximum size per attachment (10MB)
-	maxTotalRawAttachment = 18 << 20             // Maximum total raw size of all attachments (18MB)
+	brevoSMTPHost         = "smtp-relay.brevo.com"
+	brevoSMTPPort         = 587
+	maxAttachmentBytes    = 10 << 20 // Maximum size per attachment (10MB)
+	maxTotalRawAttachment = 18 << 20 // Maximum total raw size of all attachments (18MB)
 )
 
 // Sender defines the contract for sending emails
@@ -33,33 +35,67 @@ type Sender interface {
 	SendEmail(subject, content string, to, cc, bcc, attachments []string) error
 }
 
-type GmailSender struct {
-	name              string
-	fromEmailAddress  string
-	fromEmailPassword string
-	smtpClient        smtpClient // Injected for testing
+type BrevoSenderConfig struct {
+	SenderName    string
+	SenderAddress string
+	SMTPHost      string
+	SMTPPort      int
+	SMTPUsername  string
+	SMTPPassword  string
 }
 
-// NewGmailSender creates and validates a new Gmail sender
-func NewGmailSender(name, fromEmailAddress, fromEmailPassword string) (Sender, error) {
-	name = strings.TrimSpace(name)
-	fromEmailAddress = strings.TrimSpace(fromEmailAddress)
+type BrevoSender struct {
+	name             string
+	fromEmailAddress string
+	smtpUsername     string
+	smtpPassword     string
+	smtpHost         string
+	smtpPort         int
+	smtpClient       smtpClient // Injected for testing
+}
 
-	if name == "" {
+// NewBrevoSender creates and validates a sender backed by Brevo SMTP relay.
+func NewBrevoSender(config BrevoSenderConfig) (Sender, error) {
+	config.SenderName = strings.TrimSpace(config.SenderName)
+	config.SenderAddress = strings.TrimSpace(config.SenderAddress)
+	config.SMTPHost = strings.TrimSpace(config.SMTPHost)
+	config.SMTPUsername = strings.TrimSpace(config.SMTPUsername)
+	config.SMTPPassword = strings.TrimSpace(config.SMTPPassword)
+
+	if config.SenderName == "" {
 		return nil, errors.New("email sender name is required")
 	}
-	if _, err := mail.ParseAddress(fromEmailAddress); err != nil {
+	if _, err := mail.ParseAddress(config.SenderAddress); err != nil {
 		return nil, fmt.Errorf("email sender address is invalid: %w", err)
 	}
-	if strings.TrimSpace(fromEmailPassword) == "" {
-		return nil, errors.New("email sender password is required")
+
+	if config.SMTPHost == "" {
+		config.SMTPHost = brevoSMTPHost
+	}
+	if config.SMTPPort == 0 {
+		config.SMTPPort = brevoSMTPPort
+	}
+	if config.SMTPPort < 1 || config.SMTPPort > 65535 {
+		return nil, fmt.Errorf("smtp port %d is invalid", config.SMTPPort)
+	}
+	if config.SMTPUsername == "" {
+		config.SMTPUsername = config.SenderAddress
+	}
+	if _, err := mail.ParseAddress(config.SMTPUsername); err != nil {
+		return nil, fmt.Errorf("smtp username is invalid: %w", err)
+	}
+	if config.SMTPPassword == "" {
+		return nil, errors.New("brevo smtp key is required")
 	}
 
-	sender := &GmailSender{
-		name:              name,
-		fromEmailAddress:  fromEmailAddress,
-		fromEmailPassword: fromEmailPassword,
-		smtpClient:        smtpClientFunc(smtp.SendMail), // Real implementation
+	sender := &BrevoSender{
+		name:             config.SenderName,
+		fromEmailAddress: config.SenderAddress,
+		smtpUsername:     config.SMTPUsername,
+		smtpPassword:     config.SMTPPassword,
+		smtpHost:         config.SMTPHost,
+		smtpPort:         config.SMTPPort,
+		smtpClient:       smtpClientFunc(smtp.SendMail), // Real implementation
 	}
 	return sender, nil
 }
@@ -71,8 +107,8 @@ func (f smtpClientFunc) SendMail(addr string, a smtp.Auth, from string, to []str
 	return f(addr, a, from, to, msg)
 }
 
-// SendEmail sends an HTML email with CC, BCC, and attachments via Gmail
-func (sender *GmailSender) SendEmail(
+// SendEmail sends an HTML email with CC, BCC, and attachments via Brevo SMTP.
+func (sender *BrevoSender) SendEmail(
 	subject string,
 	content string,
 	to []string,
@@ -94,7 +130,7 @@ func (sender *GmailSender) SendEmail(
 		return err
 	}
 
-	auth := smtp.PlainAuth("", sender.fromEmailAddress, sender.fromEmailPassword, smtpHost)
+	auth := smtp.PlainAuth("", sender.smtpUsername, sender.smtpPassword, sender.smtpHost)
 
 	// Build the complete email message
 	var msg bytes.Buffer
@@ -155,12 +191,16 @@ func (sender *GmailSender) SendEmail(
 	recipients := append(append(append([]string{}, to...), cc...), bcc...)
 
 	return sender.smtpClient.SendMail(
-		smtpAddress,
+		sender.smtpAddress(),
 		auth,
 		sender.fromEmailAddress,
 		recipients,
 		msg.Bytes(),
 	)
+}
+
+func (sender *BrevoSender) smtpAddress() string {
+	return net.JoinHostPort(sender.smtpHost, strconv.Itoa(sender.smtpPort))
 }
 
 // validateRecipients checks email address format

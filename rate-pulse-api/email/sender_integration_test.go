@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSendEmailWithGmail_Integration(t *testing.T) {
+func TestSendEmailWithBrevo_Integration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
@@ -16,15 +16,18 @@ func TestSendEmailWithGmail_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Optional: Skip if credentials are not set
-	if config.EmailSenderPassword == "" {
+	if config.EmailSMTPPassword == "" {
 		t.Skip("Email credentials not configured")
 	}
 
-	sender, err := NewGmailSender(
-		config.EmailSenderName,
-		config.EmailSenderAddress,
-		config.EmailSenderPassword,
-	)
+	sender, err := NewBrevoSender(BrevoSenderConfig{
+		SenderName:    config.EmailSenderName,
+		SenderAddress: config.EmailSenderAddress,
+		SMTPHost:      config.EmailSMTPHost,
+		SMTPPort:      config.EmailSMTPPort,
+		SMTPUsername:  config.EmailSMTPUsername,
+		SMTPPassword:  config.EmailSMTPPassword,
+	})
 	require.NoError(t, err)
 
 	subject := "Test Email from Unit Test - " + util.RandomString(6)

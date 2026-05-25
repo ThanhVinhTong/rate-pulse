@@ -22,7 +22,10 @@ type Config struct {
 	RefreshTokenDuration   time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	EmailSenderName        string        `mapstructure:"EMAIL_SENDER_NAME"`
 	EmailSenderAddress     string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
-	EmailSenderPassword    string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
+	EmailSMTPHost          string        `mapstructure:"EMAIL_SMTP_HOST"`
+	EmailSMTPPort          int           `mapstructure:"EMAIL_SMTP_PORT"`
+	EmailSMTPUsername      string        `mapstructure:"EMAIL_SMTP_USERNAME"`
+	EmailSMTPPassword      string        `mapstructure:"EMAIL_SMTP_PASSWORD"`
 	FrontendVerifyEmailURL string        `mapstructure:"FRONTEND_VERIFY_EMAIL_URL"`
 	RateLimitPerMinute     int           `mapstructure:"RATE_LIMIT_PER_MINUTE"`
 	EnableHTTPServer       bool          `mapstructure:"ENABLE_HTTP_SERVER"`
@@ -51,7 +54,10 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("REFRESH_TOKEN_DURATION")
 	viper.BindEnv("EMAIL_SENDER_NAME")
 	viper.BindEnv("EMAIL_SENDER_ADDRESS")
-	viper.BindEnv("EMAIL_SENDER_PASSWORD")
+	viper.BindEnv("EMAIL_SMTP_HOST")
+	viper.BindEnv("EMAIL_SMTP_PORT")
+	viper.BindEnv("EMAIL_SMTP_USERNAME")
+	viper.BindEnv("EMAIL_SMTP_PASSWORD")
 	viper.BindEnv("FRONTEND_VERIFY_EMAIL_URL")
 	viper.BindEnv("RATE_LIMIT_PER_MINUTE")
 	viper.BindEnv("ENABLE_HTTP_SERVER")

@@ -38,6 +38,7 @@ func NewServer(
 	if requestsPerMin <= 0 {
 		requestsPerMin = 300
 	}
+	config.RateLimitPerMinute = requestsPerMin
 
 	server := &Server{
 		config:        config,

@@ -15,8 +15,14 @@ type RateLimiter struct {
 	requestsPerMin int
 }
 
+const defaultRequestsPerMinute = 300
+
 // NewRateLimiter creates a new rate limiter with Redis backend
 func NewRateLimiter(redisClient *redis.Client, requestsPerMin int) *RateLimiter {
+	if requestsPerMin <= 0 {
+		requestsPerMin = defaultRequestsPerMinute
+	}
+
 	return &RateLimiter{
 		client:         redisClient,
 		requestsPerMin: requestsPerMin,
@@ -32,9 +38,20 @@ func (rl *RateLimiter) Allow(ctx context.Context, key string) (bool, int, int64)
 		return false, 0, 0
 	}
 
-	redisKey := fmt.Sprintf("ratelimit:%s", key)
-
 	now := time.Now().Unix()
+	if rl == nil {
+		return true, defaultRequestsPerMinute, now + 60
+	}
+
+	requestsPerMin := rl.requestsPerMin
+	if requestsPerMin <= 0 {
+		requestsPerMin = defaultRequestsPerMinute
+	}
+	if rl.client == nil {
+		return true, requestsPerMin, now + 60
+	}
+
+	redisKey := fmt.Sprintf("ratelimit:%s", key)
 	windowStart := now - 60 // 1 minute window
 
 	// Lua script to atomically check and increment rate limit counter
@@ -66,11 +83,11 @@ func (rl *RateLimiter) Allow(ctx context.Context, key string) (bool, int, int64)
 		end
 	`)
 
-	result, err := script.Run(ctx, rl.client, []string{redisKey}, rl.requestsPerMin, now, windowStart).Result()
+	result, err := script.Run(ctx, rl.client, []string{redisKey}, requestsPerMin, now, windowStart).Result()
 	if err != nil {
 		// On error, fail open (allow the request) but log it
 		// In production, you might want to fail closed instead
-		return true, rl.requestsPerMin, now + 60
+		return true, requestsPerMin, now + 60
 	}
 
 	values := result.([]interface{})

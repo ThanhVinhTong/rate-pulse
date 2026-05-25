@@ -132,3 +132,13 @@ func TestAuthMiddleware(t *testing.T) {
 		})
 	}
 }
+
+func TestClientIdentifierFallsBackWhenClientIPUnavailable(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	request := httptest.NewRequest(http.MethodGet, "/test", nil)
+	request.RemoteAddr = ""
+	ctx.Request = request
+
+	require.Equal(t, "unknown", clientIdentifier(ctx))
+}
