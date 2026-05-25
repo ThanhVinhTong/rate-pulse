@@ -83,6 +83,7 @@ jobs:
               --from-literal=EMAIL_SENDER_ADDRESS='${{ secrets.EMAIL_SENDER_ADDRESS }}' \
               --from-literal=EMAIL_SENDER_NAME='${{ secrets.EMAIL_SENDER_NAME }}' \
               --from-literal=FRONTEND_VERIFY_EMAIL_URL='${{ secrets.FRONTEND_VERIFY_EMAIL_URL }}' \
+              --from-literal=RATE_LIMIT_PER_MINUTE='${{ secrets.RATE_LIMIT_PER_MINUTE }}' \
               --dry-run=client -o yaml | kubectl apply -f -
             
             # 2. Docker Hub pull secret (same credentials as the build job)
