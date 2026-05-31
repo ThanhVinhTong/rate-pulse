@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { clearSession, createSession, getSession } from "@/lib/auth";
 import type { ApiCurrency, ApiCountry, ApiRateSource } from "@/lib/exchange-rate-mapper";
 import { buildPairSnapshots, type ExchangeRateRowInput } from "@/lib/pair-snapshot";
-import type { PairSnapshot } from "@/types";
+import type { PairSnapshot, Profile } from "@/types";
 import type { ActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
 
@@ -72,6 +72,13 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     const user = data.user ?? data;
     const userType = user.user_type ?? "free";
 
+    const profile: Profile = {
+      timeZone: user.time_zone,
+      languagePref: user.language_preference,
+      countryOfResidence: user.country_of_residence,
+      countryOfBirth: user.country_of_birth,
+    };
+
     const session: AuthSession = {
       email: user.email,
       name: user.username,
@@ -83,6 +90,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
       accessTokenExpiresAt: data.access_token_expires_at,
       refreshToken: data.refresh_token,
       refreshTokenExpiresAt: data.refresh_token_expires_at,
+      profile,
     };
 
     await createSession(session);

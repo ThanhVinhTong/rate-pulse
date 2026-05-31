@@ -13,6 +13,7 @@ import { Panel } from "@/components/ui/panel";
 import { Text } from "@/components/ui/typography";
 import { TextLink } from "@/components/ui/text-link";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import type { AuthSession } from "@/types";
 
 import { ThemeToggle } from "./ThemeToggle";
@@ -53,6 +54,7 @@ export function Navbar({ session }: NavbarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const auth = useAuth(session);
+  const { clearProfile } = useProfile();
 
   const navItems = useMemo(() => {
     if (!auth.isAuthenticated) {
@@ -103,7 +105,7 @@ export function Navbar({ session }: NavbarProps) {
                 <p className="text-sm font-medium text-white">{auth.session?.name}</p>
                 <p className="text-xs uppercase tracking-wide text-slate-400">{auth.session?.role}</p>
               </Panel>
-              <form action={logoutAction}>
+              <form action={logoutAction} onSubmit={clearProfile}>
                 <Button
                   type="submit"
                   variant="outline"
@@ -143,7 +145,7 @@ export function Navbar({ session }: NavbarProps) {
             <div className="mt-2 flex items-center gap-3">
               <ThemeToggle />
               {auth.isAuthenticated ? (
-                <form action={logoutAction} className="flex-1">
+                <form action={logoutAction} onSubmit={clearProfile} className="flex-1">
                   <Button type="submit" variant="outlineMobile">
                     Log out
                   </Button>

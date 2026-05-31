@@ -11,6 +11,14 @@ export interface AuthSession {
   accessTokenExpiresAt?: string;
   refreshToken?: string;
   refreshTokenExpiresAt?: string;
+  profile?: Profile;
+}
+
+export interface Profile {
+  timeZone?: string;
+  languagePref?: string;
+  countryOfResidence?: string;
+  countryOfBirth?: string;
 }
 
 export interface SettingsSection {
