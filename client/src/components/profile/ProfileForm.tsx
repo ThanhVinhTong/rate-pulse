@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 
 import { useTimezones } from "@/hooks/useTimezones";
 import { useLanguages } from "@/hooks/useLanguages";
+import { useCountries } from "@/hooks/useCountries";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
@@ -277,6 +278,140 @@ export function LanguageSelect({ name, defaultValue = "", onChange }: LanguageSe
   );
 }
 
+interface CountrySelectProps {
+  name: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}
+
+export function CountrySelect({ name, defaultValue = "", onChange }: CountrySelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    filteredCountries,
+    selectedCountry,
+    setSelectedCountry,
+  } = useCountries(defaultValue);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (defaultValue) {
+      setSelectedCountry(defaultValue);
+    }
+  }, [defaultValue, setSelectedCountry]);
+
+  const handleSelect = (country: string) => {
+    setSelectedCountry(country);
+    setIsOpen(false);
+    if (onChange) {
+      onChange(country);
+    }
+  };
+
+  const displayLabel = selectedCountry
+    ? (() => {
+      let displayNames: Intl.DisplayNames | null = null;
+      try {
+        if (typeof Intl !== "undefined" && typeof Intl.DisplayNames === "function") {
+          displayNames = new Intl.DisplayNames(["en"], { type: "region" });
+        }
+      } catch (e) { }
+      let name = selectedCountry;
+      if (displayNames) {
+        try {
+          name = displayNames.of(selectedCountry) || selectedCountry;
+        } catch (e) { }
+      }
+      return `${name} (${selectedCountry})`;
+    })()
+    : "-- None --";
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <input type="hidden" name={name} value={selectedCountry} />
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
+        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm transition hover:border-primary/60"
+      >
+        <span className="truncate">{displayLabel}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="1em"
+          viewBox="0 0 512 512"
+          className={`h-4 w-4 fill-text-tertiary transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`}
+        >
+          <path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-full rounded-md border border-border bg-card p-2 shadow-lg transition-all duration-300">
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search countries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-8 py-1.5 text-xs text-text-primary placeholder:text-text-muted transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          <div className="max-h-48 overflow-y-auto space-y-0.5">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => handleSelect("")}
+              className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-text-muted transition-colors hover:bg-panel"
+            >
+              -- None --
+            </div>
+            {filteredCountries.map((country) => (
+              <div
+                key={country.code}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleSelect(country.code)}
+                className={`cursor-pointer rounded-md px-3 py-1.5 text-xs transition-colors hover:bg-panel ${selectedCountry === country.code ? "bg-panel font-semibold text-primary" : "text-text-primary"
+                  }`}
+              >
+                {country.displayName}
+              </div>
+            ))}
+            {filteredCountries.length === 0 && (
+              <div className="px-3 py-2 text-xs text-text-muted text-center">
+                No matching countries
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProfileForm({ session }: ProfileFormProps) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     updateProfileAction,
@@ -286,6 +421,8 @@ export function ProfileForm({ session }: ProfileFormProps) {
   const { profile, updateProfile } = useProfile(session.profile);
   const [localTimezone, setLocalTimezone] = useState("");
   const [localLanguage, setLocalLanguage] = useState("");
+  const [localCountryOfResidence, setLocalCountryOfResidence] = useState("");
+  const [localCountryOfBirth, setLocalCountryOfBirth] = useState("");
 
   useEffect(() => {
     if (profile?.timeZone) {
@@ -293,6 +430,12 @@ export function ProfileForm({ session }: ProfileFormProps) {
     }
     if (profile?.languagePref) {
       setLocalLanguage(profile.languagePref);
+    }
+    if (profile?.countryOfResidence) {
+      setLocalCountryOfResidence(profile.countryOfResidence);
+    }
+    if (profile?.countryOfBirth) {
+      setLocalCountryOfBirth(profile.countryOfBirth);
     }
   }, [profile]);
 
@@ -302,9 +445,11 @@ export function ProfileForm({ session }: ProfileFormProps) {
         ...profile,
         timeZone: localTimezone,
         languagePref: localLanguage,
+        countryOfResidence: localCountryOfResidence,
+        countryOfBirth: localCountryOfBirth,
       });
     }
-  }, [state, localTimezone, localLanguage]);
+  }, [state, localTimezone, localLanguage, localCountryOfResidence, localCountryOfBirth]);
 
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
@@ -351,12 +496,21 @@ export function ProfileForm({ session }: ProfileFormProps) {
         />
       </FieldLabel>
 
-      <FieldLabel className="md:col-span-2">
-        <FieldCaption>Notes</FieldCaption>
-        <Textarea
-          name="notes"
-          rows={4}
-          defaultValue="Prefers London and New York session summaries with risk reminders."
+      <FieldLabel>
+        <FieldCaption>Country of Residence</FieldCaption>
+        <CountrySelect
+          name="countryOfResidence"
+          defaultValue={profile?.countryOfResidence || ""}
+          onChange={setLocalCountryOfResidence}
+        />
+      </FieldLabel>
+
+      <FieldLabel>
+        <FieldCaption>Country of Birth</FieldCaption>
+        <CountrySelect
+          name="countryOfBirth"
+          defaultValue={profile?.countryOfBirth || ""}
+          onChange={setLocalCountryOfBirth}
         />
       </FieldLabel>
 

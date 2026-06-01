@@ -184,6 +184,8 @@ export async function updateProfileAction(
   const lastName = String(formData.get("lastName") ?? "").trim();
   const timeZone = String(formData.get("timezone") ?? "").trim() || null;
   const languagePref = String(formData.get("language") ?? "").trim() || null;
+  const countryOfResidence = String(formData.get("countryOfResidence") ?? "").trim() || null;
+  const countryOfBirth = String(formData.get("countryOfBirth") ?? "").trim() || null;
 
   if (!firstName || !lastName) {
     return {
@@ -223,6 +225,8 @@ export async function updateProfileAction(
         last_name: lastName,
         time_zone: timeZone,
         language_preference: languagePref,
+        country_of_residence: countryOfResidence,
+        country_of_birth: countryOfBirth,
       }),
     });
 
@@ -245,6 +249,8 @@ export async function updateProfileAction(
         ...currentSession.profile,
         timeZone: data.time_zone || timeZone || undefined,
         languagePref: data.language_preference || languagePref || undefined,
+        countryOfResidence: data.country_of_residence || countryOfResidence || undefined,
+        countryOfBirth: data.country_of_birth || countryOfBirth || undefined,
       },
     };
     await createSession(updatedSession);
