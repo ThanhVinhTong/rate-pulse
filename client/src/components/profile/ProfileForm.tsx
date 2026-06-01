@@ -4,13 +4,13 @@ import { useActionState, useState, useRef, useEffect } from "react";
 import { Search } from "lucide-react";
 
 import { useTimezones } from "@/hooks/useTimezones";
+import { useLanguages } from "@/hooks/useLanguages";
 import { useProfile } from "@/hooks/useProfile";
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
 import { FieldCaption, FieldLabel } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/Select";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
 import { Text } from "@/components/ui/typography";
@@ -126,7 +126,7 @@ export function TimezoneSelect({ name, defaultValue = "", onChange }: TimezoneSe
                 onClick={() => handleSelect(tz)}
                 className={`cursor-pointer rounded-md px-3 py-1.5 text-xs transition-colors hover:bg-panel ${
                   selectedTimezone === tz ? "bg-panel font-semibold text-primary" : "text-text-primary"
-                }`}
+                  }`}
               >
                 {tz}
               </div>
@@ -134,6 +134,140 @@ export function TimezoneSelect({ name, defaultValue = "", onChange }: TimezoneSe
             {filteredTimezones.length === 0 && (
               <div className="px-3 py-2 text-xs text-text-muted text-center">
                 No matching time zones
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface LanguageSelectProps {
+  name: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}
+
+export function LanguageSelect({ name, defaultValue = "", onChange }: LanguageSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    filteredLanguages,
+    selectedLanguage,
+    setSelectedLanguage,
+  } = useLanguages(defaultValue);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (defaultValue) {
+      setSelectedLanguage(defaultValue);
+    }
+  }, [defaultValue, setSelectedLanguage]);
+
+  const handleSelect = (lang: string) => {
+    setSelectedLanguage(lang);
+    setIsOpen(false);
+    if (onChange) {
+      onChange(lang);
+    }
+  };
+
+  const displayLabel = selectedLanguage
+    ? (() => {
+      let displayNames: Intl.DisplayNames | null = null;
+      try {
+        if (typeof Intl !== "undefined" && typeof Intl.DisplayNames === "function") {
+          displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+        }
+      } catch (e) { }
+      let name = selectedLanguage;
+      if (displayNames) {
+        try {
+          name = displayNames.of(selectedLanguage) || selectedLanguage;
+        } catch (e) { }
+      }
+      return `${name} (${selectedLanguage})`;
+    })()
+    : "-- None --";
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <input type="hidden" name={name} value={selectedLanguage} />
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
+        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-md border border-border bg-card px-3 text-sm text-text-primary shadow-sm transition hover:border-primary/60"
+      >
+        <span className="truncate">{displayLabel}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="1em"
+          viewBox="0 0 512 512"
+          className={`h-4 w-4 fill-text-tertiary transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`}
+        >
+          <path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-full rounded-md border border-border bg-card p-2 shadow-lg transition-all duration-300">
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search languages..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-8 py-1.5 text-xs text-text-primary placeholder:text-text-muted transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          <div className="max-h-48 overflow-y-auto space-y-0.5">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => handleSelect("")}
+              className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-text-muted transition-colors hover:bg-panel"
+            >
+              -- None --
+            </div>
+            {filteredLanguages.map((lang) => (
+              <div
+                key={lang.code}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleSelect(lang.code)}
+                className={`cursor-pointer rounded-md px-3 py-1.5 text-xs transition-colors hover:bg-panel ${selectedLanguage === lang.code ? "bg-panel font-semibold text-primary" : "text-text-primary"
+                  }`}
+              >
+                {lang.displayName}
+              </div>
+            ))}
+            {filteredLanguages.length === 0 && (
+              <div className="px-3 py-2 text-xs text-text-muted text-center">
+                No matching languages
               </div>
             )}
           </div>
@@ -151,10 +285,14 @@ export function ProfileForm({ session }: ProfileFormProps) {
 
   const { profile, updateProfile } = useProfile(session.profile);
   const [localTimezone, setLocalTimezone] = useState("");
+  const [localLanguage, setLocalLanguage] = useState("");
 
   useEffect(() => {
     if (profile?.timeZone) {
       setLocalTimezone(profile.timeZone);
+    }
+    if (profile?.languagePref) {
+      setLocalLanguage(profile.languagePref);
     }
   }, [profile]);
 
@@ -163,9 +301,10 @@ export function ProfileForm({ session }: ProfileFormProps) {
       updateProfile({
         ...profile,
         timeZone: localTimezone,
+        languagePref: localLanguage,
       });
     }
-  }, [state, localTimezone]);
+  }, [state, localTimezone, localLanguage]);
 
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
@@ -204,13 +343,12 @@ export function ProfileForm({ session }: ProfileFormProps) {
       </FieldLabel>
 
       <FieldLabel>
-        <FieldCaption>Risk profile</FieldCaption>
-        <Select name="riskProfile" defaultValue="Balanced">
-          <option>Conservative</option>
-          <option>Balanced</option>
-          <option>Growth</option>
-          <option>Aggressive</option>
-        </Select>
+        <FieldCaption>Language Preference</FieldCaption>
+        <LanguageSelect
+          name="language"
+          defaultValue={profile?.languagePref || ""}
+          onChange={setLocalLanguage}
+        />
       </FieldLabel>
 
       <FieldLabel className="md:col-span-2">

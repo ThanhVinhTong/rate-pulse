@@ -183,6 +183,7 @@ export async function updateProfileAction(
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   const timeZone = String(formData.get("timezone") ?? "").trim() || null;
+  const languagePref = String(formData.get("language") ?? "").trim() || null;
 
   if (!firstName || !lastName) {
     return {
@@ -221,6 +222,7 @@ export async function updateProfileAction(
         first_name: firstName,
         last_name: lastName,
         time_zone: timeZone,
+        language_preference: languagePref,
       }),
     });
 
@@ -242,6 +244,7 @@ export async function updateProfileAction(
       profile: {
         ...currentSession.profile,
         timeZone: data.time_zone || timeZone || undefined,
+        languagePref: data.language_preference || languagePref || undefined,
       },
     };
     await createSession(updatedSession);
