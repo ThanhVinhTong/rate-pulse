@@ -26,16 +26,23 @@ async function fetchCurrencies(): Promise<Currency[]> {
   }
 }
 
-async function fetchFavoriteCurrencyCode(currencies: Currency[]): Promise<string> {
+interface UserPreferencesData {
+  favoriteCurrencyCode: string;
+  preferredCurrencyIds: number[];
+}
+
+async function fetchUserPreferences(currencies: Currency[]): Promise<UserPreferencesData> {
   const token = await getValidAccessToken();
   if (!token) {
-    return ""; // Fallback default when no session exists (displays "-- None --")
+    return { favoriteCurrencyCode: "", preferredCurrencyIds: [] };
   }
 
   try {
     let page = 1;
     const pageSize = 10;
     const maxPages = 16; // 159 preferences max / 10 items per page = 16 pages
+    const preferredCurrencyIds: number[] = [];
+    let favoriteCurrencyCode = "";
 
     while (page <= maxPages) {
       const res = await fetch(
@@ -58,18 +65,16 @@ async function fetchFavoriteCurrencyCode(currencies: Currency[]): Promise<string
         break;
       }
 
-      // Check if the favorite currency is in this page
-      const favorite = preferences.find(
-        (p: any) =>
-          p.IsFavorite &&
-          p.IsFavorite.Bool === true &&
-          p.IsFavorite.Valid === true
-      );
+      for (const p of preferences) {
+        if (p.CurrencyID) {
+          preferredCurrencyIds.push(p.CurrencyID);
 
-      if (favorite) {
-        const matched = currencies.find((c) => c.CurrencyID === favorite.CurrencyID);
-        if (matched) {
-          return matched.CurrencyCode;
+          if (p.IsFavorite && p.IsFavorite.Bool === true && p.IsFavorite.Valid === true) {
+            const matched = currencies.find((c) => c.CurrencyID === p.CurrencyID);
+            if (matched) {
+              favoriteCurrencyCode = matched.CurrencyCode;
+            }
+          }
         }
       }
 
@@ -80,23 +85,26 @@ async function fetchFavoriteCurrencyCode(currencies: Currency[]): Promise<string
 
       page++;
     }
+
+    return { favoriteCurrencyCode, preferredCurrencyIds };
   } catch (error) {
-    console.error("Failed to fetch favorite currency preference:", error);
+    console.error("Failed to fetch user currency preferences:", error);
   }
 
-  return ""; // Fallback default if no favorite is found (displays "-- None --")
+  return { favoriteCurrencyCode: "", preferredCurrencyIds: [] };
 }
 
 export default async function ProfilePage() {
   const session = await requireAuth();
   const currencies = await fetchCurrencies();
-  const favoriteCurrencyCode = await fetchFavoriteCurrencyCode(currencies);
+  const { favoriteCurrencyCode, preferredCurrencyIds } = await fetchUserPreferences(currencies);
 
   return (
     <ProfileTabs
       session={session}
       currencies={currencies}
       favoriteCurrencyCode={favoriteCurrencyCode}
+      preferredCurrencyIds={preferredCurrencyIds}
     />
   );
 }

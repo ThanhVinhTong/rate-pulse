@@ -35,9 +35,10 @@ interface ProfileTabsProps {
   session: AuthSession;
   currencies: Currency[];
   favoriteCurrencyCode: string;
+  preferredCurrencyIds: number[];
 }
 
-export function ProfileTabs({ session, currencies, favoriteCurrencyCode }: ProfileTabsProps) {
+export function ProfileTabs({ session, currencies, favoriteCurrencyCode, preferredCurrencyIds }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>("personal");
 
   const tabCopy = useMemo(
@@ -90,6 +91,7 @@ export function ProfileTabs({ session, currencies, favoriteCurrencyCode }: Profi
             <PreferencesForm
               currencies={currencies}
               favoriteCurrencyCode={favoriteCurrencyCode}
+              preferredCurrencyIds={preferredCurrencyIds}
             />
           )}
           {activeTab === "security" && <SecurityForm session={session} />}

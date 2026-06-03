@@ -54,3 +54,76 @@ export async function GET() {
     return NextResponse.json([]);
   }
 }
+
+export async function POST(req: Request) {
+  const token = await getValidAccessToken();
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const { currencyId } = body;
+
+    if (!currencyId) {
+      return NextResponse.json({ error: "Missing currencyId" }, { status: 400 });
+    }
+
+    const res = await fetch(`${apiBase}/currency-preference`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        currency_id: Number(currencyId),
+        is_favorite: false,
+        display_order: 0,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json({ error: errText }, { status: res.status });
+    }
+
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Failed to create preference:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  const token = await getValidAccessToken();
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const currencyId = searchParams.get("currencyId");
+
+    if (!currencyId) {
+      return NextResponse.json({ error: "Missing currencyId" }, { status: 400 });
+    }
+
+    const res = await fetch(`${apiBase}/currency-preference/${currencyId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json({ error: errText }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete preference:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
