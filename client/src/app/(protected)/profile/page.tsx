@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { requireAuth, getValidAccessToken } from "@/lib/auth";
-import type { Currency } from "@/types/exchange-rates";
+import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -22,6 +22,21 @@ async function fetchCurrencies(): Promise<Currency[]> {
     return await res.json();
   } catch (error) {
     console.error("Failed to load profile currency references:", error);
+    return [];
+  }
+}
+
+async function fetchRateSources(): Promise<RateSourceMetadata[]> {
+  try {
+    const res = await fetch(`${apiBase}/rate-sources/metadata`, {
+      next: { revalidate: 3600 }, // Cache on the server side for 1 hour
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch rate sources: ${res.statusText}`);
+    }
+    return await res.json();
+  } catch (error) {
+    console.error("Failed to load profile rate source references:", error);
     return [];
   }
 }
@@ -94,17 +109,78 @@ async function fetchUserPreferences(currencies: Currency[]): Promise<UserPrefere
   return { favoriteCurrencyCode: "", preferredCurrencyIds: [] };
 }
 
+async function fetchPreferredSourceIds(): Promise<number[]> {
+  const token = await getValidAccessToken();
+  if (!token) {
+    return [];
+  }
+
+  try {
+    let page = 1;
+    const pageSize = 10;
+    const maxPages = 10;
+    const preferredSourceIds: number[] = [];
+
+    while (page <= maxPages) {
+      const res = await fetch(
+        `${apiBase}/rate-source-preferences-userid?page_id=${page}&page_size=${pageSize}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        break;
+      }
+
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        break;
+      }
+
+      for (const p of data) {
+        if (p.SourceID) {
+          preferredSourceIds.push(p.SourceID);
+        }
+      }
+
+      if (data.length < pageSize) {
+        break;
+      }
+
+      page++;
+    }
+
+    return preferredSourceIds;
+  } catch (error) {
+    console.error("Failed to fetch user preferred source IDs:", error);
+  }
+
+  return [];
+}
+
 export default async function ProfilePage() {
   const session = await requireAuth();
+  
+  // Fetch currencies, rate sources, and user preferences in parallel
   const currencies = await fetchCurrencies();
-  const { favoriteCurrencyCode, preferredCurrencyIds } = await fetchUserPreferences(currencies);
+  const [rateSources, userPrefs, preferredSourceIds] = await Promise.all([
+    fetchRateSources(),
+    fetchUserPreferences(currencies),
+    fetchPreferredSourceIds(),
+  ]);
 
   return (
     <ProfileTabs
       session={session}
       currencies={currencies}
-      favoriteCurrencyCode={favoriteCurrencyCode}
-      preferredCurrencyIds={preferredCurrencyIds}
+      favoriteCurrencyCode={userPrefs.favoriteCurrencyCode}
+      preferredCurrencyIds={userPrefs.preferredCurrencyIds}
+      rateSources={rateSources}
+      preferredSourceIds={preferredSourceIds}
     />
   );
 }

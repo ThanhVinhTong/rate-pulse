@@ -26,6 +26,7 @@ interface HistoricalClientProps {
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
   favoriteCurrencyId?: number;
+  preferredSourceIds?: number[];
 }
 
 interface ExchangeRateType {
@@ -102,6 +103,7 @@ export function HistoricalClient({
   currencies,
   rateSources,
   favoriteCurrencyId,
+  preferredSourceIds,
 }: HistoricalClientProps) {
   const initialSourceCurrencyId =
     favoriteCurrencyId && currencies.some((c) => c.CurrencyID === favoriteCurrencyId)
@@ -134,6 +136,12 @@ export function HistoricalClient({
   const [isLoading, setIsLoading] = useState(false);
 
   const [preferredIds, setPreferredIds] = useState<Set<number>>(() => new Set());
+  const [preferredSIds, setPreferredSIds] = useState<Set<number>>(() => {
+    if (preferredSourceIds && preferredSourceIds.length > 0) {
+      return new Set(preferredSourceIds);
+    }
+    return new Set();
+  });
 
   useEffect(() => {
     const cached = sessionStorage.getItem("rp_preferred_currency_ids");
@@ -170,6 +178,47 @@ export function HistoricalClient({
     };
   }, []);
 
+  useEffect(() => {
+    if (preferredSourceIds && preferredSourceIds.length > 0) {
+      sessionStorage.setItem("rp_preferred_source_ids", JSON.stringify(preferredSourceIds));
+      setPreferredSIds(new Set(preferredSourceIds));
+      return;
+    }
+
+    const cached = sessionStorage.getItem("rp_preferred_source_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredSIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferred source IDs:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferredSources() {
+      try {
+        const res = await fetch("/api/preferences/sources");
+        if (!res.ok) throw new Error("Failed to load preferred sources");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_source_ids", JSON.stringify(ids));
+          setPreferredSIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferred sources:", error);
+      }
+    }
+
+    void loadPreferredSources();
+    return () => {
+      active = false;
+    };
+  }, [preferredSourceIds]);
+
   const enrichedCurrencies = useMemo(() => {
     return currencies.map((c) => ({
       ...c,
@@ -200,15 +249,23 @@ export function HistoricalClient({
       .filter((source) => wireInt32(source.CurrencyID) === sourceCurrencyId)
       .map((source) => {
         const code = wireString(source.SourceCode);
+        const isPreferred = preferredSIds.has(source.SourceID);
         return {
           id: source.SourceID,
           code,
-          label: code ? `${code} - ${source.SourceName}` : source.SourceName,
+          label: isPreferred
+            ? `❤️ ${code ? `${code} - ${source.SourceName}` : source.SourceName}`
+            : (code ? `${code} - ${source.SourceName}` : source.SourceName),
+          isPreferred,
         };
       });
 
-    return options.sort((a, b) => a.label.localeCompare(b.label));
-  }, [rateSources, sourceCurrencyId]);
+    return options.sort((a, b) => {
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  }, [rateSources, sourceCurrencyId, preferredSIds]);
 
   // Create mapping from type ID to type name
   const typeNameMap = useMemo(() => {

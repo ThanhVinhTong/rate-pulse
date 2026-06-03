@@ -1,6 +1,7 @@
 import { HistoricalClient } from "@/components/dashboard/HistoricalClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 export const metadata: Metadata = {
@@ -36,6 +37,18 @@ export default async function HistoricalPage() {
   const { currencies, rateSources } = await fetchData();
   const favoriteCurrencyId = await fetchUserFavoriteCurrencyId();
 
+  // Read preferred rate sources from cookie for zero-network SSR
+  let preferredSourceIds: number[] = [];
+  try {
+    const cookieStore = await cookies();
+    const cookieVal = cookieStore.get("rp_preferred_source_ids")?.value;
+    if (cookieVal) {
+      preferredSourceIds = cookieVal.split(",").map(Number).filter((id) => !Number.isNaN(id));
+    }
+  } catch (e) {
+    console.warn("Failed to read preferred rate source cookie:", e);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -55,6 +68,7 @@ export default async function HistoricalPage() {
         currencies={currencies}
         rateSources={rateSources}
         favoriteCurrencyId={favoriteCurrencyId}
+        preferredSourceIds={preferredSourceIds}
       />
     </div>
   );
