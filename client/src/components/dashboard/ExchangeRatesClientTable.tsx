@@ -50,7 +50,8 @@ function rateSourceKey(r: ExchangeRateLatest): string {
 }
 
 function currencyLabel(c: Currency): string {
-  return `${c.CurrencyCode} — ${c.CurrencyName}`;
+  const label = `${c.CurrencyCode} — ${c.CurrencyName}`;
+  return c.IsPreferred ? `❤️ ${label}` : label;
 }
 
 type Props = {
@@ -284,12 +285,58 @@ export function ExchangeRatesClientTable({
     [rateSources],
   );
 
+  const [preferredIds, setPreferredIds] = useState<Set<number>>(() => new Set());
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem("rp_preferred_currency_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferences:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferences() {
+      try {
+        const res = await fetch("/api/preferences");
+        if (!res.ok) throw new Error("Failed to load preferences");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_currency_ids", JSON.stringify(ids));
+          setPreferredIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferences:", error);
+      }
+    }
+
+    void loadPreferences();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const enrichedCurrencies = useMemo(() => {
+    return currencies.map((c) => ({
+      ...c,
+      IsPreferred: preferredIds.has(c.CurrencyID),
+    }));
+  }, [currencies, preferredIds]);
+
   const sortedCurrencies = useMemo(
     () =>
-      [...currencies].sort((a, b) =>
-        a.CurrencyCode.localeCompare(b.CurrencyCode),
-      ),
-    [currencies],
+      [...enrichedCurrencies].sort((a, b) => {
+        if (a.IsPreferred && !b.IsPreferred) return -1;
+        if (!a.IsPreferred && b.IsPreferred) return 1;
+        return a.CurrencyCode.localeCompare(b.CurrencyCode);
+      }),
+    [enrichedCurrencies],
   );
 
   const sourceOptions = useMemo(() => {
