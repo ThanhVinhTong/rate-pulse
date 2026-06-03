@@ -4,11 +4,17 @@ import { useTimezones } from "@/hooks/useTimezones";
 import { useLanguages } from "@/hooks/useLanguages";
 import { useCountries } from "@/hooks/useCountries";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { useCurrencies } from "@/hooks/useCurrencies";
+import type { Currency } from "@/types/exchange-rates";
 
 export interface ProfileSelectProps {
   name: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+}
+
+export interface CurrencySelectProps extends ProfileSelectProps {
+  currencies: Currency[];
 }
 
 export function TimezoneSelect({ name, defaultValue = "", onChange }: ProfileSelectProps) {
@@ -72,6 +78,28 @@ export function CountrySelect({ name, defaultValue = "", onChange }: ProfileSele
       setSearchQuery={setSearchQuery}
       placeholder="-- None --"
       searchPlaceholder="Search countries..."
+      onChange={onChange}
+    />
+  );
+}
+
+export function CurrencySelect({ name, defaultValue = "", onChange, currencies }: CurrencySelectProps) {
+  const { searchQuery, setSearchQuery, filteredCurrencies } = useCurrencies(currencies, defaultValue);
+
+  const options = filteredCurrencies.map((c) => ({
+    value: c.CurrencyCode,
+    label: `${c.CurrencyCode} - ${c.CurrencyName}`,
+  }));
+
+  return (
+    <SearchableSelect
+      name={name}
+      defaultValue={defaultValue}
+      options={options}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      placeholder="-- None --"
+      searchPlaceholder="Search currencies..."
       onChange={onChange}
     />
   );

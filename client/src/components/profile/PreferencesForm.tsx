@@ -1,9 +1,16 @@
 "use client";
 
-import { Select } from "@/components/ui/Select";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { CurrencySelect } from "@/components/profile/ProfileSelectors";
+import type { Currency } from "@/types/exchange-rates";
 
-export function PreferencesForm() {
+interface PreferencesFormProps {
+  currencies: Currency[];
+}
+
+export function PreferencesForm({ currencies }: PreferencesFormProps) {
+  const [primaryCurrency, setPrimaryCurrency] = useState("JPY");
 
   // In a real implementation you would use useActionState similar to ProfileForm
   return (
@@ -14,16 +21,12 @@ export function PreferencesForm() {
             <div className="space-y-6">
             <label className="block space-y-2">
                 <span className="text-sm font-medium text-text-muted">Primary Currency</span>
-                <Select
+                <CurrencySelect
                     name="primaryCurrency"
-                    defaultValue="JPY"
-                >
-                    <option value="USD">$ USD - US Dollar</option>
-                    <option value="EUR">€ EUR - Euro</option>
-                    <option value="GBP">£ GBP - British Pound</option>
-                    <option value="JPY">¥ JPY - Japanese Yen</option>
-                    <option value="AUD">$ AUD - Australian Dollar</option>
-                </Select>
+                    defaultValue={primaryCurrency}
+                    onChange={setPrimaryCurrency}
+                    currencies={currencies}
+                />
             </label>
 
             <div className="space-y-3">
