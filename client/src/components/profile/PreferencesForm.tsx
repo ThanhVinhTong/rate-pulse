@@ -5,7 +5,7 @@ import { Search, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { CurrencySelect } from "@/components/profile/ProfileSelectors";
-import type { Currency } from "@/types/exchange-rates";
+import { DEFAULT_SOURCE_CURRENCY_ID, type Currency } from "@/types/exchange-rates";
 
 interface PreferencesFormProps {
   currencies: Currency[];
@@ -107,9 +107,46 @@ export function PreferencesForm({ currencies, favoriteCurrencyCode, preferredCur
     }
   };
 
-  // In a real implementation you would use useActionState similar to ProfileForm
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Find currency ID for the selected primaryCurrency code
+    const selected = currencies.find((c) => c.CurrencyCode === primaryCurrency);
+    const currencyId = selected ? selected.CurrencyID : null;
+
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currencyId }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save primary currency preference");
+      }
+
+      toast.success("Preferences saved successfully");
+
+      // Update preferredIds state so it immediately shows up in the preferred list
+      if (currencyId && !preferredIds.includes(currencyId)) {
+        setPreferredIds((prev) => [...prev, currencyId]);
+        sessionStorage.removeItem("rp_preferred_currency_ids");
+      }
+
+      // Synchronize the favorite currency cookie on the client side instantly
+      const cookieVal = currencyId ? String(currencyId) : String(DEFAULT_SOURCE_CURRENCY_ID);
+      document.cookie = `rp_favorite_currency_id=${cookieVal}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to save primary currency preference");
+    }
+  };
+
   return (
-    <form className="mt-8 space-y-8">
+    <form onSubmit={handleSubmit} className="mt-8 space-y-8">
         <div>
             <h2 className="mb-6 text-xl font-semibold text-text-primary">Currency Preferences</h2>
             

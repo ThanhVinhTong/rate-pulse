@@ -33,6 +33,7 @@ export async function fetchUserFavoriteCurrencyId(): Promise<number> {
     let page = 1;
     const pageSize = 10;
     const maxPages = 16; // 159 preferences max / 10 items per page = 16 pages
+    let favoriteId: number | null = null;
 
     while (page <= maxPages) {
       const res = await fetch(
@@ -62,7 +63,8 @@ export async function fetchUserFavoriteCurrencyId(): Promise<number> {
       );
 
       if (favorite) {
-        return favorite.CurrencyID;
+        favoriteId = favorite.CurrencyID;
+        break;
       }
 
       if (preferences.length < pageSize) {
@@ -71,6 +73,23 @@ export async function fetchUserFavoriteCurrencyId(): Promise<number> {
 
       page++;
     }
+
+    const finalFavId = favoriteId ?? DEFAULT_SOURCE_CURRENCY_ID;
+
+    // Cache the resolved ID in cookies (even if it's the fallback/default ID) so subsequent loads do not fetch from the DB
+    try {
+      const cookieStore = await cookies();
+      cookieStore.set("rp_favorite_currency_id", String(finalFavId), {
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+      });
+    } catch (e) {
+      // Ignore Next.js headers read-only errors during Server Component rendering
+    }
+
+    return finalFavId;
   } catch (error) {
     console.error("Failed to fetch favorite currency preference ID:", error);
   }
