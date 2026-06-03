@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { CurrencySelect } from "@/components/profile/ProfileSelectors";
 import type { Currency } from "@/types/exchange-rates";
 
 interface PreferencesFormProps {
   currencies: Currency[];
+  favoriteCurrencyCode: string;
 }
 
-export function PreferencesForm({ currencies }: PreferencesFormProps) {
-  const [primaryCurrency, setPrimaryCurrency] = useState("JPY");
+export function PreferencesForm({ currencies, favoriteCurrencyCode }: PreferencesFormProps) {
+  const [primaryCurrency, setPrimaryCurrency] = useState(favoriteCurrencyCode);
+
+  useEffect(() => {
+    setPrimaryCurrency(favoriteCurrencyCode);
+  }, [favoriteCurrencyCode]);
 
   // In a real implementation you would use useActionState similar to ProfileForm
   return (
