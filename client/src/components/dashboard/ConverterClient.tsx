@@ -63,7 +63,8 @@ function wireInt32(v: unknown): number | null {
 }
 
 function currencyLabel(currency: Currency): string {
-  return `${currency.CurrencyCode} - ${currency.CurrencyName}`;
+  const label = `${currency.CurrencyCode} - ${currency.CurrencyName}`;
+  return currency.IsPreferred ? `❤️ ${label}` : label;
 }
 
 const BUY_TRANSFER_TYPES = new Set([
@@ -275,12 +276,58 @@ function SnapshotTile({
 }
 
 export function ConverterClient({ apiBase, currencies, rateSources }: ConverterClientProps) {
+  const [preferredIds, setPreferredIds] = useState<Set<number>>(() => new Set());
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem("rp_preferred_currency_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferences:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferences() {
+      try {
+        const res = await fetch("/api/preferences");
+        if (!res.ok) throw new Error("Failed to load preferences");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_currency_ids", JSON.stringify(ids));
+          setPreferredIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferences:", error);
+      }
+    }
+
+    void loadPreferences();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const enrichedCurrencies = useMemo(() => {
+    return currencies.map((c) => ({
+      ...c,
+      IsPreferred: preferredIds.has(c.CurrencyID),
+    }));
+  }, [currencies, preferredIds]);
+
   const sortedCurrencies = useMemo(
     () =>
-      [...currencies].sort((a, b) =>
-        a.CurrencyCode.localeCompare(b.CurrencyCode),
-      ),
-    [currencies],
+      [...enrichedCurrencies].sort((a, b) => {
+        if (a.IsPreferred && !b.IsPreferred) return -1;
+        if (!a.IsPreferred && b.IsPreferred) return 1;
+        return a.CurrencyCode.localeCompare(b.CurrencyCode);
+      }),
+    [enrichedCurrencies],
   );
 
   const initialBaseCurrencyId =

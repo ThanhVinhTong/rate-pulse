@@ -55,7 +55,11 @@ export default async function ConverterPage() {
         </p>
       </div>
 
-      <ConverterClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
+      <ConverterClient
+        apiBase={apiBase}
+        currencies={currencies}
+        rateSources={rateSources}
+      />
     </div>
   );
 }
