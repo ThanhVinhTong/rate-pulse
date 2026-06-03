@@ -29,6 +29,7 @@ type ConverterClientProps = {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
+  favoriteCurrencyId?: number;
 };
 
 type ConverterCardProps = {
@@ -275,7 +276,7 @@ function SnapshotTile({
   );
 }
 
-export function ConverterClient({ apiBase, currencies, rateSources }: ConverterClientProps) {
+export function ConverterClient({ apiBase, currencies, rateSources, favoriteCurrencyId }: ConverterClientProps) {
   const [preferredIds, setPreferredIds] = useState<Set<number>>(() => new Set());
 
   useEffect(() => {
@@ -331,9 +332,11 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
   );
 
   const initialBaseCurrencyId =
-    sortedCurrencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
-    sortedCurrencies[0]?.CurrencyID ??
-    0;
+    favoriteCurrencyId && sortedCurrencies.some((c) => c.CurrencyID === favoriteCurrencyId)
+      ? favoriteCurrencyId
+      : sortedCurrencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
+        sortedCurrencies[0]?.CurrencyID ??
+        0;
   const initialTargetCurrencyCode =
     sortedCurrencies.find((c) => c.CurrencyCode === DEFAULT_TARGET_CURRENCY_CODE && c.CurrencyID !== initialBaseCurrencyId)
       ?.CurrencyCode ??

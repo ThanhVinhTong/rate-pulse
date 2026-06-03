@@ -1,10 +1,10 @@
 import { ExchangeRatesClientTable } from "@/components/dashboard/ExchangeRatesClientTable";
 import { 
-  DEFAULT_SOURCE_CURRENCY_ID,
   DEFAULT_TARGET_CURRENCY_CODE,
   EXCHANGE_RATES_LIMIT 
 } from "@/types/exchange-rates";
 import type { Metadata } from "next";
+import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 export const metadata: Metadata = {
   title: "Exchange Rates",
@@ -26,8 +26,8 @@ async function fetchJson(url: string, options: RequestInit, label: string) {
 export default async function ExchangeRatesPage() {
   const base = process.env.RATE_PULSE_API_BASE_URL ?? "https://localhost:3000";
 
-  const [currencies, rateSources, exchangeRatesLatest] =
-  await Promise.all([
+  // Fetch currencies, rate sources and the user's favorite currency ID
+  const [currencies, rateSources, favoriteCurrencyId] = await Promise.all([
     fetchJson(
       `${base}/currencies/codes-and-names`, 
       { next: { revalidate: 1800 } },
@@ -38,12 +38,15 @@ export default async function ExchangeRatesPage() {
       { next: { revalidate: 1800 } },
       "Rate Sources"
     ),
-    fetchJson(
-      `${base}/exchange-rates-latest?source_currency_id=${DEFAULT_SOURCE_CURRENCY_ID}&limit=${EXCHANGE_RATES_LIMIT}`,
-      { next: { revalidate: 1800 } },
-      "Exchange Rates Latest"
-    ),
-  ])
+    fetchUserFavoriteCurrencyId(),
+  ]);
+
+  // Fetch the latest rates for the user's preferred favorite base currency ID
+  const exchangeRatesLatest = await fetchJson(
+    `${base}/exchange-rates-latest?source_currency_id=${favoriteCurrencyId}&limit=${EXCHANGE_RATES_LIMIT}`,
+    { next: { revalidate: 1800 } },
+    "Exchange Rates Latest"
+  );
 
   return (
     <div className="space-y-6">
@@ -61,7 +64,7 @@ export default async function ExchangeRatesPage() {
       <div>
         <ExchangeRatesClientTable
           apiBase={base}
-          initialSourceCurrencyId={DEFAULT_SOURCE_CURRENCY_ID}
+          initialSourceCurrencyId={favoriteCurrencyId}
           initialTargetCurrencyCode={DEFAULT_TARGET_CURRENCY_CODE}
           initialRates={exchangeRatesLatest}
           currencies={currencies}

@@ -1,6 +1,7 @@
 import { HistoricalClient } from "@/components/dashboard/HistoricalClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 import type { Metadata } from "next";
+import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 export const metadata: Metadata = {
   title: "Historical Rates",
@@ -33,6 +34,7 @@ async function fetchData() {
 
 export default async function HistoricalPage() {
   const { currencies, rateSources } = await fetchData();
+  const favoriteCurrencyId = await fetchUserFavoriteCurrencyId();
 
   return (
     <div className="space-y-6">
@@ -48,7 +50,12 @@ export default async function HistoricalPage() {
         </p>
       </div>
 
-      <HistoricalClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
+      <HistoricalClient
+        apiBase={apiBase}
+        currencies={currencies}
+        rateSources={rateSources}
+        favoriteCurrencyId={favoriteCurrencyId}
+      />
     </div>
   );
 }

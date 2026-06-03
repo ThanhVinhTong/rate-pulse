@@ -25,6 +25,7 @@ interface HistoricalClientProps {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
+  favoriteCurrencyId?: number;
 }
 
 interface ExchangeRateType {
@@ -100,11 +101,14 @@ export function HistoricalClient({
   apiBase,
   currencies,
   rateSources,
+  favoriteCurrencyId,
 }: HistoricalClientProps) {
   const initialSourceCurrencyId =
-    currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
-    currencies[0]?.CurrencyID ??
-    DEFAULT_SOURCE_CURRENCY_ID;
+    favoriteCurrencyId && currencies.some((c) => c.CurrencyID === favoriteCurrencyId)
+      ? favoriteCurrencyId
+      : currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
+        currencies[0]?.CurrencyID ??
+        DEFAULT_SOURCE_CURRENCY_ID;
 
   const initialSourceId =
     rateSources.find(

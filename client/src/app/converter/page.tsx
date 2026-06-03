@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ConverterClient } from "@/components/dashboard/ConverterClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 const apiBase = process.env.RATE_PULSE_API_BASE_URL || "https://localhost:3000";
 
@@ -38,6 +39,7 @@ async function fetchConverterData() {
 
 export default async function ConverterPage() {
   const { currencies, rateSources } = await fetchConverterData();
+  const favoriteCurrencyId = await fetchUserFavoriteCurrencyId();
 
   return (
     <div className="space-y-6">
@@ -59,6 +61,7 @@ export default async function ConverterPage() {
         apiBase={apiBase}
         currencies={currencies}
         rateSources={rateSources}
+        favoriteCurrencyId={favoriteCurrencyId}
       />
     </div>
   );
