@@ -29,6 +29,8 @@ type ConverterClientProps = {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
+  favoriteCurrencyId?: number;
+  preferredSourceIds?: number[];
 };
 
 type ConverterCardProps = {
@@ -63,7 +65,8 @@ function wireInt32(v: unknown): number | null {
 }
 
 function currencyLabel(currency: Currency): string {
-  return `${currency.CurrencyCode} - ${currency.CurrencyName}`;
+  const label = `${currency.CurrencyCode} - ${currency.CurrencyName}`;
+  return currency.IsPreferred ? `❤️ ${label}` : label;
 }
 
 const BUY_TRANSFER_TYPES = new Set([
@@ -274,19 +277,120 @@ function SnapshotTile({
   );
 }
 
-export function ConverterClient({ apiBase, currencies, rateSources }: ConverterClientProps) {
+export function ConverterClient({
+  apiBase,
+  currencies,
+  rateSources,
+  favoriteCurrencyId,
+  preferredSourceIds,
+}: ConverterClientProps) {
+  const [preferredIds, setPreferredIds] = useState<Set<number>>(() => new Set());
+  const [preferredSIds, setPreferredSIds] = useState<Set<number>>(() => {
+    if (preferredSourceIds && preferredSourceIds.length > 0) {
+      return new Set(preferredSourceIds);
+    }
+    return new Set();
+  });
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem("rp_preferred_currency_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferences:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferences() {
+      try {
+        const res = await fetch("/api/preferences");
+        if (!res.ok) throw new Error("Failed to load preferences");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_currency_ids", JSON.stringify(ids));
+          setPreferredIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferences:", error);
+      }
+    }
+
+    void loadPreferences();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (preferredSourceIds && preferredSourceIds.length > 0) {
+      sessionStorage.setItem("rp_preferred_source_ids", JSON.stringify(preferredSourceIds));
+      setPreferredSIds(new Set(preferredSourceIds));
+      return;
+    }
+
+    const cached = sessionStorage.getItem("rp_preferred_source_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredSIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferred source IDs:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferredSources() {
+      try {
+        const res = await fetch("/api/preferences/sources");
+        if (!res.ok) throw new Error("Failed to load preferred sources");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_source_ids", JSON.stringify(ids));
+          setPreferredSIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferred sources:", error);
+      }
+    }
+
+    void loadPreferredSources();
+    return () => {
+      active = false;
+    };
+  }, [preferredSourceIds]);
+
+  const enrichedCurrencies = useMemo(() => {
+    return currencies.map((c) => ({
+      ...c,
+      IsPreferred: preferredIds.has(c.CurrencyID),
+    }));
+  }, [currencies, preferredIds]);
+
   const sortedCurrencies = useMemo(
     () =>
-      [...currencies].sort((a, b) =>
-        a.CurrencyCode.localeCompare(b.CurrencyCode),
-      ),
-    [currencies],
+      [...enrichedCurrencies].sort((a, b) => {
+        if (a.IsPreferred && !b.IsPreferred) return -1;
+        if (!a.IsPreferred && b.IsPreferred) return 1;
+        return a.CurrencyCode.localeCompare(b.CurrencyCode);
+      }),
+    [enrichedCurrencies],
   );
 
   const initialBaseCurrencyId =
-    sortedCurrencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
-    sortedCurrencies[0]?.CurrencyID ??
-    0;
+    favoriteCurrencyId && sortedCurrencies.some((c) => c.CurrencyID === favoriteCurrencyId)
+      ? favoriteCurrencyId
+      : sortedCurrencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
+        sortedCurrencies[0]?.CurrencyID ??
+        0;
   const initialTargetCurrencyCode =
     sortedCurrencies.find((c) => c.CurrencyCode === DEFAULT_TARGET_CURRENCY_CODE && c.CurrencyID !== initialBaseCurrencyId)
       ?.CurrencyCode ??
@@ -362,15 +466,21 @@ export function ConverterClient({ apiBase, currencies, rateSources }: ConverterC
         const code = wireString(source.SourceCode);
         if (!code) return null;
 
+        const isPreferred = preferredSIds.has(source.SourceID);
         return {
           code,
-          label: `${code} - ${source.SourceName}`,
+          label: isPreferred ? `❤️ ${code} - ${source.SourceName}` : `${code} - ${source.SourceName}`,
+          isPreferred,
         };
       })
-      .filter(Boolean) as { code: string; label: string }[];
+      .filter(Boolean) as { code: string; label: string; isPreferred: boolean }[];
 
-    return options.sort((a, b) => a.code.localeCompare(b.code));
-  }, [baseCurrencyId, rateSources]);
+    return options.sort((a, b) => {
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      return a.code.localeCompare(b.code);
+    });
+  }, [baseCurrencyId, rateSources, preferredSIds]);
 
   const targetCurrencies = useMemo(
     () =>

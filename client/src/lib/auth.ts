@@ -46,6 +46,8 @@ export async function clearSession() {
   const cookieStore = await cookies();
   try {
     cookieStore.delete(AUTH_COOKIE);
+    cookieStore.delete("rp_favorite_currency_id");
+    cookieStore.delete("rp_preferred_source_ids");
   } catch (error) {
     // Cannot set cookies in a Server Component render, just ignore.
   }

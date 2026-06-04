@@ -22,6 +22,7 @@ export interface Currency {
     CurrencyID: number;
     CurrencyCode: string;
     CurrencyName: string;
+    IsPreferred?: boolean;
 }
 
 export interface RateSourceMetadata {

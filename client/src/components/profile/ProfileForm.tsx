@@ -1,17 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useEffect } from "react";
 
+import { useProfile } from "@/hooks/useProfile";
 import { updateProfileAction } from "@/app/actions";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
 import { FieldCaption, FieldLabel } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/Select";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Textarea } from "@/components/ui/textarea";
 import { Text } from "@/components/ui/typography";
 import type { AuthSession } from "@/types";
+import { TimezoneSelect, LanguageSelect, CountrySelect } from "@/components/profile/ProfileSelectors";
 
 interface ProfileFormProps {
   session: AuthSession;
@@ -28,6 +28,39 @@ export function ProfileForm({ session }: ProfileFormProps) {
     updateProfileAction,
     initialActionState,
   );
+
+  const { profile, updateProfile } = useProfile(session.profile);
+  const [localTimezone, setLocalTimezone] = useState("");
+  const [localLanguage, setLocalLanguage] = useState("");
+  const [localCountryOfResidence, setLocalCountryOfResidence] = useState("");
+  const [localCountryOfBirth, setLocalCountryOfBirth] = useState("");
+
+  useEffect(() => {
+    if (profile?.timeZone) {
+      setLocalTimezone(profile.timeZone);
+    }
+    if (profile?.languagePref) {
+      setLocalLanguage(profile.languagePref);
+    }
+    if (profile?.countryOfResidence) {
+      setLocalCountryOfResidence(profile.countryOfResidence);
+    }
+    if (profile?.countryOfBirth) {
+      setLocalCountryOfBirth(profile.countryOfBirth);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (state.status === "success") {
+      updateProfile({
+        ...profile,
+        timeZone: localTimezone,
+        languagePref: localLanguage,
+        countryOfResidence: localCountryOfResidence,
+        countryOfBirth: localCountryOfBirth,
+      });
+    }
+  }, [state, localTimezone, localLanguage, localCountryOfResidence, localCountryOfBirth]);
 
   return (
     <form action={formAction} className="mt-8 grid gap-4 md:grid-cols-2">
@@ -57,31 +90,38 @@ export function ProfileForm({ session }: ProfileFormProps) {
       </FieldLabel>
 
       <FieldLabel>
-        <FieldCaption>Base currency</FieldCaption>
-        <Select name="currency" defaultValue="USD">
-          <option>USD</option>
-          <option>EUR</option>
-          <option>GBP</option>
-          <option>JPY</option>
-        </Select>
+        <FieldCaption>Time zone</FieldCaption>
+        <TimezoneSelect
+          name="timezone"
+          defaultValue={profile?.timeZone || ""}
+          onChange={setLocalTimezone}
+        />
       </FieldLabel>
 
       <FieldLabel>
-        <FieldCaption>Risk profile</FieldCaption>
-        <Select name="riskProfile" defaultValue="Balanced">
-          <option>Conservative</option>
-          <option>Balanced</option>
-          <option>Growth</option>
-          <option>Aggressive</option>
-        </Select>
+        <FieldCaption>Language Preference</FieldCaption>
+        <LanguageSelect
+          name="language"
+          defaultValue={profile?.languagePref || ""}
+          onChange={setLocalLanguage}
+        />
       </FieldLabel>
 
-      <FieldLabel className="md:col-span-2">
-        <FieldCaption>Notes</FieldCaption>
-        <Textarea
-          name="notes"
-          rows={4}
-          defaultValue="Prefers London and New York session summaries with risk reminders."
+      <FieldLabel>
+        <FieldCaption>Country of Residence</FieldCaption>
+        <CountrySelect
+          name="countryOfResidence"
+          defaultValue={profile?.countryOfResidence || ""}
+          onChange={setLocalCountryOfResidence}
+        />
+      </FieldLabel>
+
+      <FieldLabel>
+        <FieldCaption>Country of Birth</FieldCaption>
+        <CountrySelect
+          name="countryOfBirth"
+          defaultValue={profile?.countryOfBirth || ""}
+          onChange={setLocalCountryOfBirth}
         />
       </FieldLabel>
 

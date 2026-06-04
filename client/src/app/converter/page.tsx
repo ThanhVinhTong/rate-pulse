@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { ConverterClient } from "@/components/dashboard/ConverterClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 const apiBase = process.env.RATE_PULSE_API_BASE_URL || "https://localhost:3000";
 
@@ -38,6 +40,19 @@ async function fetchConverterData() {
 
 export default async function ConverterPage() {
   const { currencies, rateSources } = await fetchConverterData();
+  const favoriteCurrencyId = await fetchUserFavoriteCurrencyId();
+
+  // Read preferred rate sources from cookie for zero-network SSR
+  let preferredSourceIds: number[] = [];
+  try {
+    const cookieStore = await cookies();
+    const cookieVal = cookieStore.get("rp_preferred_source_ids")?.value;
+    if (cookieVal) {
+      preferredSourceIds = cookieVal.split(",").map(Number).filter((id) => !Number.isNaN(id));
+    }
+  } catch (e) {
+    console.warn("Failed to read preferred rate source cookie:", e);
+  }
 
   return (
     <div className="space-y-6">
@@ -55,7 +70,13 @@ export default async function ConverterPage() {
         </p>
       </div>
 
-      <ConverterClient apiBase={apiBase} currencies={currencies} rateSources={rateSources} />
+      <ConverterClient
+        apiBase={apiBase}
+        currencies={currencies}
+        rateSources={rateSources}
+        favoriteCurrencyId={favoriteCurrencyId}
+        preferredSourceIds={preferredSourceIds}
+      />
     </div>
   );
 }

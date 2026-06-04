@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { clearSession, createSession, getSession } from "@/lib/auth";
+import { clearSession, createSession, getSession, getValidAccessToken } from "@/lib/auth";
 import type { ApiCurrency, ApiCountry, ApiRateSource } from "@/lib/exchange-rate-mapper";
 import { buildPairSnapshots, type ExchangeRateRowInput } from "@/lib/pair-snapshot";
-import type { PairSnapshot } from "@/types";
+import type { PairSnapshot, Profile } from "@/types";
 import type { ActionState } from "@/lib/action-state";
 import type { AuthSession } from "@/types";
 
@@ -72,7 +72,15 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     const user = data.user ?? data;
     const userType = user.user_type ?? "free";
 
+    const profile: Profile = {
+      timeZone: user.time_zone,
+      languagePref: user.language_preference,
+      countryOfResidence: user.country_of_residence,
+      countryOfBirth: user.country_of_birth,
+    };
+
     const session: AuthSession = {
+      userID: user.user_id,
       email: user.email,
       name: user.username,
       firstName: user.first_name,
@@ -83,6 +91,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
       accessTokenExpiresAt: data.access_token_expires_at,
       refreshToken: data.refresh_token,
       refreshTokenExpiresAt: data.refresh_token_expires_at,
+      profile,
     };
 
     await createSession(session);
@@ -173,11 +182,82 @@ export async function updateProfileAction(
 ): Promise<ActionState> {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
+  const timeZone = String(formData.get("timezone") ?? "").trim() || null;
+  const languagePref = String(formData.get("language") ?? "").trim() || null;
+  const countryOfResidence = String(formData.get("countryOfResidence") ?? "").trim() || null;
+  const countryOfBirth = String(formData.get("countryOfBirth") ?? "").trim() || null;
 
   if (!firstName || !lastName) {
     return {
       status: "error",
       message: "First and last name are required.",
+    };
+  }
+
+  // Retrieve the authentic user session directly from the secure server cookie
+  const currentSession = await getSession();
+  if (!currentSession || !currentSession.userID) {
+    return {
+      status: "error",
+      message: "You must be logged in to update your profile.",
+    };
+  }
+
+  const userID = currentSession.userID;
+
+  try {
+    const token = await getValidAccessToken();
+    if (!token) {
+      return {
+        status: "error",
+        message: "You must be logged in to update your profile.",
+      };
+    }
+
+    const res = await fetch(`${API_BASE_URL}/users/${userID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+        time_zone: timeZone,
+        language_preference: languagePref,
+        country_of_residence: countryOfResidence,
+        country_of_birth: countryOfBirth,
+      }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      return {
+        status: "error",
+        message: readApiErrorMessage(error, "Failed to update profile details."),
+      };
+    }
+
+    const data = await res.json();
+
+    // In-memory session update & secure encryption rewrite
+    const updatedSession: AuthSession = {
+      ...currentSession,
+      firstName: data.first_name || firstName,
+      lastName: data.last_name || lastName,
+      profile: {
+        ...currentSession.profile,
+        timeZone: data.time_zone || timeZone || undefined,
+        languagePref: data.language_preference || languagePref || undefined,
+        countryOfResidence: data.country_of_residence || countryOfResidence || undefined,
+        countryOfBirth: data.country_of_birth || countryOfBirth || undefined,
+      },
+    };
+    await createSession(updatedSession);
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : String(err),
     };
   }
 

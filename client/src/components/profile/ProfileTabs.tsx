@@ -4,6 +4,7 @@ import { Bell, Shield, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { AuthSession } from "@/types";
+import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
 
 import { ProfileForm } from "./ProfileForm";
 import { PreferencesForm } from "./PreferencesForm";
@@ -32,9 +33,21 @@ const tabs = [
 
 interface ProfileTabsProps {
   session: AuthSession;
+  currencies: Currency[];
+  favoriteCurrencyCode: string;
+  preferredCurrencyIds: number[];
+  rateSources: RateSourceMetadata[];
+  preferredSourceIds: number[];
 }
 
-export function ProfileTabs({ session }: ProfileTabsProps) {
+export function ProfileTabs({
+  session,
+  currencies,
+  favoriteCurrencyCode,
+  preferredCurrencyIds,
+  rateSources,
+  preferredSourceIds,
+}: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>("personal");
 
   const tabCopy = useMemo(
@@ -83,7 +96,15 @@ export function ProfileTabs({ session }: ProfileTabsProps) {
             {tabCopy[activeTab]}
           </p>
           {activeTab === "personal" && <ProfileForm session={session} />}
-          {activeTab === "preferences" && <PreferencesForm />}
+          {activeTab === "preferences" && (
+            <PreferencesForm
+              currencies={currencies}
+              favoriteCurrencyCode={favoriteCurrencyCode}
+              preferredCurrencyIds={preferredCurrencyIds}
+              rateSources={rateSources}
+              preferredSourceIds={preferredSourceIds}
+            />
+          )}
           {activeTab === "security" && <SecurityForm session={session} />}
         </div>
       </div>

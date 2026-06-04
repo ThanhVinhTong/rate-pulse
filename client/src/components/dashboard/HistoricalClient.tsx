@@ -25,6 +25,8 @@ interface HistoricalClientProps {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
+  favoriteCurrencyId?: number;
+  preferredSourceIds?: number[];
 }
 
 interface ExchangeRateType {
@@ -100,11 +102,15 @@ export function HistoricalClient({
   apiBase,
   currencies,
   rateSources,
+  favoriteCurrencyId,
+  preferredSourceIds,
 }: HistoricalClientProps) {
   const initialSourceCurrencyId =
-    currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
-    currencies[0]?.CurrencyID ??
-    DEFAULT_SOURCE_CURRENCY_ID;
+    favoriteCurrencyId && currencies.some((c) => c.CurrencyID === favoriteCurrencyId)
+      ? favoriteCurrencyId
+      : currencies.find((c) => c.CurrencyID === DEFAULT_SOURCE_CURRENCY_ID)?.CurrencyID ??
+        currencies[0]?.CurrencyID ??
+        DEFAULT_SOURCE_CURRENCY_ID;
 
   const initialSourceId =
     rateSources.find(
@@ -129,10 +135,110 @@ export function HistoricalClient({
   const [latestRates, setLatestRates] = useState<ExchangeRateLatest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const currencyOptions = useMemo(
-    () => currencies.map((c) => ({ code: c.CurrencyCode, name: c.CurrencyName })),
-    [currencies]
-  );
+  const [preferredIds, setPreferredIds] = useState<Set<number>>(() => new Set());
+  const [preferredSIds, setPreferredSIds] = useState<Set<number>>(() => {
+    if (preferredSourceIds && preferredSourceIds.length > 0) {
+      return new Set(preferredSourceIds);
+    }
+    return new Set();
+  });
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem("rp_preferred_currency_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferences:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferences() {
+      try {
+        const res = await fetch("/api/preferences");
+        if (!res.ok) throw new Error("Failed to load preferences");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_currency_ids", JSON.stringify(ids));
+          setPreferredIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferences:", error);
+      }
+    }
+
+    void loadPreferences();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (preferredSourceIds && preferredSourceIds.length > 0) {
+      sessionStorage.setItem("rp_preferred_source_ids", JSON.stringify(preferredSourceIds));
+      setPreferredSIds(new Set(preferredSourceIds));
+      return;
+    }
+
+    const cached = sessionStorage.getItem("rp_preferred_source_ids");
+    if (cached) {
+      try {
+        const ids: number[] = JSON.parse(cached);
+        if (Array.isArray(ids)) {
+          setPreferredSIds(new Set(ids));
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached preferred source IDs:", e);
+      }
+    }
+
+    let active = true;
+    async function loadPreferredSources() {
+      try {
+        const res = await fetch("/api/preferences/sources");
+        if (!res.ok) throw new Error("Failed to load preferred sources");
+        const ids: number[] = await res.json();
+        if (active && Array.isArray(ids)) {
+          sessionStorage.setItem("rp_preferred_source_ids", JSON.stringify(ids));
+          setPreferredSIds(new Set(ids));
+        }
+      } catch (error) {
+        console.error("Failed to fetch preferred sources:", error);
+      }
+    }
+
+    void loadPreferredSources();
+    return () => {
+      active = false;
+    };
+  }, [preferredSourceIds]);
+
+  const enrichedCurrencies = useMemo(() => {
+    return currencies.map((c) => ({
+      ...c,
+      IsPreferred: preferredIds.has(c.CurrencyID),
+    }));
+  }, [currencies, preferredIds]);
+
+  const currencyOptions = useMemo(() => {
+    const options = enrichedCurrencies.map((c) => ({
+      code: c.CurrencyCode,
+      name: c.CurrencyName,
+      isPreferred: c.IsPreferred,
+    }));
+
+    return options.sort((a, b) => {
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      return a.code.localeCompare(b.code);
+    });
+  }, [enrichedCurrencies]);
 
   const sourceCurrencyId = useMemo(() => {
     return currencies.find((c) => c.CurrencyCode === fromCurrency)?.CurrencyID ?? initialSourceCurrencyId;
@@ -143,15 +249,23 @@ export function HistoricalClient({
       .filter((source) => wireInt32(source.CurrencyID) === sourceCurrencyId)
       .map((source) => {
         const code = wireString(source.SourceCode);
+        const isPreferred = preferredSIds.has(source.SourceID);
         return {
           id: source.SourceID,
           code,
-          label: code ? `${code} - ${source.SourceName}` : source.SourceName,
+          label: isPreferred
+            ? `❤️ ${code ? `${code} - ${source.SourceName}` : source.SourceName}`
+            : (code ? `${code} - ${source.SourceName}` : source.SourceName),
+          isPreferred,
         };
       });
 
-    return options.sort((a, b) => a.label.localeCompare(b.label));
-  }, [rateSources, sourceCurrencyId]);
+    return options.sort((a, b) => {
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  }, [rateSources, sourceCurrencyId, preferredSIds]);
 
   // Create mapping from type ID to type name
   const typeNameMap = useMemo(() => {
@@ -389,7 +503,7 @@ export function HistoricalClient({
             >
               {currencyOptions.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.code}
+                  {c.isPreferred ? `❤️ ${c.code}` : c.code}
                 </option>
               ))}
             </select>
@@ -405,7 +519,7 @@ export function HistoricalClient({
             >
               {currencyOptions.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.code}
+                  {c.isPreferred ? `❤️ ${c.code}` : c.code}
                 </option>
               ))}
             </select>
