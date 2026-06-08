@@ -109,7 +109,4 @@ class WMS(Scraper):
         # Fetch financial news
         self.news_data["financial"] = self.get_feed_news(ids["financial"])
 
-        print("Quitting driver")
-        self.driver.quit()
-
         return self.news_data
