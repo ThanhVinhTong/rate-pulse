@@ -13,8 +13,8 @@ from utils.numeric_cleaner import parse_rate
 logger = logging.getLogger(__name__)
 
 
-class BVB(FX):
-    def __init__(self, driver, connection, name="bvb"):
+class BaoViet(FX):
+    def __init__(self, driver, connection, name="baoviet"):
         super().__init__(driver, connection)
         self.bank_constants = require_bank_constant(name)
         self.code = get_bank_code(name)

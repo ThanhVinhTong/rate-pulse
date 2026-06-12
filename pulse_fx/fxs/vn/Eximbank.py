@@ -14,8 +14,8 @@ from utils.numeric_cleaner import parse_rate
 logger = logging.getLogger(__name__)
 
 
-class EXIM(FX):
-    def __init__(self, driver, connection, name="exim"):
+class Eximbank(FX):
+    def __init__(self, driver, connection, name="eximbank"):
         super().__init__(driver, connection)
         self.bank_constants = require_bank_constant(name)
         self.code = get_bank_code(name)

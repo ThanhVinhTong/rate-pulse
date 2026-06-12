@@ -1,24 +1,22 @@
 from constants.Constant import Constant
 
 
-class EXIMConstant(Constant):
+class BaoVietConstant(Constant):
     def __init__(self):
-        self.website = "https://eximbank.com.vn/bang-ty-gia"
+        self.website = "https://www.baovietbank.vn/vn/ti-gia-ngoai-te"
         self.info = {
             "source_currency": "VND",
             "destination_currency": "currency_code",
             "buy_cash": "buy_cash",
             "buy_transfer": "buy_transfer",
-            "sell_cash": "sell_cash",
-            "sell_transfer": "sell_transfer",
+            "sell_cash_transfer": "sell_cash_transfer",
             "time_zone": "UTC+7",
             "updated_at": "updated_at",
         }
         self.translate_column = {
             "buy_cash": 1,
             "buy_transfer": 3,
-            "sell_cash": 2,
-            "sell_transfer": 4,
+            "sell_cash_transfer": 9,
         }
 
     def get_website(self) -> str:

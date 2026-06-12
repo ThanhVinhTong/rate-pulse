@@ -7,8 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from fxs.vn.ACB import ACB
 from fxs.vn.Agribank import Agribank
 from fxs.vn.BIDV import BIDV
-from fxs.vn.BVB import BVB
-from fxs.vn.EXIM import EXIM
+from fxs.vn.BaoViet import BaoViet
+from fxs.vn.Eximbank import Eximbank
 from fxs.vn.GPBank import GPBank
 from fxs.vn.HSBCVN import HSBCVN
 from fxs.vn.KLB import KLB
@@ -23,10 +23,10 @@ from utils.sessions import start_driver
 logger = logging.getLogger(__name__)
 
 BANK_NAMES = {
-    BVB: "bvb",
+    BaoViet: "baoviet",
     ACB: "acb",
     Agribank: "agribank",
-    EXIM: "exim",
+    Eximbank: "eximbank",
     GPBank: "gpbank",
     CBA: "cba",
     BIDV: "bidv",
@@ -45,7 +45,7 @@ class Script:
         self.db_uri = db_uri
         self.webdriver_path = webdriver_path
         self.max_workers = max(1, max_workers)
-        self.bank_classes = [VCB, BVB, EXIM, GPBank, CBA, BIDV, ACB, VTB, MBB, TCB, Agribank, HSBCVN, TPB, KLB]
+        self.bank_classes = [VCB, BaoViet, Eximbank, GPBank, CBA, BIDV, ACB, VTB, MBB, TCB, Agribank, HSBCVN, TPB, KLB]
 
     def get_fx(self) -> None:
         if not self.db_uri or not str(self.db_uri).strip():
