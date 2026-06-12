@@ -1,4 +1,8 @@
 from .vn.VCBConstant import VCBConstant
+from .vn.BVBConstant import BVBConstant
+from .vn.EXIMConstant import EXIMConstant
+from .vn.GPBankConstant import GPBankConstant
+from .au.CBAConstant import CBAConstant
 from .vn.BIDVConstant import BIDVConstant
 from .vn.VTBConstant import VTBConstant
 from .vn.ACBConstant import ACBConstant
@@ -11,6 +15,10 @@ from .vn.TPBConstant import TPBConstant
 
 BANK_CONSTANTS = {
     "vcb": VCBConstant,
+    "bvb": BVBConstant,
+    "exim": EXIMConstant,
+    "gpbank": GPBankConstant,
+    "cba": CBAConstant,
     "bidv": BIDVConstant,
     "vtb": VTBConstant,
     "acb": ACBConstant,
@@ -24,6 +32,10 @@ BANK_CONSTANTS = {
 
 BANK_CODES = {
     "vcb": "VCB",
+    "bvb": "BVB",
+    "exim": "EXIM",
+    "gpbank": "GPBANK",
+    "cba": "CBA",
     "bidv": "BIDV",
     "vtb": "VTB",
     "acb": "ACB",
