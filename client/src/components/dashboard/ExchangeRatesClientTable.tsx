@@ -89,6 +89,16 @@ function wireInt32(v: unknown): number | null {
 
 type SourceDetails = { name: string; link: string };
 
+function sourceOptionLabel(
+  code: string,
+  sourceName: string | null | undefined,
+  isPreferred: boolean,
+): string {
+  const name = sourceName?.trim() ?? "";
+  const label = name ? `${code} \u2014 ${name}` : code;
+  return isPreferred ? `\u2764\uFE0F ${label}` : label;
+}
+
 function safeExternalHref(url: string): string {
   const t = url.trim();
   if (!t) return "#";
@@ -398,7 +408,7 @@ export function ExchangeRatesClientTable({
         const isPreferred = preferredSIds.has(rs.SourceID);
         return {
           code,
-          label: isPreferred ? `❤️ ${code} — ${rs.SourceName}` : `${code} — ${rs.SourceName}`,
+          label: sourceOptionLabel(code, rs.SourceName, isPreferred),
           isPreferred,
         };
       })
@@ -413,7 +423,7 @@ export function ExchangeRatesClientTable({
         const isPreferred = matchedSource ? preferredSIds.has(matchedSource.SourceID) : false;
         fromApi.push({
           code: k,
-          label: isPreferred ? `❤️ ${k}` : k,
+          label: sourceOptionLabel(k, matchedSource?.SourceName, isPreferred),
           isPreferred,
         });
       }
