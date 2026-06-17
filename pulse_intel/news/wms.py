@@ -1,9 +1,14 @@
 import time
+import logging
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from news.scraper import Scraper
+
+logger = logging.getLogger(__name__)
 
 class WMS(Scraper):
     def __init__(self, driver: webdriver.Edge, website: str) -> None:
@@ -82,11 +87,95 @@ class WMS(Scraper):
         return financial_news
 
     def scrape_news(self, ids: dict[str, str]) -> dict[str, dict]:
-        self.driver.get(self.website)
-        print(f"Website loaded successfully {self.website}")
+        # Force desktop window size to guarantee desktop layout elements render
+        try:
+            self.driver.set_window_size(1920, 1080)
+        except Exception:
+            try:
+                self.driver.maximize_window()
+            except Exception:
+                pass
 
-        print(f"Scraping news ...")
-        time.sleep(15)
+        self.driver.get(self.website)
+        
+        # If the page did not auto-redirect to the dashboard, navigate there directly
+        time.sleep(2)
+        if "/dashboard" not in self.driver.current_url:
+            dashboard_url = self.website.rstrip("/") + "/dashboard"
+            logger.info("Not on dashboard. Navigating directly to: %s", dashboard_url)
+            self.driver.get(dashboard_url)
+
+        logger.info("Website loaded successfully: %s", self.driver.current_url)
+        logger.info("Scraping news ...")
+
+        # 1. Wait for the page/dashboard buttons to render (either modal or header MISSION button)
+        try:
+            WebDriverWait(self.driver, 15).until(
+                lambda d: any(
+                    "Crisis Desk" in b.text or b.get_attribute("id") == "missionPresetBtn"
+                    for b in d.find_elements(By.TAG_NAME, "button")
+                )
+            )
+        except Exception:
+            pass
+
+        # 2. Check if the AI insights container is present. If not, select Crisis Desk from workspace modal.
+        try:
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.ID, ids["ai_insights"]))
+            )
+        except Exception:
+            logger.info("AI Insights element not found immediately. Attempting to select Crisis Desk workspace...")
+            try:
+                # 1. If Crisis Desk is already visible (modal is open on load), click it
+                logger.debug("Checking if 'Crisis Desk' button is already visible (modal open on load)...")
+                crisis_btn = WebDriverWait(self.driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Crisis Desk')]"))
+                )
+                crisis_btn.click()
+                logger.debug("Clicked visible 'Crisis Desk' button. Waiting 1s...")
+                time.sleep(1)
+                # Dismiss the modal by clicking Close
+                close_btn = WebDriverWait(self.driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Close')]"))
+                )
+                close_btn.click()
+                logger.debug("Clicked 'Close' button. Waiting 1s...")
+                time.sleep(1)
+            except Exception as e:
+                logger.debug("Modal was not open on load (or error clicking visible buttons): %s. Proceeding to open modal...", e)
+                # 2. If Crisis Desk button wasn't present, the modal is closed. Open it via missionPresetBtn.
+                try:
+                    logger.debug("Attempting to locate and click 'missionPresetBtn'...")
+                    mission_btn = WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable((By.ID, "missionPresetBtn"))
+                    )
+                    mission_btn.click()
+                    logger.debug("Clicked 'missionPresetBtn'. Waiting 1.5s for modal to render...")
+                    time.sleep(1.5)
+                    
+                    logger.debug("Attempting to locate and click 'Crisis Desk' button inside modal...")
+                    crisis_btn = WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Crisis Desk')]"))
+                    )
+                    crisis_btn.click()
+                    logger.debug("Clicked 'Crisis Desk' button. Waiting 1s...")
+                    time.sleep(1)
+                    
+                    logger.debug("Attempting to locate and click 'Close' button inside modal...")
+                    close_btn = WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Close')]"))
+                    )
+                    close_btn.click()
+                    logger.debug("Clicked 'Close' button. Waiting 1s...")
+                    time.sleep(1)
+                except Exception as ex:
+                    logger.exception("Warning: Could not select Crisis Desk workspace")
+
+        # 3. Final wait for the AI insights container to load
+        WebDriverWait(self.driver, 20).until(
+            EC.presence_of_element_located((By.ID, ids["ai_insights"]))
+        )
 
         # Fetch AI insights
         self.news_data["ai_insights"] = self.get_ai_insights(ids["ai_insights"])
