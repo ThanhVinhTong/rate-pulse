@@ -11,6 +11,24 @@ import (
 	"github.com/google/uuid"
 )
 
+type BankFeeRule struct {
+	FeeRuleID          int32
+	SourceID           int32
+	TypeID             int32
+	FeeRate            sql.NullString
+	VatRate            string
+	VatApplies         string
+	FeeIncludesVat     bool
+	SwiftFee           sql.NullString
+	SwiftFeeCurrencyID sql.NullInt32
+	SourceUrl          sql.NullString
+	SourceNote         sql.NullString
+	EffectiveFrom      time.Time
+	EffectiveTo        sql.NullTime
+	UpdatedAt          sql.NullTime
+	CreatedAt          sql.NullTime
+}
+
 type Country struct {
 	CountryID   int32
 	CountryName string
@@ -49,11 +67,10 @@ type ExchangeRateType struct {
 
 type Payment struct {
 	PaymentID      int32
-	UserID         int32
-	SubscriptionID sql.NullInt32
+	SubscriptionID int32
 	TransactionID  sql.NullString
 	Amount         string
-	Currency       string
+	CurrencyCode   string
 	PaymentMethod  sql.NullString
 	PaymentStatus  sql.NullString
 	PaymentDate    sql.NullTime

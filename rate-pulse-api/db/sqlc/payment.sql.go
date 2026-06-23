@@ -12,25 +12,23 @@ import (
 
 const createPayment = `-- name: CreatePayment :one
 INSERT INTO payments (
-    user_id,
     subscription_id,
     transaction_id,
     amount,
-    currency,
+    currency_code,
     payment_method,
     payment_status,
     payment_date
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING payment_id, subscription_id, transaction_id, amount, currency_code, payment_method, payment_status, payment_date, created_at, updated_at
 `
 
 type CreatePaymentParams struct {
-	UserID         int32
-	SubscriptionID sql.NullInt32
+	SubscriptionID int32
 	TransactionID  sql.NullString
 	Amount         string
-	Currency       string
+	CurrencyCode   string
 	PaymentMethod  sql.NullString
 	PaymentStatus  sql.NullString
 	PaymentDate    sql.NullTime
@@ -38,11 +36,10 @@ type CreatePaymentParams struct {
 
 func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error) {
 	row := q.db.QueryRowContext(ctx, createPayment,
-		arg.UserID,
 		arg.SubscriptionID,
 		arg.TransactionID,
 		arg.Amount,
-		arg.Currency,
+		arg.CurrencyCode,
 		arg.PaymentMethod,
 		arg.PaymentStatus,
 		arg.PaymentDate,
@@ -50,11 +47,10 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 	var i Payment
 	err := row.Scan(
 		&i.PaymentID,
-		&i.UserID,
 		&i.SubscriptionID,
 		&i.TransactionID,
 		&i.Amount,
-		&i.Currency,
+		&i.CurrencyCode,
 		&i.PaymentMethod,
 		&i.PaymentStatus,
 		&i.PaymentDate,
@@ -75,7 +71,7 @@ func (q *Queries) DeletePayment(ctx context.Context, paymentID int32) error {
 }
 
 const getAllPayments = `-- name: GetAllPayments :many
-SELECT payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
+SELECT payment_id, subscription_id, transaction_id, amount, currency_code, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
 ORDER BY payment_date DESC
 `
 
@@ -90,11 +86,10 @@ func (q *Queries) GetAllPayments(ctx context.Context) ([]Payment, error) {
 		var i Payment
 		if err := rows.Scan(
 			&i.PaymentID,
-			&i.UserID,
 			&i.SubscriptionID,
 			&i.TransactionID,
 			&i.Amount,
-			&i.Currency,
+			&i.CurrencyCode,
 			&i.PaymentMethod,
 			&i.PaymentStatus,
 			&i.PaymentDate,
@@ -115,7 +110,7 @@ func (q *Queries) GetAllPayments(ctx context.Context) ([]Payment, error) {
 }
 
 const getPaymentByID = `-- name: GetPaymentByID :one
-SELECT payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
+SELECT payment_id, subscription_id, transaction_id, amount, currency_code, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
 WHERE payment_id = $1 LIMIT 1
 `
 
@@ -124,11 +119,10 @@ func (q *Queries) GetPaymentByID(ctx context.Context, paymentID int32) (Payment,
 	var i Payment
 	err := row.Scan(
 		&i.PaymentID,
-		&i.UserID,
 		&i.SubscriptionID,
 		&i.TransactionID,
 		&i.Amount,
-		&i.Currency,
+		&i.CurrencyCode,
 		&i.PaymentMethod,
 		&i.PaymentStatus,
 		&i.PaymentDate,
@@ -139,7 +133,7 @@ func (q *Queries) GetPaymentByID(ctx context.Context, paymentID int32) (Payment,
 }
 
 const getPaymentByTransactionID = `-- name: GetPaymentByTransactionID :one
-SELECT payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
+SELECT payment_id, subscription_id, transaction_id, amount, currency_code, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
 WHERE transaction_id = $1 LIMIT 1
 `
 
@@ -148,11 +142,10 @@ func (q *Queries) GetPaymentByTransactionID(ctx context.Context, transactionID s
 	var i Payment
 	err := row.Scan(
 		&i.PaymentID,
-		&i.UserID,
 		&i.SubscriptionID,
 		&i.TransactionID,
 		&i.Amount,
-		&i.Currency,
+		&i.CurrencyCode,
 		&i.PaymentMethod,
 		&i.PaymentStatus,
 		&i.PaymentDate,
@@ -163,7 +156,7 @@ func (q *Queries) GetPaymentByTransactionID(ctx context.Context, transactionID s
 }
 
 const getPaymentsByStatus = `-- name: GetPaymentsByStatus :many
-SELECT payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
+SELECT payment_id, subscription_id, transaction_id, amount, currency_code, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
 WHERE payment_status = $1
 ORDER BY payment_date DESC
 `
@@ -179,11 +172,10 @@ func (q *Queries) GetPaymentsByStatus(ctx context.Context, paymentStatus sql.Nul
 		var i Payment
 		if err := rows.Scan(
 			&i.PaymentID,
-			&i.UserID,
 			&i.SubscriptionID,
 			&i.TransactionID,
 			&i.Amount,
-			&i.Currency,
+			&i.CurrencyCode,
 			&i.PaymentMethod,
 			&i.PaymentStatus,
 			&i.PaymentDate,
@@ -204,9 +196,10 @@ func (q *Queries) GetPaymentsByStatus(ctx context.Context, paymentStatus sql.Nul
 }
 
 const getPaymentsByUserID = `-- name: GetPaymentsByUserID :many
-SELECT payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at FROM payments
-WHERE user_id = $1
-ORDER BY payment_date DESC
+SELECT p.payment_id, p.subscription_id, p.transaction_id, p.amount, p.currency_code, p.payment_method, p.payment_status, p.payment_date, p.created_at, p.updated_at FROM payments p
+JOIN user_subscriptions us ON us.subscription_id = p.subscription_id
+WHERE us.user_id = $1
+ORDER BY p.payment_date DESC
 `
 
 func (q *Queries) GetPaymentsByUserID(ctx context.Context, userID int32) ([]Payment, error) {
@@ -220,11 +213,10 @@ func (q *Queries) GetPaymentsByUserID(ctx context.Context, userID int32) ([]Paym
 		var i Payment
 		if err := rows.Scan(
 			&i.PaymentID,
-			&i.UserID,
 			&i.SubscriptionID,
 			&i.TransactionID,
 			&i.Amount,
-			&i.Currency,
+			&i.CurrencyCode,
 			&i.PaymentMethod,
 			&i.PaymentStatus,
 			&i.PaymentDate,
@@ -250,20 +242,20 @@ SET
     subscription_id = COALESCE($1, subscription_id),
     transaction_id = COALESCE($2, transaction_id),
     amount = COALESCE($3, amount),
-    currency = COALESCE($4, currency),
+    currency_code = COALESCE($4, currency_code),
     payment_method = COALESCE($5, payment_method),
     payment_status = COALESCE($6, payment_status),
     payment_date = COALESCE($7, payment_date),
     updated_at = CURRENT_TIMESTAMP
 WHERE payment_id = $8
-RETURNING payment_id, user_id, subscription_id, transaction_id, amount, currency, payment_method, payment_status, payment_date, created_at, updated_at
+RETURNING payment_id, subscription_id, transaction_id, amount, currency_code, payment_method, payment_status, payment_date, created_at, updated_at
 `
 
 type UpdatePaymentParams struct {
 	SubscriptionID sql.NullInt32
 	TransactionID  sql.NullString
 	Amount         sql.NullString
-	Currency       sql.NullString
+	CurrencyCode   sql.NullString
 	PaymentMethod  sql.NullString
 	PaymentStatus  sql.NullString
 	PaymentDate    sql.NullTime
@@ -275,7 +267,7 @@ func (q *Queries) UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (P
 		arg.SubscriptionID,
 		arg.TransactionID,
 		arg.Amount,
-		arg.Currency,
+		arg.CurrencyCode,
 		arg.PaymentMethod,
 		arg.PaymentStatus,
 		arg.PaymentDate,
@@ -284,11 +276,10 @@ func (q *Queries) UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (P
 	var i Payment
 	err := row.Scan(
 		&i.PaymentID,
-		&i.UserID,
 		&i.SubscriptionID,
 		&i.TransactionID,
 		&i.Amount,
-		&i.Currency,
+		&i.CurrencyCode,
 		&i.PaymentMethod,
 		&i.PaymentStatus,
 		&i.PaymentDate,
