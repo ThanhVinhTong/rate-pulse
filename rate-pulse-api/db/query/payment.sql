@@ -1,15 +1,14 @@
 -- name: CreatePayment :one
 INSERT INTO payments (
-    user_id,
     subscription_id,
     transaction_id,
     amount,
-    currency,
+    currency_code,
     payment_method,
     payment_status,
     payment_date
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7
 ) RETURNING *;
 
 -- name: GetPaymentByID :one
@@ -21,9 +20,10 @@ SELECT * FROM payments
 WHERE transaction_id = $1 LIMIT 1;
 
 -- name: GetPaymentsByUserID :many
-SELECT * FROM payments
-WHERE user_id = $1
-ORDER BY payment_date DESC;
+SELECT p.* FROM payments p
+JOIN user_subscriptions us ON us.subscription_id = p.subscription_id
+WHERE us.user_id = $1
+ORDER BY p.payment_date DESC;
 
 -- name: GetPaymentsByStatus :many
 SELECT * FROM payments
@@ -40,7 +40,7 @@ SET
     subscription_id = COALESCE(sqlc.narg(subscription_id), subscription_id),
     transaction_id = COALESCE(sqlc.narg(transaction_id), transaction_id),
     amount = COALESCE(sqlc.narg(amount), amount),
-    currency = COALESCE(sqlc.narg(currency), currency),
+    currency_code = COALESCE(sqlc.narg(currency_code), currency_code),
     payment_method = COALESCE(sqlc.narg(payment_method), payment_method),
     payment_status = COALESCE(sqlc.narg(payment_status), payment_status),
     payment_date = COALESCE(sqlc.narg(payment_date), payment_date),

@@ -105,6 +105,8 @@ func (server *Server) setupRouter() {
 	router.GET("/rate-sources", server.listRateSource)
 	router.GET("/rate-sources/metadata", server.listRateSourceMetadata)
 	router.GET("/rate-sources/:id", server.getRateSource)
+	router.GET("/subscription-plans", server.listActiveSubscriptionPlans)
+	router.GET("/subscription-plans/:id", server.getSubscriptionPlan)
 	router.GET("/countries/code/:country_code", server.getCountryByCode)
 	router.GET("/countries/:id", server.getCountry)
 	router.GET("/countries", server.listCountry)
@@ -139,6 +141,31 @@ func (server *Server) setupRouter() {
 	adminRoutes.POST("/admin/countries", server.createCountry)
 	adminRoutes.PUT("/admin/countries/:id", server.updateCountry)
 	adminRoutes.DELETE("/admin/countries/:id", server.deleteCountry)
+
+	// add `subscription_plans` routes
+	adminRoutes.POST("/admin/subscription-plans", server.createSubscriptionPlan)
+	adminRoutes.GET("/admin/subscription-plans", server.listAllSubscriptionPlans)
+	adminRoutes.PUT("/admin/subscription-plans/:id", server.updateSubscriptionPlan)
+	adminRoutes.DELETE("/admin/subscription-plans/:id", server.deleteSubscriptionPlan)
+
+	// add `user_subscriptions` routes
+	authRoutes.POST("/subscriptions", server.createUserSubscription)
+	authRoutes.GET("/subscriptions", server.listMyUserSubscriptions)
+	authRoutes.GET("/subscriptions/active", server.getMyActiveUserSubscription)
+	adminRoutes.GET("/admin/subscriptions", server.listAllUserSubscriptions)
+	adminRoutes.GET("/admin/subscriptions/status", server.listUserSubscriptionsByStatus)
+	adminRoutes.PUT("/admin/subscriptions/:id", server.updateUserSubscription)
+	adminRoutes.DELETE("/admin/subscriptions/:id", server.deleteUserSubscription)
+
+	// add `payments` routes
+	authRoutes.GET("/payments", server.listMyPayments)
+	authRoutes.GET("/payments/:id", server.getMyPayment)
+	adminRoutes.POST("/admin/payments", server.createPayment)
+	adminRoutes.GET("/admin/payments", server.listAllPayments)
+	adminRoutes.GET("/admin/payments/status", server.listPaymentsByStatus)
+	adminRoutes.GET("/admin/payments/:id", server.getPayment)
+	adminRoutes.PUT("/admin/payments/:id", server.updatePayment)
+	adminRoutes.DELETE("/admin/payments/:id", server.deletePayment)
 
 	authRoutes.POST("/rate-source-preferences", server.createRateSourcePreference)
 	authRoutes.GET("/rate-source-preferences-userid", server.getRateSourcePreferencesByUserID)
