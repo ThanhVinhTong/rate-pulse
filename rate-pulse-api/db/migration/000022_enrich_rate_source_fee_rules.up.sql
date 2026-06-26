@@ -1,3 +1,7 @@
+-- sqlc cannot understand the dynamic rename inside migration 000020.
+-- In real DBs where 000020 already ran, bank_fee_rules is absent and this is a no-op.
+ALTER TABLE IF EXISTS bank_fee_rules RENAME TO rate_source_fee_rules;
+
 -- Add enough structure to model real bank fee policies without duplicating
 -- exchange-rate rows. The FX rate type still records what the bank publishes;
 -- transaction_type records the customer action the fee applies to.

@@ -19,6 +19,7 @@ type Querier interface {
 	CreateExchangeRateType(ctx context.Context, typeName string) (ExchangeRateType, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreateRateSource(ctx context.Context, arg CreateRateSourceParams) (RateSource, error)
+	CreateRateSourceFeeRule(ctx context.Context, arg CreateRateSourceFeeRuleParams) (RateSourceFeeRule, error)
 	CreateRateSourcePreference(ctx context.Context, arg CreateRateSourcePreferenceParams) (UserRateSourcePreference, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateSubscriptionPlan(ctx context.Context, arg CreateSubscriptionPlanParams) (SubscriptionPlan, error)
@@ -33,11 +34,13 @@ type Querier interface {
 	DeleteExchangeRateType(ctx context.Context, typeID int32) error
 	DeletePayment(ctx context.Context, paymentID int32) error
 	DeleteRateSource(ctx context.Context, sourceID int32) error
+	DeleteRateSourceFeeRule(ctx context.Context, feeRuleID int32) error
 	DeleteRateSourcePreference(ctx context.Context, arg DeleteRateSourcePreferenceParams) error
 	DeleteSubscriptionPlan(ctx context.Context, planID int32) error
 	DeleteUserByEmail(ctx context.Context, email string) error
 	DeleteUserByID(ctx context.Context, userID int32) error
 	DeleteUserSubscription(ctx context.Context, subscriptionID int32) error
+	GetActiveRateSourceFeeRule(ctx context.Context, arg GetActiveRateSourceFeeRuleParams) (RateSourceFeeRule, error)
 	GetActiveSubscriptionPlans(ctx context.Context) ([]SubscriptionPlan, error)
 	GetActiveUserSubscriptionByUserID(ctx context.Context, userID int32) (UserSubscription, error)
 	GetAllCountries(ctx context.Context) ([]GetAllCountriesRow, error)
@@ -76,6 +79,7 @@ type Querier interface {
 	GetPaymentsByUserID(ctx context.Context, userID int32) ([]Payment, error)
 	GetRateSourceByCode(ctx context.Context, sourceCode sql.NullString) (GetRateSourceByCodeRow, error)
 	GetRateSourceByID(ctx context.Context, sourceID int32) (GetRateSourceByIDRow, error)
+	GetRateSourceFeeRuleByID(ctx context.Context, feeRuleID int32) (RateSourceFeeRule, error)
 	GetRateSourcePreferencesBySourceID(ctx context.Context, arg GetRateSourcePreferencesBySourceIDParams) ([]UserRateSourcePreference, error)
 	GetRateSourcePreferencesByUserID(ctx context.Context, arg GetRateSourcePreferencesByUserIDParams) ([]UserRateSourcePreference, error)
 	GetSessionByID(ctx context.Context, sessionID uuid.UUID) (Session, error)
@@ -88,7 +92,10 @@ type Querier interface {
 	GetUserSubscriptionsByStatus(ctx context.Context, status sql.NullString) ([]UserSubscription, error)
 	GetUserSubscriptionsByUserID(ctx context.Context, userID int32) ([]UserSubscription, error)
 	GetVerifyEmail(ctx context.Context, id int64) (VerifyEmail, error)
+	ListActiveRateSourceFeeRulesBySource(ctx context.Context, arg ListActiveRateSourceFeeRulesBySourceParams) ([]RateSourceFeeRule, error)
 	ListExchangeRateTypes(ctx context.Context) ([]ExchangeRateType, error)
+	ListRateSourceFeeRules(ctx context.Context) ([]RateSourceFeeRule, error)
+	ListRateSourceFeeRulesBySource(ctx context.Context, sourceID int32) ([]RateSourceFeeRule, error)
 	ListRateSourceMetadata(ctx context.Context) ([]ListRateSourceMetadataRow, error)
 	ListRateSources(ctx context.Context) ([]ListRateSourcesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
@@ -99,6 +106,7 @@ type Querier interface {
 	UpdateExchangeRateType(ctx context.Context, arg UpdateExchangeRateTypeParams) (ExchangeRateType, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (Payment, error)
 	UpdateRateSource(ctx context.Context, arg UpdateRateSourceParams) (RateSource, error)
+	UpdateRateSourceFeeRule(ctx context.Context, arg UpdateRateSourceFeeRuleParams) (RateSourceFeeRule, error)
 	UpdateRateSourcePreference(ctx context.Context, arg UpdateRateSourcePreferenceParams) (UserRateSourcePreference, error)
 	UpdateSubscriptionPlan(ctx context.Context, arg UpdateSubscriptionPlanParams) (SubscriptionPlan, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
