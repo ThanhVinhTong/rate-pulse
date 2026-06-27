@@ -17,72 +17,134 @@ class WMS(Scraper):
         self.news_data = {}
         self.ai_insights_classes = {
             "world_brief": "insights-brief-text",
-            "geo_insights": ["convergence-zone", "convergence-description"],
+            "geo_insights": ["convergence-region", "convergence-description"],
             "break_news": "insight-story-title",
         }
+
+    def scroll_to_panel(self, panel_name: str, check_class: str = None) -> None:
+        try:
+            p = self.driver.find_element(By.XPATH, f"//div[@data-panel='{panel_name}']")
+            self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", p)
+            time.sleep(0.3)
+            if check_class:
+                WebDriverWait(self.driver, 10).until(
+                    lambda d: len(d.find_element(By.XPATH, f"//div[@data-panel='{panel_name}']").find_elements(By.CLASS_NAME, check_class)) > 0
+                )
+        except Exception as e:
+            logger.warning("Could not hydrate panel %s: %s", panel_name, e)
 
     def get_ai_insights(self, id: str) -> dict[str, dict[str, str]]:
         contents = self.driver.find_element(By.ID, id)
         insights = {}
 
         # Summary fetch
-        info = contents.find_element(By.CLASS_NAME, self.ai_insights_classes["world_brief"]).text
+        info = self.driver.execute_script(
+            "return arguments[0].querySelector('.' + arguments[1])?.innerText || '';", 
+            contents, self.ai_insights_classes["world_brief"]
+        )
         insights["world_brief"] = info
         
         # Geo insights fetch
         region_class, description = self.ai_insights_classes["geo_insights"]
+        geo_data = self.driver.execute_script("""
+            var regions = arguments[0].getElementsByClassName(arguments[1]);
+            var descs = arguments[0].getElementsByClassName(arguments[2]);
+            var list = [];
+            for (var i = 0; i < Math.min(regions.length, descs.length); i++) {
+                list.push({
+                    region: regions[i].innerText,
+                    desc: descs[i].innerText
+                });
+            }
+            return list;
+        """, contents, region_class, description)
+        
         insights["geo_insights"] = []
-        regions = contents.find_elements(By.CLASS_NAME, region_class)
-        descriptions = contents.find_elements(By.CLASS_NAME, description)
-        for region, description in zip(regions, descriptions):
-            insights["geo_insights"].append({region.text: description.text.split(": ")[-1]})
+        for item in geo_data:
+            insights["geo_insights"].append({item["region"]: item["desc"].split(": ")[-1]})
         
         # Break news fetch
-        insights["break_news"] = []
-        infos = contents.find_elements(By.CLASS_NAME, self.ai_insights_classes["break_news"])
-        for info in infos:
-            insights["break_news"].append(info.text)
+        break_news_texts = self.driver.execute_script("""
+            var elements = arguments[0].getElementsByClassName(arguments[1]);
+            var list = [];
+            for (var i = 0; i < elements.length; i++) {
+                list.push(elements[i].innerText);
+            }
+            return list;
+        """, contents, self.ai_insights_classes["break_news"])
+        insights["break_news"] = break_news_texts
         
         return insights
 
     def get_section_news(self, id: str) -> dict[str, dict[str, str]]:
         contents = self.driver.find_element(By.ID, id)
+        
+        news_items = self.driver.execute_script("""
+            var infos = arguments[0].getElementsByClassName('item-title');
+            var times = arguments[0].getElementsByClassName('item-time');
+            var list = [];
+            for (var i = 0; i < Math.min(infos.length, times.length); i++) {
+                list.push({
+                    text: infos[i].innerText,
+                    href: infos[i].getAttribute('href'),
+                    time: times[i].innerText
+                });
+            }
+            return list;
+        """, contents)
+        
         continent_news = {}
-
-        infos = contents.find_elements(By.CLASS_NAME, "item-title")
-        times = contents.find_elements(By.CLASS_NAME, "item-time")
-        for info, time in zip(infos, times):
-            continent_news[info.text] = {
-                "href": info.get_attribute("href"),
-                "time": time.text
+        for item in news_items:
+            continent_news[item["text"]] = {
+                "href": item["href"],
+                "time": item["time"]
             }
             
         return continent_news
 
     def get_feed_news(self, id: str) -> dict[str, dict[str, str]]:
         contents = self.driver.find_element(By.ID, id)
+        
+        feed_items = self.driver.execute_script("""
+            var cards = arguments[0].getElementsByClassName('item');
+            var list = [];
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var sourceEl = card.getElementsByClassName('item-source')[0];
+                var titleEl = card.getElementsByClassName('item-title')[0];
+                if (titleEl) {
+                    list.push({
+                        title: titleEl.innerText,
+                        href: titleEl.getAttribute('href'),
+                        source: sourceEl ? sourceEl.innerText : "",
+                        isAlert: card.classList.contains('alert')
+                    });
+                }
+            }
+            return list;
+        """, contents)
+        
         financial_news = {}
         read = set()
-
-        alert_cards = contents.find_elements(By.CLASS_NAME, "item.alert")
-        for card in alert_cards:
-            source = card.find_element(By.CLASS_NAME, "item-source").text
-            title = card.find_element(By.CLASS_NAME, "item-title").text
-            href = card.find_element(By.CLASS_NAME, "item-title").get_attribute("href")
-            financial_news[title] = {
-                "source": source,
-                "href": href,
-            }
-            read.add(title)
-        normal_cards = contents.find_elements(By.CLASS_NAME, "item")
-        for card in normal_cards:
-            title = card.find_element(By.CLASS_NAME, "item-title").text
-            if title in read:
+        
+        # First process alert cards to maintain priority logic
+        for item in feed_items:
+            if item["isAlert"]:
+                financial_news[item["title"]] = {
+                    "source": item["source"],
+                    "href": item["href"]
+                }
+                read.add(item["title"])
+                
+        # Then process normal cards
+        for item in feed_items:
+            if item["title"] in read:
                 continue
-            source = card.find_element(By.CLASS_NAME, "item-source").text
-            href = card.find_element(By.CLASS_NAME, "item-title").get_attribute("href")
-            financial_news[title] = { "source": source, "href": href }
-            read.add(title)
+            financial_news[item["title"]] = {
+                "source": item["source"],
+                "href": item["href"]
+            }
+            read.add(item["title"])
             
         return financial_news
 
@@ -96,14 +158,9 @@ class WMS(Scraper):
             except Exception:
                 pass
 
-        self.driver.get(self.website)
-        
-        # If the page did not auto-redirect to the dashboard, navigate there directly
-        time.sleep(2)
-        if "/dashboard" not in self.driver.current_url:
-            dashboard_url = self.website.rstrip("/") + "/dashboard"
-            logger.info("Not on dashboard. Navigating directly to: %s", dashboard_url)
-            self.driver.get(dashboard_url)
+        dashboard_url = self.website.rstrip("/") + "/dashboard"
+        logger.info("Navigating directly to: %s", dashboard_url)
+        self.driver.get(dashboard_url)
 
         logger.info("Website loaded successfully: %s", self.driver.current_url)
         logger.info("Scraping news ...")
@@ -119,10 +176,10 @@ class WMS(Scraper):
         except Exception:
             pass
 
-        # 2. Check if the AI insights container is present. If not, select Crisis Desk from workspace modal.
+        # 2. Check if the AI insights brief is present. If not, select Crisis Desk from workspace modal.
         try:
             WebDriverWait(self.driver, 5).until(
-                EC.presence_of_element_located((By.ID, ids["ai_insights"]))
+                EC.presence_of_element_located((By.CLASS_NAME, self.ai_insights_classes["world_brief"]))
             )
         except Exception:
             logger.info("AI Insights element not found immediately. Attempting to select Crisis Desk workspace...")
@@ -172,30 +229,52 @@ class WMS(Scraper):
                 except Exception as ex:
                     logger.exception("Warning: Could not select Crisis Desk workspace")
 
-        # 3. Final wait for the AI insights container to load
+        # 3. Final wait for the AI insights brief to load
         WebDriverWait(self.driver, 20).until(
-            EC.presence_of_element_located((By.ID, ids["ai_insights"]))
+            EC.presence_of_element_located((By.CLASS_NAME, self.ai_insights_classes["world_brief"]))
         )
 
         # Fetch AI insights
+        self.scroll_to_panel("insights", self.ai_insights_classes["world_brief"])
         self.news_data["ai_insights"] = self.get_ai_insights(ids["ai_insights"])
 
         # Fetch intel feed
+        self.scroll_to_panel("intel", "item-title")
         self.news_data["intel_feed"] = self.get_feed_news(ids["intel_feed"])
         
         # Fetch continent news
+        self.scroll_to_panel("politics", "item-title")
         self.news_data["world_news"] = self.get_section_news(ids["world_news"])
+        
+        self.scroll_to_panel("us", "item-title")
         self.news_data["united_states"] = self.get_section_news(ids["united_states"])
+        
+        self.scroll_to_panel("europe", "item-title")
         self.news_data["europe"] = self.get_section_news(ids["europe"])
+        
+        self.scroll_to_panel("middleeast", "item-title")
         self.news_data["middle_east"] = self.get_section_news(ids["middle_east"])
+        
+        self.scroll_to_panel("africa", "item-title")
         self.news_data["africa"] = self.get_section_news(ids["africa"])
+        
+        self.scroll_to_panel("latam", "item-title")
         self.news_data["latin_america"] = self.get_section_news(ids["latin_america"])
+        
+        self.scroll_to_panel("asia", "item-title")
         self.news_data["asia_pacific"] = self.get_section_news(ids["asia_pacific"])
+        
+        self.scroll_to_panel("energy", "item-title")
         self.news_data["energy_and_resources"] = self.get_section_news(ids["energy_and_resources"])
+        
+        self.scroll_to_panel("gov", "item-title")
         self.news_data["government"] = self.get_section_news(ids["government"])
+        
+        self.scroll_to_panel("thinktanks", "item-title")
         self.news_data["think_tanks"] = self.get_section_news(ids["think_tanks"])
 
         # Fetch financial news
+        self.scroll_to_panel("finance", "item-title")
         self.news_data["financial"] = self.get_feed_news(ids["financial"])
 
         return self.news_data
