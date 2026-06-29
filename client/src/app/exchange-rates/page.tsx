@@ -8,6 +8,8 @@ import { cookies } from "next/headers";
 import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 import type { ExchangeRateTypeWire, RateSourceFeeRule } from "@/types/fee-rules";
 
+const FEE_RULES_REVALIDATE_SECONDS = 3600;
+
 export const metadata: Metadata = {
   title: "Exchange Rates",
   description:
@@ -57,7 +59,7 @@ export default async function ExchangeRatesPage() {
     ),
     fetchOptionalJson<RateSourceFeeRule[]>(
       `${base}/rate-source-fee-rules?active_on=${activeOn}`,
-      { next: { revalidate: 1800 } },
+      { next: { revalidate: FEE_RULES_REVALIDATE_SECONDS } },
       "Rate Source Fee Rules",
       []
     ),

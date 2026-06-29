@@ -16,6 +16,7 @@ const (
 	cacheTTLHistoricalData      = 24 * time.Hour
 	cacheTTLReferenceDataMonth  = 30 * 24 * time.Hour
 	cacheTTLRateSources         = 7 * 24 * time.Hour
+	cacheTTLRateSourceFeeRules  = time.Hour
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 	cacheKeyExchangeRateTypes  = cacheKeyPrefix + "exchange-rate-types"
 	cacheKeyRateSources        = cacheKeyPrefix + "rate-sources"
 	cacheKeyRateSourceMetadata = cacheKeyPrefix + "rate-sources:metadata"
+	cacheKeyRateSourceFeeRules = cacheKeyPrefix + "rate-source-fee-rules"
 )
 
 func (server *Server) cachedJSON(ctx *gin.Context, key string, ttl time.Duration, fetch func() (any, error)) {
@@ -75,8 +77,23 @@ func (server *Server) deleteCacheKeys(ctx *gin.Context, keys ...string) {
 	_ = server.responseCache.Delete(ctx.Request.Context(), keys...)
 }
 
+func (server *Server) deleteCacheKeyPrefix(ctx *gin.Context, prefix string) {
+	_ = server.responseCache.DeleteByPrefix(ctx.Request.Context(), prefix)
+}
+
 func cacheKeyForRequest(ctx *gin.Context, namespace string) string {
 	query, _ := url.ParseQuery(ctx.Request.URL.RawQuery)
+	encodedQuery := query.Encode()
+	if encodedQuery == "" {
+		return cacheKeyPrefix + namespace
+	}
+
+	return cacheKeyPrefix + namespace + "?" + encodedQuery
+}
+
+func cacheKeyForRequestWithQueryValue(ctx *gin.Context, namespace string, name string, value string) string {
+	query, _ := url.ParseQuery(ctx.Request.URL.RawQuery)
+	query.Set(name, value)
 	encodedQuery := query.Encode()
 	if encodedQuery == "" {
 		return cacheKeyPrefix + namespace

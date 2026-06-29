@@ -7,6 +7,7 @@ import type { ExchangeRateTypeWire, RateSourceFeeRule } from "@/types/fee-rules"
 import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 const apiBase = process.env.RATE_PULSE_API_BASE_URL || "https://localhost:3000";
+const FEE_RULES_REVALIDATE_SECONDS = 3600;
 
 export const metadata: Metadata = {
   title: "Converter",
@@ -26,7 +27,7 @@ async function fetchConverterData() {
         next: { revalidate: 3600 },
       }),
       fetch(`${apiBase}/rate-source-fee-rules?active_on=${activeOn}`, {
-        next: { revalidate: 1800 },
+        next: { revalidate: FEE_RULES_REVALIDATE_SECONDS },
       }),
       fetch(`${apiBase}/exchange-rate-types`, {
         next: { revalidate: 3600 },

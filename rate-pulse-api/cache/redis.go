@@ -77,6 +77,29 @@ func (cache *RedisResponseCache) Delete(ctx context.Context, keys ...string) err
 	return cache.client.Del(ctx, keys...).Err()
 }
 
+func (cache *RedisResponseCache) DeleteByPrefix(ctx context.Context, prefix string) error {
+	if strings.TrimSpace(prefix) == "" {
+		return nil
+	}
+
+	var cursor uint64
+	for {
+		keys, nextCursor, err := cache.client.Scan(ctx, cursor, prefix+"*", 100).Result()
+		if err != nil {
+			return err
+		}
+		if len(keys) > 0 {
+			if err := cache.client.Del(ctx, keys...).Err(); err != nil {
+				return err
+			}
+		}
+		cursor = nextCursor
+		if cursor == 0 {
+			return nil
+		}
+	}
+}
+
 func redisTLSConfig(address string) *tls.Config {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {

@@ -78,6 +78,7 @@ func (server *Server) createRateSourceFeeRule(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeyPrefix(ctx, cacheKeyRateSourceFeeRules)
 	ctx.JSON(http.StatusOK, rule)
 }
 
@@ -121,16 +122,12 @@ func (server *Server) listRateSourceFeeRules(ctx *gin.Context) {
 		return
 	}
 
-	rules, err := server.services.FeeRules.ListRateSourceFeeRules(ctx, service.ListRateSourceFeeRulesInput{
-		SourceID: req.SourceID,
-		ActiveOn: activeOn,
+	server.cachedJSON(ctx, cacheKeyForRequest(ctx, "rate-source-fee-rules"), cacheTTLRateSourceFeeRules, func() (any, error) {
+		return server.services.FeeRules.ListRateSourceFeeRules(ctx, service.ListRateSourceFeeRulesInput{
+			SourceID: req.SourceID,
+			ActiveOn: activeOn,
+		})
 	})
-	if err != nil {
-		RespondServiceError(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, rules)
 }
 
 type getActiveRateSourceFeeRuleRequest struct {
@@ -158,19 +155,16 @@ func (server *Server) getActiveRateSourceFeeRule(ctx *gin.Context) {
 		}
 	}
 
-	rule, err := server.services.FeeRules.GetActiveRateSourceFeeRule(ctx, service.GetActiveRateSourceFeeRuleInput{
-		SourceID:        req.SourceID,
-		TypeID:          req.TypeID,
-		TransactionType: req.TransactionType,
-		Channel:         req.Channel,
-		EffectiveDate:   effectiveDate,
+	cacheKey := cacheKeyForRequestWithQueryValue(ctx, "rate-source-fee-rules:active", "effective_date", effectiveDate.Format("2006-01-02"))
+	server.cachedJSON(ctx, cacheKey, cacheTTLRateSourceFeeRules, func() (any, error) {
+		return server.services.FeeRules.GetActiveRateSourceFeeRule(ctx, service.GetActiveRateSourceFeeRuleInput{
+			SourceID:        req.SourceID,
+			TypeID:          req.TypeID,
+			TransactionType: req.TransactionType,
+			Channel:         req.Channel,
+			EffectiveDate:   effectiveDate,
+		})
 	})
-	if err != nil {
-		RespondServiceError(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, rule)
 }
 
 type updateRateSourceFeeRuleRequest struct {
@@ -250,6 +244,7 @@ func (server *Server) updateRateSourceFeeRule(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeyPrefix(ctx, cacheKeyRateSourceFeeRules)
 	ctx.JSON(http.StatusOK, rule)
 }
 
@@ -265,6 +260,7 @@ func (server *Server) deleteRateSourceFeeRule(ctx *gin.Context) {
 		return
 	}
 
+	server.deleteCacheKeyPrefix(ctx, cacheKeyRateSourceFeeRules)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Rate source fee rule deleted successfully"})
 }
 
