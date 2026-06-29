@@ -117,6 +117,21 @@ function formatConvertedValue(result: number): string {
   });
 }
 
+function formatFeeAdjustedDisplay(feeAdjustedData: FeeAdjustedBest | null): string {
+  if (!feeAdjustedData) return "Unavailable";
+
+  const conversion = feeAdjustedData.conversion;
+  if (
+    conversion.isRange &&
+    conversion.adjustedValueMin != null &&
+    conversion.adjustedValueMax != null
+  ) {
+    return `${formatConvertedValue(conversion.adjustedValueMin)} - ${formatConvertedValue(conversion.adjustedValueMax)}`;
+  }
+
+  return feeAdjustedData.displayValue;
+}
+
 function safeExternalHref(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return "#";
@@ -170,21 +185,11 @@ function ConverterCard({
     return formatConvertedValue(result);
   })();
 
-  const feeAdjustedAmount = (() => {
-    if (!hasAmount) return "-";
-    if (!feeAdjustedData) return "Unavailable";
-
-    const conversion = feeAdjustedData.conversion;
-    if (
-      conversion.isRange &&
-      conversion.adjustedValueMin != null &&
-      conversion.adjustedValueMax != null
-    ) {
-      return `${formatConvertedValue(conversion.adjustedValueMin)} - ${formatConvertedValue(conversion.adjustedValueMax)}`;
-    }
-
-    return feeAdjustedData.displayValue;
-  })();
+  const feeAdjustedAmount = hasAmount ? formatFeeAdjustedDisplay(feeAdjustedData) : "-";
+  const feeDetails = feeAdjustedData?.feeSummary ?? "Fee data unavailable";
+  const bankUsed = feeAdjustedData?.bank || rateData?.bank || "-";
+  const sourceLink = feeAdjustedData?.sourceLink || rateData?.sourceLink || "";
+  const sourceCode = feeAdjustedData?.sourceCode || rateData?.sourceCode || "-";
 
   const handleCopyResult = async () => {
     if (convertedAmount === "-") return;
@@ -231,38 +236,67 @@ function ConverterCard({
       </label>
 
       <Panel variant="inset" padding="sm">
-        <Text variant="caption">{resultLabel}</Text>
-        <div className="mt-2 flex items-end justify-between gap-3">
-          <p className="text-2xl font-semibold text-primary tabular-nums">
-            {convertedAmount}
-          </p>
-          <Badge className="gap-1.5 normal-case">
-            <CurrencyCodeBadge code={outputCurrency} className="text-xs text-primary" />
-          </Badge>
-        </div>
-        <Text variant="caption" className="mt-2">
-          {hasAmount && rateData
-            ? `Rate used: ${rateData.displayValue} · Bank: ${rateData.sourceCode}`
-            : "Enter an amount to preview the conversion."}
-        </Text>
-        {hasAmount ? (
-          <div className="mt-3 rounded-lg border border-border bg-card px-3 py-2">
-            <Text variant="caption">Best after estimated fee</Text>
-            <div className="mt-1 flex items-end justify-between gap-3">
-              <p className="text-lg font-semibold tabular-nums text-text-primary">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card/70 px-3 py-2">
+            <Text variant="caption">Raw estimate</Text>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <p className="text-xl font-semibold text-primary tabular-nums">
+                {convertedAmount}
+              </p>
+              <Badge className="gap-1.5 normal-case">
+                <CurrencyCodeBadge code={outputCurrency} className="text-xs text-primary" />
+              </Badge>
+            </div>
+            <Text variant="caption" className="mt-2">
+              {hasAmount && rateData
+                ? `Best raw ${type === "buy" ? "buy" : "sell"} rate from ${rateData.sourceCode}`
+                : "Enter an amount to preview the raw conversion."}
+            </Text>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card/70 px-3 py-2">
+            <Text variant="caption">Fee-adjusted estimate</Text>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <p className="text-xl font-semibold tabular-nums text-text-primary">
                 {feeAdjustedAmount}
               </p>
               <Badge variant="muted" className="gap-1.5 normal-case">
                 <CurrencyCodeBadge code={outputCurrency} className="text-xs" />
               </Badge>
             </div>
-            <Text variant="caption" className="mt-1">
-              {feeAdjustedData
-                ? `${feeAdjustedData.sourceCode}: ${feeAdjustedData.feeSummary}`
-                : "No fee-adjusted estimate because the fee rule or fee currency conversion is unavailable."}
+            <Text variant="caption" className="mt-2">
+              {hasAmount ? feeDetails : "Enter an amount to preview the fee-adjusted outcome."}
             </Text>
           </div>
-        ) : null}
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border bg-card px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Text variant="caption">Fee details</Text>
+            <Badge variant="muted">{sourceCode}</Badge>
+          </div>
+          <Text variant="caption" className="mt-2">
+            {feeDetails}
+          </Text>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Text variant="caption" className="font-medium text-text-primary">
+              Bank used: {bankUsed}
+            </Text>
+            {sourceLink ? (
+              <a
+                href={safeExternalHref(sourceLink)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Source link
+                <ExternalLink className="h-3 w-3" aria-hidden />
+              </a>
+            ) : (
+              <Text variant="caption">Source link: -</Text>
+            )}
+          </div>
+        </div>
       </Panel>
 
       <div className="flex flex-wrap gap-2">
@@ -291,6 +325,7 @@ function SnapshotTile({
   sourceCode,
   sourceLink,
   tone,
+  detail,
 }: {
   label: string;
   value: string;
@@ -298,6 +333,7 @@ function SnapshotTile({
   sourceCode: string;
   sourceLink: string;
   tone: "buy" | "sell";
+  detail?: string;
 }) {
   return (
     <Panel variant="inset" padding="sm">
@@ -310,6 +346,7 @@ function SnapshotTile({
       <p className="mt-3 text-3xl font-semibold text-text-primary tabular-nums">
         {value}
       </p>
+      {detail ? <Text variant="caption" className="mt-2">{detail}</Text> : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge variant="muted">{sourceCode || "-"}</Badge>
         <Text variant="caption" className="font-medium text-text-primary">
@@ -613,6 +650,7 @@ export function ConverterClient({
     direction: "buy" | "sell",
     amount: string,
     bankCode?: string,
+    normalizeToUnit = false,
   ): FeeAdjustedBest => {
     const parsedAmount = Number(amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return null;
@@ -633,13 +671,16 @@ export function ConverterClient({
         exchangeRateTypes,
         currencies,
       });
-      if (!conversion) continue;
+      if (!conversion || conversion.isRange) continue;
 
-      if (!best || conversion.comparisonValue > best.value) {
+      const scaledAdjustedValue = normalizeToUnit ? conversion.adjustedValue / parsedAmount : conversion.adjustedValue;
+      const scaledComparisonValue = normalizeToUnit ? conversion.comparisonValue / parsedAmount : conversion.comparisonValue;
+
+      if (!best || scaledAdjustedValue > best.value) {
         const sourceCode = rateSourceKey(rate);
         best = {
-          value: conversion.comparisonValue,
-          displayValue: formatConvertedValue(conversion.adjustedValue),
+          value: scaledComparisonValue,
+          displayValue: formatConvertedValue(scaledAdjustedValue),
           bank: sourceMetaByCode.get(sourceCode)?.name ?? sourceCode,
           sourceCode,
           sourceLink: sourceMetaByCode.get(sourceCode)?.link ?? "",
@@ -670,6 +711,9 @@ export function ConverterClient({
     [findBestRate, selectedBankCode],
   );
 
+  // Use a larger benchmark for the all-bank snapshot so minimum fee rules do not collapse the preview to zero.
+  const DEFAULT_SNAPSHOT_AMOUNT = "1000";
+
   const bestBuyAfterFee = useMemo<FeeAdjustedBest>(
     () => findBestFeeAdjusted(BUY_TRANSFER_TYPES, "buy", buyAmount, selectedBankCode),
     [findBestFeeAdjusted, buyAmount, selectedBankCode],
@@ -678,6 +722,16 @@ export function ConverterClient({
   const bestSellAfterFee = useMemo<FeeAdjustedBest>(
     () => findBestFeeAdjusted(SELL_TRANSFER_TYPES, "sell", sellAmount, selectedBankCode),
     [findBestFeeAdjusted, sellAmount, selectedBankCode],
+  );
+
+  const bestBuyAfterFeeAllBanks = useMemo<FeeAdjustedBest>(
+    () => findBestFeeAdjusted(BUY_TRANSFER_TYPES, "buy", DEFAULT_SNAPSHOT_AMOUNT, undefined, true),
+    [findBestFeeAdjusted],
+  );
+
+  const bestSellAfterFeeAllBanks = useMemo<FeeAdjustedBest>(
+    () => findBestFeeAdjusted(SELL_TRANSFER_TYPES, "buy", DEFAULT_SNAPSHOT_AMOUNT, undefined, true),
+    [findBestFeeAdjusted],
   );
 
   const bestBuyAllBanks = useMemo<SnapshotBest>(
@@ -837,23 +891,45 @@ export function ConverterClient({
           </Text>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           <SnapshotTile
-            label="Maximum buy among all banks"
+            label="Best raw buy rate"
             value={snapshotLoading ? "-" : bestBuyAllBanks?.displayValue ?? "-"}
             bank={snapshotLoading ? "-" : bestBuyAllBanks?.bank ?? "-"}
             sourceCode={snapshotLoading ? "" : bestBuyAllBanks?.sourceCode ?? ""}
             sourceLink={snapshotLoading ? "" : bestBuyAllBanks?.sourceLink ?? ""}
             tone="buy"
+            detail="Raw market best before bank fees"
           />
 
           <SnapshotTile
-            label="Minimum sell among all banks"
+            label="Best buy after fees"
+            value={snapshotLoading ? "-" : bestBuyAfterFeeAllBanks?.displayValue ?? "Unavailable"}
+            bank={snapshotLoading ? "-" : bestBuyAfterFeeAllBanks?.bank ?? "-"}
+            sourceCode={snapshotLoading ? "" : bestBuyAfterFeeAllBanks?.sourceCode ?? ""}
+            sourceLink={snapshotLoading ? "" : bestBuyAfterFeeAllBanks?.sourceLink ?? ""}
+            tone="buy"
+            detail={snapshotLoading ? "Refreshing fee-aware ranking..." : bestBuyAfterFeeAllBanks?.feeSummary ?? "Fee data unavailable"}
+          />
+
+          <SnapshotTile
+            label="Best raw sell rate"
             value={snapshotLoading ? "-" : bestSellAllBanks?.displayValue ?? "-"}
             bank={snapshotLoading ? "-" : bestSellAllBanks?.bank ?? "-"}
             sourceCode={snapshotLoading ? "" : bestSellAllBanks?.sourceCode ?? ""}
             sourceLink={snapshotLoading ? "" : bestSellAllBanks?.sourceLink ?? ""}
             tone="sell"
+            detail="Raw market best before bank fees"
+          />
+
+          <SnapshotTile
+            label="Best sell after fees"
+            value={snapshotLoading ? "-" : bestSellAfterFeeAllBanks?.displayValue ?? "Unavailable"}
+            bank={snapshotLoading ? "-" : bestSellAfterFeeAllBanks?.bank ?? "-"}
+            sourceCode={snapshotLoading ? "" : bestSellAfterFeeAllBanks?.sourceCode ?? ""}
+            sourceLink={snapshotLoading ? "" : bestSellAfterFeeAllBanks?.sourceLink ?? ""}
+            tone="sell"
+            detail={snapshotLoading ? "Refreshing fee-aware ranking..." : bestSellAfterFeeAllBanks?.feeSummary ?? "Fee data unavailable"}
           />
         </div>
       </Panel>
