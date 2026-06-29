@@ -105,6 +105,9 @@ func (server *Server) setupRouter() {
 	router.GET("/rate-sources", server.listRateSource)
 	router.GET("/rate-sources/metadata", server.listRateSourceMetadata)
 	router.GET("/rate-sources/:id", server.getRateSource)
+	router.GET("/rate-source-fee-rules/active", server.getActiveRateSourceFeeRule)
+	router.GET("/rate-source-fee-rules/:id", server.getRateSourceFeeRule)
+	router.GET("/rate-source-fee-rules", server.listRateSourceFeeRules)
 	router.GET("/subscription-plans", server.listActiveSubscriptionPlans)
 	router.GET("/subscription-plans/:id", server.getSubscriptionPlan)
 	router.GET("/countries/code/:country_code", server.getCountryByCode)
@@ -136,6 +139,11 @@ func (server *Server) setupRouter() {
 	adminRoutes.POST("/admin/rate-sources", server.createRateSource)
 	adminRoutes.PUT("/admin/rate-sources/:id", server.updateRateSource)
 	adminRoutes.DELETE("/admin/rate-sources/:id", server.deleteRateSource)
+
+	// add `rate-source-fee-rules` routes (mutations only; reads are public above)
+	adminRoutes.POST("/admin/rate-source-fee-rules", server.createRateSourceFeeRule)
+	adminRoutes.PUT("/admin/rate-source-fee-rules/:id", server.updateRateSourceFeeRule)
+	adminRoutes.DELETE("/admin/rate-source-fee-rules/:id", server.deleteRateSourceFeeRule)
 
 	// add `countries` routes (mutations only; reads are public above)
 	adminRoutes.POST("/admin/countries", server.createCountry)

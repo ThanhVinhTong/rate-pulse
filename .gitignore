@@ -72,5 +72,6 @@ build/
 coverage.html
 coverage.txt
 
-# Air live reload
+# Temporary Air live reload
 tmp/
+implementation-note.md

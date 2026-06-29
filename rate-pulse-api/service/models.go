@@ -210,3 +210,103 @@ type GetHistoricalDataInput struct {
 	TimeRange             string
 	DataPoints            int32
 }
+
+/*
+rate source fee rule service models
+*/
+type RateSourceFeeRule struct {
+	FeeRuleID          int32      `json:"fee_rule_id"`
+	SourceID           int32      `json:"source_id"`
+	TypeID             int32      `json:"type_id"`
+	TransactionType    string     `json:"transaction_type"`
+	Channel            string     `json:"channel"`
+	FeeRate            *string    `json:"fee_rate"`
+	FeeRateMin         *string    `json:"fee_rate_min"`
+	FeeRateMax         *string    `json:"fee_rate_max"`
+	FeeCurrencyID      *int32     `json:"fee_currency_id"`
+	FixedFee           *string    `json:"fixed_fee"`
+	MinFee             *string    `json:"min_fee"`
+	MaxFee             *string    `json:"max_fee"`
+	VatRate            string     `json:"vat_rate"`
+	VatApplies         string     `json:"vat_applies"`
+	FeeIncludesVat     bool       `json:"fee_includes_vat"`
+	SwiftFee           *string    `json:"swift_fee"`
+	SwiftFeeCurrencyID *int32     `json:"swift_fee_currency_id"`
+	SwiftFeeIncluded   bool       `json:"swift_fee_included"`
+	SourceURL          *string    `json:"source_url"`
+	SourceNote         *string    `json:"source_note"`
+	EffectiveFrom      time.Time  `json:"effective_from"`
+	EffectiveTo        *time.Time `json:"effective_to"`
+	UpdatedAt          *time.Time `json:"updated_at"`
+	CreatedAt          *time.Time `json:"created_at"`
+}
+
+type CreateRateSourceFeeRuleInput struct {
+	SourceID           int32
+	TypeID             int32
+	TransactionType    string
+	Channel            string
+	FeeRate            *string
+	FeeRateMin         *string
+	FeeRateMax         *string
+	FeeCurrencyID      *int32
+	FixedFee           *string
+	MinFee             *string
+	MaxFee             *string
+	VatRate            *string
+	VatApplies         string
+	FeeIncludesVat     bool
+	SwiftFee           *string
+	SwiftFeeCurrencyID *int32
+	SwiftFeeIncluded   bool
+	SourceURL          *string
+	SourceNote         *string
+	EffectiveFrom      time.Time
+	EffectiveTo        *time.Time
+}
+
+type GetRateSourceFeeRuleInput struct {
+	FeeRuleID int32
+}
+
+type ListRateSourceFeeRulesInput struct {
+	SourceID *int32
+	ActiveOn *time.Time
+}
+
+type GetActiveRateSourceFeeRuleInput struct {
+	SourceID        int32
+	TypeID          int32
+	TransactionType string
+	Channel         string
+	EffectiveDate   time.Time
+}
+
+type UpdateRateSourceFeeRuleInput struct {
+	FeeRuleID          int32
+	SourceID           *int32
+	TypeID             *int32
+	TransactionType    *string
+	Channel            *string
+	FeeRate            *string
+	FeeRateMin         *string
+	FeeRateMax         *string
+	FeeCurrencyID      *int32
+	FixedFee           *string
+	MinFee             *string
+	MaxFee             *string
+	VatRate            *string
+	VatApplies         *string
+	FeeIncludesVat     *bool
+	SwiftFee           *string
+	SwiftFeeCurrencyID *int32
+	SwiftFeeIncluded   *bool
+	SourceURL          *string
+	SourceNote         *string
+	EffectiveFrom      *time.Time
+	EffectiveTo        *time.Time
+}
+
+type DeleteRateSourceFeeRuleInput struct {
+	FeeRuleID int32
+}

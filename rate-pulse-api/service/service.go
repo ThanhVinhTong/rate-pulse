@@ -11,10 +11,11 @@ import (
 
 // Services groups application use cases behind transport layers such as REST and gRPC.
 type Services struct {
-	Auth   AuthUseCase
-	Users  UserUseCase
-	FX     FXUseCase
-	Health HealthUseCase
+	Auth     AuthUseCase
+	Users    UserUseCase
+	FX       FXUseCase
+	FeeRules RateSourceFeeRuleUseCase
+	Health   HealthUseCase
 }
 
 func NewServices(
@@ -24,10 +25,11 @@ func NewServices(
 	taskDistributor worker.TaskDistributor,
 ) *Services {
 	return &Services{
-		Auth:   NewAuthService(config, store, tokenMaker, taskDistributor),
-		Users:  NewUserService(store),
-		FX:     NewFXService(store),
-		Health: NewHealthService(store),
+		Auth:     NewAuthService(config, store, tokenMaker, taskDistributor),
+		Users:    NewUserService(store),
+		FX:       NewFXService(store),
+		FeeRules: NewRateSourceFeeRuleService(store),
+		Health:   NewHealthService(store),
 	}
 }
 
@@ -58,4 +60,13 @@ type FXUseCase interface {
 	UpdateExchangeRate(ctx context.Context, input UpdateExchangeRateInput) (ExchangeRate, error)
 	DeleteExchangeRate(ctx context.Context, input DeleteExchangeRateInput) error
 	GetHistoricalData(ctx context.Context, input GetHistoricalDataInput) ([]HistoricalDataPoint, error)
+}
+
+type RateSourceFeeRuleUseCase interface {
+	CreateRateSourceFeeRule(ctx context.Context, input CreateRateSourceFeeRuleInput) (RateSourceFeeRule, error)
+	GetRateSourceFeeRule(ctx context.Context, input GetRateSourceFeeRuleInput) (RateSourceFeeRule, error)
+	ListRateSourceFeeRules(ctx context.Context, input ListRateSourceFeeRulesInput) ([]RateSourceFeeRule, error)
+	GetActiveRateSourceFeeRule(ctx context.Context, input GetActiveRateSourceFeeRuleInput) (RateSourceFeeRule, error)
+	UpdateRateSourceFeeRule(ctx context.Context, input UpdateRateSourceFeeRuleInput) (RateSourceFeeRule, error)
+	DeleteRateSourceFeeRule(ctx context.Context, input DeleteRateSourceFeeRuleInput) error
 }
