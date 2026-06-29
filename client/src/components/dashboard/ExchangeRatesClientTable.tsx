@@ -13,6 +13,8 @@ import {
   MOBILE_SOURCES_PER_PAGE,
   MOBILE_RATE_PREVIEW_LIMIT
 } from "@/types/exchange-rates";
+import type { ExchangeRateTypeWire, RateSourceFeeRule } from "@/types/fee-rules";
+import { formatFeeMatch, matchFeeRuleForRate } from "@/lib/fee-rules";
 
 /** Same output on Node (SSR) and browser — avoids hydration mismatch. */
 function formatDateTime(iso: string): string {
@@ -61,6 +63,8 @@ type Props = {
   initialTargetCurrencyCode: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
+  feeRules: RateSourceFeeRule[];
+  exchangeRateTypes: ExchangeRateTypeWire[];
   preferredSourceIds?: number[];
 };
 
@@ -271,6 +275,8 @@ export function ExchangeRatesClientTable({
   initialRates,
   currencies,
   rateSources,
+  feeRules,
+  exchangeRateTypes,
   preferredSourceIds,
 }: Props) {
   const [rates, setRates] = useState<ExchangeRateLatest[]>(() =>
@@ -551,6 +557,18 @@ export function ExchangeRatesClientTable({
     });
   }
 
+  function feeLabelForRate(rate: ExchangeRateLatest): string {
+    return formatFeeMatch(
+      matchFeeRuleForRate(rate, {
+        feeRules,
+        rateSources,
+        exchangeRateTypes,
+        currencies,
+      }),
+      currencies,
+    );
+  }
+
   async function handleBaseCurrencyChange(id: number) {
     setSourceCurrencyId(id);
     setFetchError(null);
@@ -772,6 +790,14 @@ export function ExchangeRatesClientTable({
                           {r.TypeName || "—"}
                         </p>
                       </div>
+                      <div className="col-span-2">
+                        <span className="text-text-muted">
+                          Fee
+                        </span>
+                        <p className="font-medium text-text-primary">
+                          {feeLabelForRate(r)}
+                        </p>
+                      </div>
                       <div>
                         <span className="text-text-muted">
                           Valid from
@@ -815,11 +841,12 @@ export function ExchangeRatesClientTable({
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
+              <col className="w-[18%]" />
+              <col className="w-[12%]" />
               <col className="w-[22%]" />
-              <col className="w-[14%]" />
-              <col className="w-[28%]" />
-              <col className="w-[18%]" />
-              <col className="w-[18%]" />
+              <col className="w-[22%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-panel">
@@ -828,6 +855,7 @@ export function ExchangeRatesClientTable({
                     { label: "Pair", align: "left" },
                     { label: "Rate", align: "right" },
                     { label: "Type", align: "left" },
+                    { label: "Fee", align: "left" },
                     { label: "Valid from", align: "left" },
                     { label: "Updated", align: "left" },
                   ] as const
@@ -867,7 +895,7 @@ export function ExchangeRatesClientTable({
                     }
                   >
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className={`border-0 bg-transparent px-3 pb-0 pt-1 ${groupIndex === 0 ? "pt-3" : "pt-5"}`}
                     >
                       <div className="rounded-lg border border-border bg-panel p-3">
@@ -906,6 +934,14 @@ export function ExchangeRatesClientTable({
                           {r.TypeName || "—"}
                         </span>
                       </td>
+                      <td
+                        className="border-l border-border px-3 py-2.5 align-middle text-xs leading-snug text-text-muted"
+                        title={feeLabelForRate(r)}
+                      >
+                        <span className="line-clamp-2">
+                          {feeLabelForRate(r)}
+                        </span>
+                      </td>
                       <td className="border-l border-border px-3 py-2.5 align-middle tabular-nums text-text-muted">
                         {formatDateTime(r.ValidFromDate)}
                       </td>
@@ -917,7 +953,7 @@ export function ExchangeRatesClientTable({
                   {hiddenRateCount > 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="border-t border-border bg-card px-4 py-2 text-center"
                       >
                         <button

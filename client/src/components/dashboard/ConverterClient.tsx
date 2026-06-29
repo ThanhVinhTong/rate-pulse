@@ -1,7 +1,7 @@
 "use client";
 
 import { Copy, ExternalLink, RotateCcw } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/Button";
 import {
@@ -21,6 +21,8 @@ import {
   type ExchangeRateLatest,
   type RateSourceMetadata,
 } from "@/types/exchange-rates";
+import type { ExchangeRateTypeWire, FeeAdjustedConversion, RateSourceFeeRule } from "@/types/fee-rules";
+import { calculateFeeAdjustedConversion } from "@/lib/fee-rules";
 
 type GoNullString = { String: string; Valid: boolean };
 type GoNullInt32 = { Int32: number; Valid: boolean };
@@ -29,6 +31,8 @@ type ConverterClientProps = {
   apiBase: string;
   currencies: Currency[];
   rateSources: RateSourceMetadata[];
+  feeRules: RateSourceFeeRule[];
+  exchangeRateTypes: ExchangeRateTypeWire[];
   favoriteCurrencyId?: number;
   preferredSourceIds?: number[];
 };
@@ -42,6 +46,7 @@ type ConverterCardProps = {
   outputCurrency: string;
   resultLabel: string;
   rateData: SnapshotBest;
+  feeAdjustedData: FeeAdjustedBest;
   type: "buy" | "sell";
 };
 
@@ -96,6 +101,22 @@ function formatRate(value: string): string {
   });
 }
 
+function formatConvertedValue(result: number): string {
+  if (!Number.isFinite(result)) return "-";
+
+  if (result < 1) {
+    return result.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumSignificantDigits: 2,
+    });
+  }
+
+  return result.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 function safeExternalHref(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return "#";
@@ -109,6 +130,17 @@ type SnapshotBest = {
   bank: string;
   sourceCode: string;
   sourceLink: string;
+  rate: ExchangeRateLatest;
+} | null;
+
+type FeeAdjustedBest = {
+  value: number;
+  displayValue: string;
+  bank: string;
+  sourceCode: string;
+  sourceLink: string;
+  feeSummary: string;
+  conversion: FeeAdjustedConversion;
 } | null;
 
 function ConverterCard({
@@ -120,6 +152,7 @@ function ConverterCard({
   outputCurrency,
   resultLabel,
   rateData,
+  feeAdjustedData,
   type,
 }: ConverterCardProps) {
   const hasAmount = amount.trim().length > 0;
@@ -134,16 +167,23 @@ function ConverterCard({
       ? numAmount * rateData.value 
       : numAmount / rateData.value;
     
-    if (result < 1) {
-      return result.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumSignificantDigits: 2,
-      });
+    return formatConvertedValue(result);
+  })();
+
+  const feeAdjustedAmount = (() => {
+    if (!hasAmount) return "-";
+    if (!feeAdjustedData) return "Unavailable";
+
+    const conversion = feeAdjustedData.conversion;
+    if (
+      conversion.isRange &&
+      conversion.adjustedValueMin != null &&
+      conversion.adjustedValueMax != null
+    ) {
+      return `${formatConvertedValue(conversion.adjustedValueMin)} - ${formatConvertedValue(conversion.adjustedValueMax)}`;
     }
-    return result.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+
+    return feeAdjustedData.displayValue;
   })();
 
   const handleCopyResult = async () => {
@@ -205,6 +245,24 @@ function ConverterCard({
             ? `Rate used: ${rateData.displayValue} · Bank: ${rateData.sourceCode}`
             : "Enter an amount to preview the conversion."}
         </Text>
+        {hasAmount ? (
+          <div className="mt-3 rounded-lg border border-border bg-card px-3 py-2">
+            <Text variant="caption">Best after estimated fee</Text>
+            <div className="mt-1 flex items-end justify-between gap-3">
+              <p className="text-lg font-semibold tabular-nums text-text-primary">
+                {feeAdjustedAmount}
+              </p>
+              <Badge variant="muted" className="gap-1.5 normal-case">
+                <CurrencyCodeBadge code={outputCurrency} className="text-xs" />
+              </Badge>
+            </div>
+            <Text variant="caption" className="mt-1">
+              {feeAdjustedData
+                ? `${feeAdjustedData.sourceCode}: ${feeAdjustedData.feeSummary}`
+                : "No fee-adjusted estimate because the fee rule or fee currency conversion is unavailable."}
+            </Text>
+          </div>
+        ) : null}
       </Panel>
 
       <div className="flex flex-wrap gap-2">
@@ -281,6 +339,8 @@ export function ConverterClient({
   apiBase,
   currencies,
   rateSources,
+  feeRules,
+  exchangeRateTypes,
   favoriteCurrencyId,
   preferredSourceIds,
 }: ConverterClientProps) {
@@ -518,7 +578,7 @@ export function ConverterClient({
     [latestRates, targetCurrencyCode],
   );
 
-  const findBestRate = (
+  const findBestRate = useCallback((
     typeSet: Set<string>,
     compareFunc: (current: number, best: number) => boolean,
     bankCode?: string,
@@ -540,31 +600,94 @@ export function ConverterClient({
           bank: sourceMetaByCode.get(sourceCode)?.name ?? sourceCode,
           sourceCode,
           sourceLink: sourceMetaByCode.get(sourceCode)?.link ?? "",
+          rate,
         };
       }
     }
 
     return best;
-  };
+  }, [snapshotRates, sourceMetaByCode]);
+
+  const findBestFeeAdjusted = useCallback((
+    typeSet: Set<string>,
+    direction: "buy" | "sell",
+    amount: string,
+    bankCode?: string,
+  ): FeeAdjustedBest => {
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return null;
+
+    let best: FeeAdjustedBest = null;
+
+    for (const rate of snapshotRates) {
+      if (!typeSet.has(rateType(rate))) continue;
+      if (bankCode && rateSourceKey(rate) !== bankCode) continue;
+
+      const conversion = calculateFeeAdjustedConversion({
+        rate,
+        allRates: latestRates,
+        amount: parsedAmount,
+        direction,
+        feeRules,
+        rateSources,
+        exchangeRateTypes,
+        currencies,
+      });
+      if (!conversion) continue;
+
+      if (!best || conversion.comparisonValue > best.value) {
+        const sourceCode = rateSourceKey(rate);
+        best = {
+          value: conversion.comparisonValue,
+          displayValue: formatConvertedValue(conversion.adjustedValue),
+          bank: sourceMetaByCode.get(sourceCode)?.name ?? sourceCode,
+          sourceCode,
+          sourceLink: sourceMetaByCode.get(sourceCode)?.link ?? "",
+          feeSummary: conversion.feeSummary,
+          conversion,
+        };
+      }
+    }
+
+    return best;
+  }, [
+    currencies,
+    exchangeRateTypes,
+    feeRules,
+    latestRates,
+    rateSources,
+    snapshotRates,
+    sourceMetaByCode,
+  ]);
   
   const bestBuy = useMemo<SnapshotBest>(
     () => findBestRate(BUY_TRANSFER_TYPES, (current, best) => current > best, selectedBankCode),
-    [snapshotRates, sourceMetaByCode, selectedBankCode],
+    [findBestRate, selectedBankCode],
   );
   
   const bestSell = useMemo<SnapshotBest>(
     () => findBestRate(SELL_TRANSFER_TYPES, (current, best) => current < best, selectedBankCode),
-    [snapshotRates, sourceMetaByCode, selectedBankCode],
+    [findBestRate, selectedBankCode],
+  );
+
+  const bestBuyAfterFee = useMemo<FeeAdjustedBest>(
+    () => findBestFeeAdjusted(BUY_TRANSFER_TYPES, "buy", buyAmount, selectedBankCode),
+    [findBestFeeAdjusted, buyAmount, selectedBankCode],
+  );
+
+  const bestSellAfterFee = useMemo<FeeAdjustedBest>(
+    () => findBestFeeAdjusted(SELL_TRANSFER_TYPES, "sell", sellAmount, selectedBankCode),
+    [findBestFeeAdjusted, sellAmount, selectedBankCode],
   );
 
   const bestBuyAllBanks = useMemo<SnapshotBest>(
     () => findBestRate(BUY_TRANSFER_TYPES, (current, best) => current > best),
-    [snapshotRates, sourceMetaByCode],
+    [findBestRate],
   );
 
   const bestSellAllBanks = useMemo<SnapshotBest>(
     () => findBestRate(SELL_TRANSFER_TYPES, (current, best) => current < best),
-    [snapshotRates, sourceMetaByCode],
+    [findBestRate],
   );
 
   const selectClass =
@@ -671,6 +794,7 @@ export function ConverterClient({
 
           resultLabel="Estimated target amount"
           rateData={bestBuy}
+          feeAdjustedData={bestBuyAfterFee}
           type="buy"
         />
 
@@ -683,6 +807,7 @@ export function ConverterClient({
           outputCurrency={targetCurrencyCode || "-"}
           resultLabel="Estimated base amount"
           rateData={bestSell}
+          feeAdjustedData={bestSellAfterFee}
           type="sell"
         />
       </div>

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { ConverterClient } from "@/components/dashboard/ConverterClient";
 import type { Currency, RateSourceMetadata } from "@/types/exchange-rates";
+import type { ExchangeRateTypeWire, RateSourceFeeRule } from "@/types/fee-rules";
 import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
 
 const apiBase = process.env.RATE_PULSE_API_BASE_URL || "https://localhost:3000";
@@ -14,12 +15,20 @@ export const metadata: Metadata = {
 };
 
 async function fetchConverterData() {
+  const activeOn = new Date().toISOString().slice(0, 10);
+
   try {
-    const [currenciesRes, rateSourcesRes] = await Promise.all([
+    const [currenciesRes, rateSourcesRes, feeRulesRes, exchangeRateTypesRes] = await Promise.all([
       fetch(`${apiBase}/currencies/codes-and-names`, {
         next: { revalidate: 3600 },
       }),
       fetch(`${apiBase}/rate-sources/metadata`, {
+        next: { revalidate: 3600 },
+      }),
+      fetch(`${apiBase}/rate-source-fee-rules?active_on=${activeOn}`, {
+        next: { revalidate: 1800 },
+      }),
+      fetch(`${apiBase}/exchange-rate-types`, {
         next: { revalidate: 3600 },
       }),
     ]);
@@ -30,16 +39,20 @@ async function fetchConverterData() {
 
     const currencies: Currency[] = await currenciesRes.json();
     const rateSources: RateSourceMetadata[] = await rateSourcesRes.json();
+    const feeRules: RateSourceFeeRule[] = feeRulesRes.ok ? await feeRulesRes.json() : [];
+    const exchangeRateTypes: ExchangeRateTypeWire[] = exchangeRateTypesRes.ok
+      ? await exchangeRateTypesRes.json()
+      : [];
 
-    return { currencies, rateSources };
+    return { currencies, rateSources, feeRules, exchangeRateTypes };
   } catch (error) {
     console.error("Failed to fetch converter data:", error);
-    return { currencies: [], rateSources: [] };
+    return { currencies: [], rateSources: [], feeRules: [], exchangeRateTypes: [] };
   }
 }
 
 export default async function ConverterPage() {
-  const { currencies, rateSources } = await fetchConverterData();
+  const { currencies, rateSources, feeRules, exchangeRateTypes } = await fetchConverterData();
   const favoriteCurrencyId = await fetchUserFavoriteCurrencyId();
 
   // Read preferred rate sources from cookie for zero-network SSR
@@ -74,6 +87,8 @@ export default async function ConverterPage() {
         apiBase={apiBase}
         currencies={currencies}
         rateSources={rateSources}
+        feeRules={feeRules}
+        exchangeRateTypes={exchangeRateTypes}
         favoriteCurrencyId={favoriteCurrencyId}
         preferredSourceIds={preferredSourceIds}
       />

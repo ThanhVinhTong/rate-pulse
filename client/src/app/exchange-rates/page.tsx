@@ -6,6 +6,7 @@ import {
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { fetchUserFavoriteCurrencyId } from "@/lib/preferences";
+import type { ExchangeRateTypeWire, RateSourceFeeRule } from "@/types/fee-rules";
 
 export const metadata: Metadata = {
   title: "Exchange Rates",
@@ -24,11 +25,26 @@ async function fetchJson(url: string, options: RequestInit, label: string) {
   return res.json()
 }
 
+async function fetchOptionalJson<T>(
+  url: string,
+  options: RequestInit,
+  label: string,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await fetchJson(url, options, label);
+  } catch (error) {
+    console.warn(`${label} unavailable:`, error);
+    return fallback;
+  }
+}
+
 export default async function ExchangeRatesPage() {
   const base = process.env.RATE_PULSE_API_BASE_URL ?? "https://localhost:3000";
+  const activeOn = new Date().toISOString().slice(0, 10);
 
-  // Fetch currencies, rate sources and the user's favorite currency ID
-  const [currencies, rateSources, favoriteCurrencyId] = await Promise.all([
+  // Fetch currencies, sources, fee rules, rate types, and the user's favorite currency ID.
+  const [currencies, rateSources, feeRules, exchangeRateTypes, favoriteCurrencyId] = await Promise.all([
     fetchJson(
       `${base}/currencies/codes-and-names`, 
       { next: { revalidate: 1800 } },
@@ -38,6 +54,18 @@ export default async function ExchangeRatesPage() {
       `${base}/rate-sources/metadata`, 
       { next: { revalidate: 1800 } },
       "Rate Sources"
+    ),
+    fetchOptionalJson<RateSourceFeeRule[]>(
+      `${base}/rate-source-fee-rules?active_on=${activeOn}`,
+      { next: { revalidate: 1800 } },
+      "Rate Source Fee Rules",
+      []
+    ),
+    fetchOptionalJson<ExchangeRateTypeWire[]>(
+      `${base}/exchange-rate-types`,
+      { next: { revalidate: 1800 } },
+      "Exchange Rate Types",
+      []
     ),
     fetchUserFavoriteCurrencyId(),
   ]);
@@ -82,6 +110,8 @@ export default async function ExchangeRatesPage() {
           initialRates={exchangeRatesLatest}
           currencies={currencies}
           rateSources={rateSources}
+          feeRules={feeRules}
+          exchangeRateTypes={exchangeRateTypes}
           preferredSourceIds={preferredSourceIds}
         />
       </div>
