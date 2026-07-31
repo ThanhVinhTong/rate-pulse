@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import { ThemeProvider } from "@/components/common/ThemeProvider";
 import { Toast } from "@/components/common/Toast";
 import { Footer } from "@/components/layout/Footer";
+import { MigrationNotice } from "@/components/layout/MigrationNotice";
 import { Navbar } from "@/components/layout/Navbar";
 import { Container } from "@/components/ui/container";
 import { getUserFromCookie } from "@/lib/auth";
@@ -41,6 +42,7 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <div className="flex min-h-screen flex-col">
             <Navbar session={session} />
+            <MigrationNotice />
             <main className="flex flex-1 flex-col">
               <Container className="flex flex-1 flex-col" verticalPadding="md">
                 {children}
