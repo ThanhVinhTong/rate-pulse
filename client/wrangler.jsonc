@@ -1,4 +1,5 @@
 {
+  "keep_vars": true,
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rate-pulse",
   "main": ".open-next/worker.js",
@@ -10,5 +11,10 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "MONGO_DB": "rate_pulse",
+    "MONGO_COLLECTION": "news-rate-pulse",
+    "RATE_PULSE_API_BASE_URL": "https://api.rate-pulse.me"
   }
 }
