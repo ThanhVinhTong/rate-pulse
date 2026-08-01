@@ -1,34 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rate-pulse-api-deployment
+  name: rate-pulse-worker-deployment
   labels:
-    app: rate-pulse-api
+    app: rate-pulse-worker
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: rate-pulse-api
+      app: rate-pulse-worker
   template:
     metadata:
       labels:
-        app: rate-pulse-api
+        app: rate-pulse-worker
     spec:
       imagePullSecrets:
         - name: dockerhub-pull
       containers:
-      - name: rate-pulse-api  
+      - name: rate-pulse-worker
         image: vinhtongthanh57/rate-pulse-api:latest
-        ports:
-        - containerPort: 8080
-        - containerPort: 50051
         envFrom:
         - secretRef:
             name: rate-pulse-secrets
         env:
         - name: ENABLE_HTTP_SERVER
-          value: "true"
-        - name: ENABLE_GRPC_SERVER
-          value: "true"
-        - name: ENABLE_TASK_PROCESSOR
           value: "false"
+        - name: ENABLE_GRPC_SERVER
+          value: "false"
+        - name: ENABLE_TASK_PROCESSOR
+          value: "true"

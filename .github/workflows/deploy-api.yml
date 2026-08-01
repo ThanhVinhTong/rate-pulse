@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'rate-pulse-api/**'
-      - 'digitalocean/**'
+      - 'ovh/**'
   workflow_dispatch:
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
           docker push $IMAGE_NAME:latest
 
   deploy:
-    name: Deploy on Droplet
+    name: Deploy on OVH VPS
     runs-on: ubuntu-latest
     needs: build
 
@@ -44,23 +44,23 @@ jobs:
       - name: Copy Kubernetes manifests
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "digitalocean/*"
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
+          passphrase: ${{ secrets.OVH_SSH_PASSPHRASE }}
+          key: ${{ secrets.OVH_SSH_KEY }}
+          source: "ovh/*"
           target: "~/rate-pulse-api"
 
       - name: SSH → Apply Secrets & Deploy
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          password: ${{ secrets.DROPLET_PASSWORD || secrets.PASSWORD }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
+          passphrase: ${{ secrets.OVH_SSH_PASSPHRASE }}
+          key: ${{ secrets.OVH_SSH_KEY }}
           script: |
+            set -eu
+            export KUBECONFIG="$HOME/.kube/config"
             cd ~/rate-pulse-api
             
             # 1. Create/Update the Kubernetes Secret
@@ -95,11 +95,11 @@ jobs:
               --dry-run=client -o yaml | kubectl apply -f -
 
             # 3. Apply deployment manifests
-            kubectl apply -f digitalocean/deployment.yaml
-            kubectl apply -f digitalocean/service.yaml
-            kubectl apply -f digitalocean/issuer.yaml
-            kubectl apply -f digitalocean/ingress.yaml
-            kubectl apply -f digitalocean/worker-deployment.yaml
+            kubectl apply -f ovh/deployment.yaml
+            kubectl apply -f ovh/service.yaml
+            kubectl apply -f ovh/issuer.yaml
+            kubectl apply -f ovh/ingress.yaml
+            kubectl apply -f ovh/worker-deployment.yaml
               
             # 4. Restart deployment and wait for it to be ready
             kubectl rollout restart deployment/rate-pulse-api-deployment

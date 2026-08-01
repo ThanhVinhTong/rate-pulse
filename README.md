@@ -24,7 +24,7 @@ rate-pulse/
 ├── client/                 # Next.js App Router frontend (dashboard + marketing home)
 ├── pulse-intel/            # Python Selenium pipeline for news / market scraping
 ├── pulse_fx/               # Python tool for FX data gathering from institutions
-├── digitalocean/           # Kubernetes manifests (service, ingress, issuer, etc.)
+├── ovh/                    # Kubernetes manifests (service, ingress, issuer, etc.)
 ├── .github/workflows/      # CI/CD (API, client, pulse-intel)
 ├── docker-compose.yaml     # Local API + Postgres
 └── README.md
@@ -55,7 +55,7 @@ UI is built from reusable primitives under `client/src/components/ui/` (panels, 
 
 - Docker / Docker Compose
 - GitHub Actions
-- Kubernetes-style manifests under `digitalocean/`
+- Kubernetes-style manifests under `ovh/`
 
 ### Data collection (WIP)
 
@@ -152,7 +152,7 @@ npm run lint    # ESLint
 
 ## CI/CD and deployment
 
-Workflows such as `deploy-api.yml`, `deploy-client.yml`, and `deploy-pulse-intel.yml` typically run on pushes to `main`. They build and push images to Docker Hub (for example `vinhtongthanh57/rate-pulse-api`, `vinhtongthanh57/client`), tag with the commit SHA and `latest`, and apply manifests from `digitalocean/` where configured.
+Workflows such as `deploy-api.yml`, `deploy-client.yml`, and `deploy-pulse-intel.yml` typically run on pushes to `main`. They build and push images to Docker Hub (for example `vinhtongthanh57/rate-pulse-api`, `vinhtongthanh57/client`), tag with the commit SHA and `latest`, and apply manifests from `ovh/` where configured.
 
 ## `pulse-intel` (WIP)
 
