@@ -75,6 +75,7 @@ func (server *Server) setupRouter() {
 			"http://localhost:3000",
 			"https://www.rate-pulse.me",
 			"https://rate-pulse.me",
+			"https://rate-pulse.vincenttong.workers.dev",
 		},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
