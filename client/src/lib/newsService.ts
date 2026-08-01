@@ -1,56 +1,40 @@
+import "server-only";
+
+import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 import type { SnapshotDocument, FeedArticleDoc } from "@/types";
+import { getLatestSnapshot } from "@/lib/newsRepository";
+
+const getCachedLatestSnapshot = unstable_cache(
+  getLatestSnapshot,
+  ["latest-news-snapshot"],
+  { revalidate: 3600 },
+);
 
 /**
- * Fetch the latest pulse_intel snapshot from MongoDB via the Next.js API route.
+ * Fetch the latest pulse_intel snapshot directly from MongoDB.
  *
  * Usage (server component):
  *   const snapshot = await fetchLatestSnapshot();
- *
- * Usage (client component / hook):
- *   const [snapshot, setSnapshot] = useState<SnapshotDocument | null>(null);
- *   useEffect(() => { fetchLatestSnapshot().then(setSnapshot); }, []);
  */
 export async function fetchLatestSnapshot(): Promise<SnapshotDocument | null> {
+  // Do not query MongoDB while Next.js is prerendering the application.
+  await connection();
+
   try {
-    const baseUrl = "https://www.rate-pulse.me/";
-    const res = await fetch(`${baseUrl}/api/news/latest`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      console.error("[fetchLatestSnapshot] API error:", res.status, body);
-      return null;
-    }
-
-    return (await res.json()) as SnapshotDocument;
+    return await getCachedLatestSnapshot();
   } catch (err) {
-    console.error("[fetchLatestSnapshot] Network error:", err);
+    console.error("[fetchLatestSnapshot] MongoDB error:", err);
     return null;
   }
 }
 
 export async function fetchBreakingNews(): Promise<FeedArticleDoc[] | null> {
-  try {
-    const baseUrl = "https://www.rate-pulse.me/";
-    const res = await fetch(`${baseUrl}/api/news/latest`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
-    });
+  const data = await fetchLatestSnapshot();
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      console.error("[fetchBreakingNews] API error:", res.status, body);
-      return null;
-    }
-
-    const data: SnapshotDocument = await res.json();
-
-    // Flatten all feed categories into a single array
-    const result: FeedArticleDoc[] = data.feeds.world_news.slice(0, 3);
-
-    return result;
-  } catch (err) {
-    console.error("[fetchBreakingNews] Network error:", err);
+  if (!data) {
     return null;
   }
+
+  return data.feeds.world_news.slice(0, 3);
 }
