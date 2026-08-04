@@ -138,6 +138,14 @@ npm run build   # production build
 npm run lint    # ESLint
 ```
 
+**Note:** Make sure you config client/.env before running your frontend with the following variables:
+```
+MONGO_URI=
+MONGO_DB=
+MONGO_COLLECTION=
+RATE_PULSE_API_BASE_URL=
+```
+
 ## API overview
 
 ### Public
@@ -195,13 +203,24 @@ pulse-intel/
 
 Additional IDs exist for expansion (economic indicators, trade, supply chain, financial, technology, crypto, AI/ML, etc.).
 
-### Run
+### Setup & Environment
 
-```bash
-cd pulse-intel
-pip install -r requirements.txt
-python main.py
-```
+1. Copy `.env.example` to `.env` inside `pulse-intel/`:
+   ```bash
+   cp pulse-intel/.env.example pulse-intel/.env
+   ```
+2. Configure your MongoDB clusters and Gmail notification credentials in `.env`:
+   - `MONGO_URI`: Primary database cluster for production app queries (keeps a minimum of 10 latest snapshots).
+   - `GMAIL_SMTP_USER`, `GMAIL_APP_PASSWORD`, `GMAIL_NOTIFY_TO`: Credentials for receiving execution log notifications.
+
+### Scraper & Data Worker
+
+- **Run Scraper**: Collects latest market news and exports to MongoDB / Excel.
+  ```bash
+  cd pulse-intel
+  pip install -r requirements.txt
+  python main.py
+  ```
 
 Requires Python 3.10+, Microsoft Edge, and a matching Edge WebDriver.
 
