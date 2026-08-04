@@ -19,6 +19,8 @@ async function getClient(): Promise<MongoClient> {
         strict: true,
         deprecationErrors: true,
       },
+      connectTimeoutMS: 5000,
+      socketTimeoutMS: 5000,
     });
 
     cachedClientPromise = client.connect().catch((error) => {
@@ -31,29 +33,40 @@ async function getClient(): Promise<MongoClient> {
 }
 
 export async function getLatestSnapshot(): Promise<SnapshotDocument | null> {
-  const client = await getClient();
   const dbName = process.env.MONGO_DB ?? "rate_pulse";
-  const collectionName =
-    process.env.MONGO_COLLECTION ?? "news-rate-pulse";
+  const collectionName = process.env.MONGO_COLLECTION ?? "news-rate-pulse";
 
-  const doc = await client
-    .db(dbName)
-    .collection(collectionName)
-    .find({})
-    .sort({ generated_at: -1 })
-    .limit(1)
-    .next();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const client = await getClient();
+      const doc = await client
+        .db(dbName)
+        .collection(collectionName)
+        .find({})
+        .sort({ generated_at: -1 })
+        .limit(1)
+        .next();
 
-  if (!doc) {
-    return null;
+      if (!doc) {
+        return null;
+      }
+
+      return {
+        ...doc,
+        _id: doc._id.toString(),
+        generated_at:
+          doc.generated_at instanceof Date
+            ? doc.generated_at.toISOString()
+            : String(doc.generated_at),
+      } as SnapshotDocument;
+    } catch (err: any) {
+      cachedClientPromise = null;
+      if (attempt === 1) {
+        throw err;
+      }
+    }
   }
 
-  return {
-    ...doc,
-    _id: doc._id.toString(),
-    generated_at:
-      doc.generated_at instanceof Date
-        ? doc.generated_at.toISOString()
-        : String(doc.generated_at),
-  } as SnapshotDocument;
+  return null;
 }
+
