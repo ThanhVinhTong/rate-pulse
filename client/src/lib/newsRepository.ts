@@ -32,63 +32,7 @@ async function getClient(): Promise<MongoClient> {
   return cachedClientPromise;
 }
 
-/**
- * Fetch latest snapshot via MongoDB Atlas Data API (HTTPS REST).
- * Best practice for Edge Runtimes (Cloudflare Workers) — zero persistent TCP sockets.
- */
-async function getLatestSnapshotViaDataApi(): Promise<SnapshotDocument | null> {
-  const endpoint = process.env.MONGO_ATLAS_DATA_API_URL;
-  const apiKey = process.env.MONGO_ATLAS_DATA_API_KEY;
-  const clusterName = process.env.MONGO_ATLAS_CLUSTER_NAME ?? "Cluster0";
-  const dbName = process.env.MONGO_DB ?? "rate_pulse";
-  const collectionName = process.env.MONGO_COLLECTION ?? "news-rate-pulse";
-
-  if (!endpoint || !apiKey) {
-    return null;
-  }
-
-  const url = endpoint.endsWith("/")
-    ? `${endpoint}action/findOne`
-    : `${endpoint}/action/findOne`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "api-key": apiKey,
-    },
-    body: JSON.stringify({
-      dataSource: clusterName,
-      database: dbName,
-      collection: collectionName,
-      sort: { generated_at: -1 },
-    }),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`MongoDB Data API HTTP Error ${response.status}: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  const doc = data.document;
-
-  if (!doc) {
-    return null;
-  }
-
-  return {
-    ...doc,
-    _id: typeof doc._id === "object" ? doc._id.$oid ?? String(doc._id) : String(doc._id),
-    generated_at: typeof doc.generated_at === "string" ? doc.generated_at : new Date(doc.generated_at).toISOString(),
-  } as SnapshotDocument;
-}
-
 export async function getLatestSnapshot(): Promise<SnapshotDocument | null> {
-  if (process.env.MONGO_ATLAS_DATA_API_URL && process.env.MONGO_ATLAS_DATA_API_KEY) {
-    return getLatestSnapshotViaDataApi();
-  }
-
   const dbName = process.env.MONGO_DB ?? "rate_pulse";
   const collectionName = process.env.MONGO_COLLECTION ?? "news-rate-pulse";
 
