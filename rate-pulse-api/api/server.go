@@ -114,6 +114,7 @@ func (server *Server) setupRouter() {
 	router.GET("/countries/code/:country_code", server.getCountryByCode)
 	router.GET("/countries/:id", server.getCountry)
 	router.GET("/countries", server.listCountry)
+	router.GET("/news/latest", server.getLatestNewsSnapshot)
 
 	// Protected routes (authentication required)
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
