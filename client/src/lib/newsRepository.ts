@@ -2,10 +2,7 @@ import "server-only";
 import type { SnapshotDocument } from "@/types";
 
 export async function getLatestSnapshot(): Promise<SnapshotDocument | null> {
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.API_URL ||
-    "http://localhost:8080";
+  const apiBase = "https://api.rate-pulse.me";
 
   try {
     const res = await fetch(`${apiBase}/news/latest`, {
