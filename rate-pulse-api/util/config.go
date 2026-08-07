@@ -31,6 +31,9 @@ type Config struct {
 	EnableHTTPServer       bool          `mapstructure:"ENABLE_HTTP_SERVER"`
 	EnableGRPCServer       bool          `mapstructure:"ENABLE_GRPC_SERVER"`
 	EnableTaskProcessor    bool          `mapstructure:"ENABLE_TASK_PROCESSOR"`
+	MongoURI               string        `mapstructure:"MONGO_URI"`
+	MongoDB                string        `mapstructure:"MONGO_DB"`
+	MongoCollection        string        `mapstructure:"MONGO_COLLECTION"`
 }
 
 // LoadConfig loads the configuration from the environment variables
@@ -63,6 +66,9 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("ENABLE_HTTP_SERVER")
 	viper.BindEnv("ENABLE_GRPC_SERVER")
 	viper.BindEnv("ENABLE_TASK_PROCESSOR")
+	viper.BindEnv("MONGO_URI")
+	viper.BindEnv("MONGO_DB")
+	viper.BindEnv("MONGO_COLLECTION")
 
 	err = viper.ReadInConfig()
 	if err != nil {

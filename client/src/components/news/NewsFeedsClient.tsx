@@ -45,7 +45,7 @@ export function NewsFeedsClient({ feeds }: NewsFeedsClientProps) {
     return key.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   };
 
-  const currentFeed = feeds[activeTab] || [];
+  const currentFeed = feeds?.[activeTab] || [];
 
   const filteredFeed = useMemo(() => {
     let out = currentFeed;
