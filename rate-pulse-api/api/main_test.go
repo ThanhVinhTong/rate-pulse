@@ -40,7 +40,7 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 	}
 
 	taskDistributor := noopTaskDistributor{}
-	services := service.NewServices(config, store, tokenMaker, taskDistributor)
+	services := service.NewServices(config, store, tokenMaker, taskDistributor, nil)
 	server, err := NewServer(config, store, services, tokenMaker, nil)
 	require.NoError(t, err)
 

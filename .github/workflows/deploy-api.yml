@@ -69,6 +69,9 @@ jobs:
               --from-literal=DB_DRIVER='${{ secrets.DB_DRIVER }}' \
               --from-literal=HTTP_SERVER_ADDRESS='${{ secrets.HTTP_SERVER_ADDRESS }}' \
               --from-literal=GRPC_SERVER_ADDRESS='${{ secrets.GRPC_SERVER_ADDRESS }}' \
+              --from-literal=MONGO_URI='${{ secrets.MONGO_URI }}' \
+              --from-literal=MONGO_DB='${{ secrets.MONGO_DB }}' \
+              --from-literal=MONGO_COLLECTION='${{ secrets.MONGO_COLLECTION }}' \
               --from-literal=ACCESS_TOKEN_DURATION='${{ secrets.ACCESS_TOKEN_DURATION }}' \
               --from-literal=TOKEN_SYMMETRIC_KEY='${{ secrets.TOKEN_SYMMETRIC_KEY }}' \
               --from-literal=REFRESH_TOKEN_DURATION='${{ secrets.REFRESH_TOKEN_DURATION }}' \

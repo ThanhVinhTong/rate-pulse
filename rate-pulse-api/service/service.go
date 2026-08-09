@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	mongoClient "github.com/ThanhVinhTong/rate-pulse/db/mongo"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/token"
 	"github.com/ThanhVinhTong/rate-pulse/util"
@@ -16,6 +17,7 @@ type Services struct {
 	FX       FXUseCase
 	FeeRules RateSourceFeeRuleUseCase
 	Health   HealthUseCase
+	News     NewsUseCase
 }
 
 func NewServices(
@@ -23,6 +25,7 @@ func NewServices(
 	store db.Store,
 	tokenMaker token.Maker,
 	taskDistributor worker.TaskDistributor,
+	mongo *mongoClient.Client,
 ) *Services {
 	return &Services{
 		Auth:     NewAuthService(config, store, tokenMaker, taskDistributor),
@@ -30,6 +33,7 @@ func NewServices(
 		FX:       NewFXService(store),
 		FeeRules: NewRateSourceFeeRuleService(store),
 		Health:   NewHealthService(store),
+		News:     NewNewsService(mongo),
 	}
 }
 
