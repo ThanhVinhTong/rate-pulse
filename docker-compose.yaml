@@ -11,7 +11,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_SOURCE: postgresql://root:12345678@postgres:5432/rate_pulse?sslmode=disable
+      DB_SOURCE_API: postgresql://root:12345678@postgres:5432/rate_pulse?sslmode=disable
     depends_on:
       - postgres
     entrypoint: [ "/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh" ]

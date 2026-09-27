@@ -10,7 +10,7 @@ import (
 // Config represents the configuration for the application
 type Config struct {
 	DBDriver               string        `mapstructure:"DB_DRIVER"`
-	DBSource               string        `mapstructure:"DB_SOURCE"`
+	DBSource               string        `mapstructure:"DB_SOURCE_API"`
 	HTTPServerAddress      string        `mapstructure:"HTTP_SERVER_ADDRESS"`
 	GRPCServerAddress      string        `mapstructure:"GRPC_SERVER_ADDRESS"`
 	RedisAddress           string        `mapstructure:"REDIS_ADDRESS"`
@@ -42,7 +42,7 @@ func LoadConfig(path string) (config Config, err error) {
 
 	viper.AutomaticEnv()
 	viper.BindEnv("DB_DRIVER")
-	viper.BindEnv("DB_SOURCE")
+	viper.BindEnv("DB_SOURCE_API")
 	viper.BindEnv("HTTP_SERVER_ADDRESS")
 	viper.BindEnv("GRPC_SERVER_ADDRESS")
 	viper.BindEnv("REDIS_ADDRESS")

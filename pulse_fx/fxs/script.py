@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.engine import make_url
 
 from fxs.vn.ACB import ACB
 from fxs.vn.Agribank import Agribank
@@ -53,6 +54,7 @@ class Script:
             return
 
         try:
+            print("Database driver:", make_url(self.db_uri).drivername)
             engine = create_engine(self.db_uri)
         except SQLAlchemyError:
             logger.exception("Could not create SQLAlchemy engine (check DB_SOURCE).")
