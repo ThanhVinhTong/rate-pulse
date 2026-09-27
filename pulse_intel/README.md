@@ -137,13 +137,33 @@ output_folder = "./output_news/"
 
 Make sure your Edge WebDriver version matches your installed Edge browser version.
 
-## Run
+Next, environment variables:
 
-Start the scraper with:
+1. Create `.env` from `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Configure environmental variables:
+   - `MONGO_URI`: Production cluster URI (retains min 10 records).
+   - `MONGO_WEEKLY_URI`: Weekly historical cluster URI (retains min 60 records).
+   - `GMAIL_SMTP_USER`, `GMAIL_APP_PASSWORD`, `GMAIL_NOTIFY_TO`: SMTP credentials for email log delivery.
 
-```bash
-python main.py
-```
+## Execution
+
+- **Run Scraper**:
+  ```bash
+  python main.py
+  ```
+
+- **Run Worker (Sync & Data Retention)**:
+  ```bash
+  python worker.py
+  ```
+  `worker.py` copies daily scraped documents to the weekly cluster without duplicates, then prunes the oldest records in production (min 10 kept) and weekly history (min 60 kept).
+
+- **Automated Workflow**:
+  Triggered daily at 03:00 UTC via GitHub Actions (`.github/workflows/daily_worker.yml`).
+
 
 ## Output
 

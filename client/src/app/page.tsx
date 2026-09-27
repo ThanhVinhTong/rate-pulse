@@ -92,17 +92,9 @@ const fxPreviewCards = [
   },
 ] as const;
 
-export default async function Home() {
-  const feedDocs = await fetchBreakingNews();
-  const homeNews: NewsArticleRegion[] = (feedDocs || []).map((doc) => ({
-    title: doc.title,
-    href: doc.href,
-    domain: doc.domain,
-    source: doc.source,
-    category: "World News",
-    timestamp: doc.time || null,
-  }));
+import { Suspense } from "react";
 
+export default function Home() {
   return (
     <div className="space-y-0 pb-6">
       <Panel variant="hero" className="relative" id="introduction" aria-labelledby="hero-heading">
@@ -270,18 +262,9 @@ export default async function Home() {
           </TextLink>
         </div>
 
-        {homeNews.length > 0 ? (
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {homeNews.slice(0, 3).map((article) => (
-              <NewsArticleCard key={article.title} article={article} />
-            ))}
-          </div>
-        ) : (
-          <Panel variant="inset" padding="md" className="mt-10 flex items-center gap-3">
-            <Clock3 className="h-5 w-5 text-accent" aria-hidden />
-            <Text variant="muted">Latest headlines will appear here when the news feed is available.</Text>
-          </Panel>
-        )}
+        <Suspense fallback={<NewsSkeleton />}>
+          <AsyncBreakingNewsSection />
+        </Suspense>
 
         <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-border pt-8">
           <TextLink href="/historical" variant="pill">
@@ -293,6 +276,45 @@ export default async function Home() {
           </TextLink>
         </div>
       </section>
+    </div>
+  );
+}
+
+async function AsyncBreakingNewsSection() {
+  const feedDocs = await fetchBreakingNews();
+  const homeNews: NewsArticleRegion[] = (feedDocs || []).map((doc) => ({
+    title: doc.title,
+    href: doc.href,
+    domain: doc.domain,
+    source: doc.source,
+    category: "World News",
+    timestamp: doc.time || null,
+  }));
+
+  if (homeNews.length === 0) {
+    return (
+      <Panel variant="inset" padding="md" className="mt-10 flex items-center gap-3">
+        <Clock3 className="h-5 w-5 text-accent" aria-hidden />
+        <Text variant="muted">Latest headlines will appear here when the news feed is available.</Text>
+      </Panel>
+    );
+  }
+
+  return (
+    <div className="mt-10 grid gap-4 lg:grid-cols-3">
+      {homeNews.slice(0, 3).map((article) => (
+        <NewsArticleCard key={article.title} article={article} />
+      ))}
+    </div>
+  );
+}
+
+function NewsSkeleton() {
+  return (
+    <div className="mt-10 grid gap-4 lg:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="h-28 rounded-xl border border-border bg-panel/50 animate-pulse" />
+      ))}
     </div>
   );
 }

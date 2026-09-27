@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/ThanhVinhTong/rate-pulse/api"
 	responsecache "github.com/ThanhVinhTong/rate-pulse/cache"
+	mongoClient "github.com/ThanhVinhTong/rate-pulse/db/mongo"
 	db "github.com/ThanhVinhTong/rate-pulse/db/sqlc"
 	"github.com/ThanhVinhTong/rate-pulse/email"
 	"github.com/ThanhVinhTong/rate-pulse/gapi"
@@ -87,9 +89,22 @@ func main() {
 		log.Fatal().Err(err).Msg("Cannot create token maker")
 	}
 
+	// Initialize MongoDB client if configured
+	var mongoClientInstance *mongoClient.Client
+	if config.MongoURI != "" {
+		mClient, err := mongoClient.NewClient(config.MongoURI, config.MongoDB, config.MongoCollection)
+		if err != nil {
+			log.Warn().Err(err).Msg("MongoDB connection skipped or failed")
+		} else {
+			mongoClientInstance = mClient
+			defer mongoClientInstance.Close(context.Background())
+			log.Info().Msg("MongoDB connected successfully")
+		}
+	}
+
 	// Initialize application service layer with dependencies.
 	gin.SetMode(gin.ReleaseMode)
-	services := service.NewServices(config, store, tokenMaker, taskDistributor)
+	services := service.NewServices(config, store, tokenMaker, taskDistributor, mongoClientInstance)
 
 	var emailSender email.Sender
 	if config.EnableTaskProcessor {

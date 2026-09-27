@@ -1,0 +1,44 @@
+# Scheduled news sync & retention worker (pulse_intel) on GitHub-hosted runners.
+
+name: pulse_intel daily sync and prune worker
+
+on:
+  schedule:
+    # Daily at 03:00 AM UTC (off-peak hours)
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  run_worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    defaults:
+      run:
+        working-directory: pulse_intel
+
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      MONGO_DB: ${{ secrets.MONGO_DB }}
+      MONGO_COLLECTION: ${{ secrets.MONGO_COLLECTION }}
+      MONGO_WEEKLY_URI: ${{ secrets.MONGO_WEEKLY_URI }}
+      MONGO_WEEKLY_DB: ${{ secrets.MONGO_WEEKLY_DB }}
+      MONGO_WEEKLY_COLLECTION: ${{ secrets.MONGO_WEEKLY_COLLECTION }}
+      GMAIL_SMTP_USER_INTEL: ${{ secrets.GMAIL_SMTP_USER_INTEL }}
+      GMAIL_APP_PASSWORD_INTEL: ${{ secrets.GMAIL_APP_PASSWORD_INTEL }}
+      GMAIL_NOTIFY_TO_INTEL: ${{ secrets.GMAIL_NOTIFY_TO_INTEL }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pulse_intel worker
+        run: python worker.py
